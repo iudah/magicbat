@@ -8,7 +8,7 @@ struct tensor_struct {
   f32 *data;
   u32 *shape;
   u32 ndims;
-  u32 length;
+  u32 nelements;
 };
 
 #endif

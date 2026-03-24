@@ -1,5 +1,5 @@
-#include "../adt/tensor_prot.h"
-#include "../tensor.h"
+#include "../include/tensor/adt/tensor_prot.h"
+#include "../include/tensor/tensor.h"
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -12,7 +12,7 @@ int main() {
   assert(t->shape[0] == 3);
   assert(t->shape[1] == 5);
   assert(t->data != NULL);
-  assert(t->length == 15);
+  assert(t->nelements == 15);
 
   tensor_destroy(t);
 

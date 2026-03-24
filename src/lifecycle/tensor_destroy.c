@@ -1,5 +1,5 @@
-#include "../adt/tensor_prot.h"
-#include "../tensor.h"
+#include "../../include/tensor/adt/tensor_prot.h"
+#include "../../include/tensor/tensor.h"
 #include "tensor_memory.h"
 #include <stdbool.h>
 #include <stddef.h>
@@ -10,7 +10,7 @@ bool tensor_destroy(Tensor t) {
   if (t == NULL)
     return false;
 
-  if (t->data == NULL || t->length == 0 || t->ndims == 0 || t->shape == NULL)
+  if (t->data == NULL || t->nelements == 0 || t->ndims == 0 || t->shape == NULL)
     return false;
 
   tfree(t->data);

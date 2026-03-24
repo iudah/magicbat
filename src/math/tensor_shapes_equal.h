@@ -1,0 +1,37 @@
+#ifndef TENSOR_MATCH_ELEMENT_WISE
+#define TENSOR_MATCH_ELEMENT_WISE
+#include "../../include/tensor/tensor.h"
+
+static inline bool tensor_shapes_equal(Tensor t, Tensor s) {
+  auto t_size = tensor_num_elements(t);
+  auto s_size = tensor_num_elements(s);
+
+  if (t_size != s_size)
+    return false;
+
+  auto t_ndims = tensor_ndims(t);
+  auto s_ndims = tensor_ndims(s);
+
+  if (t_ndims != s_ndims)
+    return false;
+  if (t_ndims == 0)
+    return false;
+
+  auto t_shape = tensor_shape(t);
+  auto s_shape = tensor_shape(s);
+
+  if (t_shape == NULL || s_shape == NULL)
+    return false;
+
+  u32 i = t_ndims;
+  u32 j = s_ndims;
+  while (i > 0 && j > 0) {
+    --i;
+    --j;
+    if (t_shape[i] != s_shape[j])
+      return false;
+  }
+
+  return true;
+}
+#endif

@@ -6,11 +6,25 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 add_compile_options(-Wall -Wpedantic -Wextra -O2)
 
 set(target tensor)
+add_library(${target} STATIC 
+src/info/tensor_ndims.c
+src/info/tensor_num_elements.c
+src/info/tensor_shape.c
+src/lifecycle/tensor_destroy.c
+src/lifecycle/tensor_new.c
+src/math/tensor_add.c
+src/ops/tensor_fill.c
+src/access/tensor_get.c
+src/access/tensor_set.c
+src/access/tensor_index_out_of_bound.c
+)
 
-add_library(${target} STATIC lifecycle/tensor_new.c lifecycle/tensor_destroy.c)
-
-target_include_directories(${target} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(tensor PUBLIC include)
+target_include_directories(tensor PRIVATE src)
 
 # Test 
 add_executable(test_basic tests/tensor_basic_test.c)
 target_link_libraries(test_basic PRIVATE ${target})
+
+add_executable(test_add tests/tensor_add_test.c)
+target_link_libraries(test_add PRIVATE ${target})
