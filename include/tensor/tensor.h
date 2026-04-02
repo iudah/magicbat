@@ -17,6 +17,10 @@ Tensor tensor_new(const u32 ndims, const u32 *shape);
 bool tensor_destroy(Tensor t);
 
 Tensor tensor_add(Tensor t, Tensor s);
+Tensor tensor_sub(Tensor t, Tensor s);
+Tensor tensor_mul(Tensor t, Tensor s);
+Tensor tensor_div(Tensor t, Tensor s);
+Tensor tensor_matmul(Tensor t, Tensor s);
 
 bool tensor_fill(Tensor t, f32 value);
 

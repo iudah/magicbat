@@ -1,11 +1,13 @@
 #include "../../include/tensor/adt/tensor_prot.h"
 #include "../../include/tensor/tensor.h"
 #include "tensor_shapes_equal.h"
+#include <math.h>
 #include <stdint.h>
 
-Tensor tensor_add(Tensor t, Tensor s) {
+Tensor tensor_div(Tensor t, Tensor s) {
   if (!t || !s)
     return NULL;
+
   if (!tensor_shapes_equal(t, s))
     return NULL;
 
@@ -18,7 +20,11 @@ Tensor tensor_add(Tensor t, Tensor s) {
   for (u32 i = 0; i < nelement; ++i) {
     auto a = t->data[i];
     auto b = s->data[i];
-    res->data[i] = a + b;
+    if (fabsf(b) < 1e-12) {
+      tensor_destroy(res);
+      return NULL;
+    }
+    res->data[i] = a / b;
   }
 
   return res;

@@ -2,11 +2,10 @@
 #include <math.h>
 
 f32 tensor_get(Tensor t, u32 *index) {
-  if (tensor_index_out_of_bound(t, index))
-    return -INFINITY;
-
   u32 flat = 0;
   for (u32 i = 0; i < t->ndims; ++i) {
+    if (index[i] >= t->shape[i])
+      return -INFINITY;
     flat = flat * t->shape[i] + index[i];
   }
 

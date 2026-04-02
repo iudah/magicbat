@@ -13,6 +13,11 @@ src/info/tensor_shape.c
 src/lifecycle/tensor_destroy.c
 src/lifecycle/tensor_new.c
 src/math/tensor_add.c
+src/math/tensor_sub.c
+src/math/tensor_sum.c
+src/math/tensor_mul.c
+src/math/tensor_matmul.c
+src/math/tensor_div.c
 src/ops/tensor_fill.c
 src/access/tensor_get.c
 src/access/tensor_set.c
@@ -28,3 +33,15 @@ target_link_libraries(test_basic PRIVATE ${target})
 
 add_executable(test_add tests/tensor_add_test.c)
 target_link_libraries(test_add PRIVATE ${target})
+
+add_executable(test_sub tests/tensor_sub_test.c)
+target_link_libraries(test_sub PRIVATE ${target})
+
+add_executable(test_mul tests/tensor_mul_test.c)
+target_link_libraries(test_mul PRIVATE ${target})
+
+add_executable(test_matmul tests/tensor_matmul_test.c)
+target_link_libraries(test_matmul PRIVATE ${target})
+
+add_executable(test_div tests/tensor_div_test.c)
+target_link_libraries(test_div PRIVATE ${target})

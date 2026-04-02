@@ -3,7 +3,7 @@
 #include "tensor_shapes_equal.h"
 #include <stdint.h>
 
-Tensor tensor_add(Tensor t, Tensor s) {
+Tensor tensor_sub(Tensor t, Tensor s) {
   if (!t || !s)
     return NULL;
   if (!tensor_shapes_equal(t, s))
@@ -18,7 +18,7 @@ Tensor tensor_add(Tensor t, Tensor s) {
   for (u32 i = 0; i < nelement; ++i) {
     auto a = t->data[i];
     auto b = s->data[i];
-    res->data[i] = a + b;
+    res->data[i] = a - b;
   }
 
   return res;
