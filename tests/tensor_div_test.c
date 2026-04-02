@@ -29,7 +29,7 @@ int main() {
   tensor_destroy(s);
   tensor_destroy(t);
 
-  printf("All tests passed");
+  printf("All div tests passed\n");
 
   return 0;
 }

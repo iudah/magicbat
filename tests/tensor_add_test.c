@@ -28,7 +28,7 @@ int main() {
   tensor_destroy(s);
   tensor_destroy(t);
 
-  printf("All tests passed");
+  printf("All add tests passed\n");
 
   return 0;
 }

@@ -16,7 +16,7 @@ int main() {
 
   tensor_destroy(t);
 
-  printf("All tests passed");
+  printf("All basic tests passed\n");
 
   return 0;
 }
