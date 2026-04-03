@@ -45,3 +45,12 @@ target_link_libraries(test_matmul PRIVATE ${target})
 
 add_executable(test_div tests/tensor_div_test.c)
 target_link_libraries(test_div PRIVATE ${target})
+
+add_executable(test_broadcast tests/tensor_broadcast_test.c)
+target_link_libraries(test_broadcast PRIVATE ${target})
+
+add_executable(test_softmax tests/tensor_softmax_test.c)
+target_link_libraries(test_softmax PRIVATE ${target})
+
+add_executable(test_max tests/tensor_max_test.c)
+target_link_libraries(test_max PRIVATE ${target})

@@ -2,7 +2,7 @@
 #include "../../include/tensor/tensor.h"
 #include <stdint.h>
 
-Tensor tensor_matmul(Tensor t, Tensor s) {
+Tensor tensor_matmul(const Tensor t, const Tensor s) {
   if (!t || !s)
     return NULL;
   if (s->ndims != 2 || t->ndims != 2 || t->shape[1] != s->shape[0])

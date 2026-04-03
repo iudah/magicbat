@@ -1,25 +1,9 @@
-#include "../../include/tensor/adt/tensor_prot.h"
 #include "../../include/tensor/tensor.h"
-#include "tensor_shapes_equal.h"
+#include "tensor_binary_op.h"
 #include <stdint.h>
 
-Tensor tensor_sub(Tensor t, Tensor s) {
-  if (!t || !s)
-    return NULL;
-  if (!tensor_shapes_equal(t, s))
-    return NULL;
+static inline float subtract(float a, float b) { return a - b; }
 
-  Tensor res = tensor_new(tensor_ndims(t), tensor_shape(t));
-  if (res == NULL)
-    return NULL;
-
-  auto nelement = tensor_num_elements(res);
-
-  for (u32 i = 0; i < nelement; ++i) {
-    auto a = t->data[i];
-    auto b = s->data[i];
-    res->data[i] = a - b;
-  }
-
-  return res;
+Tensor tensor_sub(const Tensor t, const Tensor s) {
+  return tensor_binary_op(t, s, subtract);
 }

@@ -4,7 +4,7 @@
 #include <math.h>
 #include <stdint.h>
 
-Tensor tensor_sum_axis(const Tensor t, i32 axis) {
+Tensor tensor_max_axis(const Tensor t, i32 axis) {
   if (!t)
     return NULL;
 
@@ -41,27 +41,28 @@ Tensor tensor_sum_axis(const Tensor t, i32 axis) {
     u32 r_offset = o * inner_size;
     float *r_data = &res->data[r_offset];
     for (u32 i = 0; i < inner_size; ++i) {
-      float sum = 0;
+      float max = -INFINITY;
       for (u32 a = 0; a < axis_size; ++a) {
         u32 a_offset = o_offset + a * inner_size;
-        // cache-miss read if inner_size > locality
-        sum += t->data[a_offset + i];
+        // cache-miss will occur if inner_size > locality (~64B)
+        // But avoid ping-ponging res->data
+        max = fmaxf(max, t->data[a_offset + i]);
       }
-      r_data[i] = sum;
+      r_data[i] = max;
     }
   }
   return res;
 }
 
-float tensor_sum_all(Tensor t) {
+float tensor_max_all(const Tensor t) {
   if (!t)
-    return -INFINITY;
+    return -NAN;
 
-  float sum = 0;
+  float max = -INFINITY;
   u32 nelements = tensor_num_elements(t);
   for (u32 i = 0; i < nelements; ++i) {
-    sum += t->data[i];
+    max = fmaxf(max, t->data[i]);
   }
 
-  return sum;
+  return max;
 }

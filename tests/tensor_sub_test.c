@@ -5,30 +5,58 @@
 #include <stdio.h>
 
 int main() {
-  Tensor t = tensor_new(2, (u32[]){3, 5});
-  Tensor s = tensor_new(2, (u32[]){3, 5});
+  /* ---------------- SAME SHAPE ---------------- */
+  {
+    Tensor t = tensor_new(2, (u32[]){3, 5});
+    Tensor s = tensor_new(2, (u32[]){3, 5});
 
-  assert(t != NULL);
-  assert(s != NULL);
+    assert(t && s);
 
-  tensor_fill(t, 2.5f);
-  tensor_fill(s, 6.5f);
+    tensor_fill(t, 5.0f);
+    tensor_fill(s, 2.0f);
 
-  tensor_set(t, (u32[]){1, 3}, 45.23f);
-  tensor_set(s, (u32[]){2, 2}, -5.55f);
+    Tensor res = tensor_sub(t, s);
+    assert(res);
 
-  Tensor diff = tensor_sub(t, s);
-  assert(diff != NULL);
+    for (u32 i = 0; i < res->nelements; ++i)
+      assert(res->data[i] == 3.0f);
 
-  for (u32 i = 0; i < diff->nelements; ++i) {
-    assert(diff->data[i] == (t->data[i] - s->data[i]));
+    tensor_destroy(res);
+    tensor_destroy(t);
+    tensor_destroy(s);
   }
 
-  tensor_destroy(diff);
-  tensor_destroy(s);
-  tensor_destroy(t);
+  /* ---------------- SCALAR ---------------- */
+  {
+    Tensor t = tensor_new(1, (u32[]){1});
+    Tensor s = tensor_new(2, (u32[]){2, 2});
+
+    t->data[0] = 10.0f;
+    tensor_fill(s, 3.0f);
+
+    Tensor res = tensor_sub(t, s);
+    assert(res);
+
+    for (u32 i = 0; i < res->nelements; ++i)
+      assert(res->data[i] == 7.0f);
+
+    tensor_destroy(res);
+    tensor_destroy(t);
+    tensor_destroy(s);
+  }
+
+  /* ---------------- INVALID ---------------- */
+  {
+    Tensor t = tensor_new(2, (u32[]){2, 3});
+    Tensor s = tensor_new(2, (u32[]){3, 2});
+
+    Tensor res = tensor_sub(t, s);
+    assert(res == NULL);
+
+    tensor_destroy(t);
+    tensor_destroy(s);
+  }
 
   printf("All sub tests passed\n");
-
   return 0;
 }

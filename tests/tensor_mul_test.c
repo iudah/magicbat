@@ -5,30 +5,56 @@
 #include <stdio.h>
 
 int main() {
-  Tensor t = tensor_new(2, (u32[]){3, 5});
-  Tensor s = tensor_new(2, (u32[]){3, 5});
+  /* ---------------- SAME SHAPE ---------------- */
+  {
+    Tensor t = tensor_new(2, (u32[]){2, 2});
+    Tensor s = tensor_new(2, (u32[]){2, 2});
 
-  assert(t != NULL);
-  assert(s != NULL);
+    tensor_fill(t, 3.0f);
+    tensor_fill(s, 4.0f);
 
-  tensor_fill(t, 2.5f);
-  tensor_fill(s, 6.5f);
+    Tensor res = tensor_mul(t, s);
+    assert(res);
 
-  tensor_set(t, (u32[]){1, 3}, 45.23f);
-  tensor_set(s, (u32[]){2, 2}, -5.55f);
+    for (u32 i = 0; i < res->nelements; ++i)
+      assert(res->data[i] == 12.0f);
 
-  Tensor prod = tensor_mul(t, s);
-  assert(prod != NULL);
-
-  for (u32 i = 0; i < prod->nelements; ++i) {
-    assert(prod->data[i] == (t->data[i] * s->data[i]));
+    tensor_destroy(res);
+    tensor_destroy(t);
+    tensor_destroy(s);
   }
 
-  tensor_destroy(prod);
-  tensor_destroy(s);
-  tensor_destroy(t);
+  /* ---------------- SCALAR ---------------- */
+  {
+    Tensor t = tensor_new(2, (u32[]){2, 2});
+    Tensor s = tensor_new(1, (u32[]){1});
+
+    tensor_fill(t, 5.0f);
+    s->data[0] = 2.0f;
+
+    Tensor res = tensor_mul(t, s);
+    assert(res);
+
+    for (u32 i = 0; i < res->nelements; ++i)
+      assert(res->data[i] == 10.0f);
+
+    tensor_destroy(res);
+    tensor_destroy(t);
+    tensor_destroy(s);
+  }
+
+  /* ---------------- INVALID ---------------- */
+  {
+    Tensor t = tensor_new(2, (u32[]){2, 3});
+    Tensor s = tensor_new(2, (u32[]){3, 2});
+
+    Tensor res = tensor_mul(t, s);
+    assert(res == NULL);
+
+    tensor_destroy(t);
+    tensor_destroy(s);
+  }
 
   printf("All mul tests passed\n");
-
   return 0;
 }

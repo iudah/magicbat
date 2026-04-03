@@ -1,8 +1,8 @@
-#ifndef TENSOR_MATCH_ELEMENT_WISE
-#define TENSOR_MATCH_ELEMENT_WISE
+#ifndef TENSOR_SHAPES_EQUAL
+#define TENSOR_SHAPES_EQUAL
 #include "../../include/tensor/tensor.h"
 
-static inline bool tensor_shapes_equal(Tensor t, Tensor s) {
+static inline bool tensor_shapes_equal(const Tensor t, const Tensor s) {
   auto t_size = tensor_num_elements(t);
   auto s_size = tensor_num_elements(s);
 

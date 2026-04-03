@@ -5,31 +5,59 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#define EPS 1e-6
+
 int main() {
-  Tensor t = tensor_new(2, (u32[]){3, 5});
-  Tensor s = tensor_new(2, (u32[]){3, 5});
+  /* ---------------- SAME SHAPE ---------------- */
+  {
+    Tensor t = tensor_new(2, (u32[]){2, 2});
+    Tensor s = tensor_new(2, (u32[]){2, 2});
 
-  assert(t != NULL);
-  assert(s != NULL);
+    tensor_fill(t, 10.0f);
+    tensor_fill(s, 2.0f);
 
-  tensor_fill(t, 2.5f);
-  tensor_fill(s, 6.5f);
+    Tensor res = tensor_div(t, s);
+    assert(res);
 
-  tensor_set(t, (u32[]){1, 3}, 45.23f);
-  tensor_set(s, (u32[]){2, 2}, -5.55f);
+    for (u32 i = 0; i < res->nelements; ++i)
+      assert(fabsf(res->data[i] - 5.0f) < EPS);
 
-  Tensor qoutient = tensor_div(t, s);
-  assert(qoutient != NULL);
-
-  for (u32 i = 0; i < qoutient->nelements; ++i) {
-    assert(fabsf(qoutient->data[i] - (t->data[i] / s->data[i])) <= 1e-6);
+    tensor_destroy(res);
+    tensor_destroy(t);
+    tensor_destroy(s);
   }
 
-  tensor_destroy(qoutient);
-  tensor_destroy(s);
-  tensor_destroy(t);
+  /* ---------------- SCALAR ---------------- */
+  {
+    Tensor t = tensor_new(2, (u32[]){2, 2});
+    Tensor s = tensor_new(1, (u32[]){1});
+
+    tensor_fill(t, 9.0f);
+    s->data[0] = 3.0f;
+
+    Tensor res = tensor_div(t, s);
+    assert(res);
+
+    for (u32 i = 0; i < res->nelements; ++i)
+      assert(fabsf(res->data[i] - 3.0f) < EPS);
+
+    tensor_destroy(res);
+    tensor_destroy(t);
+    tensor_destroy(s);
+  }
+
+  /* ---------------- INVALID ---------------- */
+  {
+    Tensor t = tensor_new(2, (u32[]){2, 3});
+    Tensor s = tensor_new(2, (u32[]){3, 2});
+
+    Tensor res = tensor_div(t, s);
+    assert(res == NULL);
+
+    tensor_destroy(t);
+    tensor_destroy(s);
+  }
 
   printf("All div tests passed\n");
-
   return 0;
 }

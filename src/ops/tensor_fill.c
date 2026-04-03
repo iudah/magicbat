@@ -1,6 +1,6 @@
 #include "../../include/tensor/adt/tensor_prot.h"
 
-bool tensor_fill(Tensor t, f32 value) {
+bool tensor_fill(const Tensor t, f32 value) {
   if (t == NULL)
     return false;
 

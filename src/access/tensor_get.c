@@ -1,7 +1,7 @@
 #include "../../include/tensor/adt/tensor_prot.h"
 #include <math.h>
 
-f32 tensor_get(Tensor t, u32 *index) {
+f32 tensor_get(const Tensor t, const u32 *index) {
   u32 flat = 0;
   for (u32 i = 0; i < t->ndims; ++i) {
     if (index[i] >= t->shape[i])

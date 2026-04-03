@@ -1,6 +1,6 @@
 #include "../../include/tensor/adt/tensor_prot.h"
 
-bool tensor_set(Tensor t, u32 *index, f32 value) {
+bool tensor_set(const Tensor t, const u32 *index, f32 value) {
   u32 flat = 0;
   for (u32 i = 0; i < t->ndims; ++i) {
     if (index[i] >= t->shape[i])

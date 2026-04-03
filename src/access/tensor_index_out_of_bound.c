@@ -1,6 +1,6 @@
 #include "../../include/tensor/adt/tensor_prot.h"
 
-bool tensor_index_out_of_bound(Tensor t, u32 *index) {
+bool tensor_index_out_of_bound(const Tensor t, const u32 *index) {
   if (t == NULL || index == NULL)
     return false;
 
