@@ -18,7 +18,12 @@ src/math/tensor_sum.c
 src/math/tensor_mul.c
 src/math/tensor_matmul.c
 src/math/tensor_div.c
+src/math/tensor_exp.c
+src/math/tensor_softmax.c
+src/math/tensor_binary_op.c
+src/math/tensor_max.c
 src/ops/tensor_fill.c
+src/ops/tensor_reshape.c
 src/access/tensor_get.c
 src/access/tensor_set.c
 src/access/tensor_index_out_of_bound.c
@@ -50,7 +55,7 @@ add_executable(test_broadcast tests/tensor_broadcast_test.c)
 target_link_libraries(test_broadcast PRIVATE ${target})
 
 add_executable(test_softmax tests/tensor_softmax_test.c)
-target_link_libraries(test_softmax PRIVATE ${target})
+target_link_libraries(test_softmax PRIVATE ${target} m)
 
 add_executable(test_max tests/tensor_max_test.c)
-target_link_libraries(test_max PRIVATE ${target})
+target_link_libraries(test_max PRIVATE ${target} m)
