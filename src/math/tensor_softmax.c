@@ -1,4 +1,4 @@
-#include "../../include/tensor/tensor.h"
+#include "../../include/tensor.h"
 #include <stdint.h>
 
 Tensor tensor_softmax_axis(const Tensor t, i32 axis) {

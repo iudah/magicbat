@@ -1,6 +1,6 @@
 #ifndef TENSOR_SHAPES_EQUAL
 #define TENSOR_SHAPES_EQUAL
-#include "../../include/tensor/tensor.h"
+#include "../../include/tensor.h"
 
 static inline bool tensor_shapes_equal(const Tensor t, const Tensor s) {
   auto t_size = tensor_num_elements(t);

@@ -1,4 +1,5 @@
-#include "../../include/tensor/adt/tensor_prot.h"
+#include "../../include/adt/tensor/tensor_prot.h"
+#include "../../include/tensor.h"
 
 bool tensor_set(const Tensor t, const u32 *index, f32 value) {
   u32 flat = 0;

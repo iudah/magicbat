@@ -1,4 +1,5 @@
-#include "../../include/tensor/adt/tensor_prot.h"
+#include "../../include/adt/tensor/tensor_prot.h"
+#include "../../include/tensor.h"
 #include <math.h>
 
 f32 tensor_get(const Tensor t, const u32 *index) {

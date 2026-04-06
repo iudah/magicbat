@@ -1,4 +1,5 @@
-#include "../../include/tensor/adt/tensor_prot.h"
+#include "../../include/adt/tensor/tensor_prot.h"
+#include "../../include/tensor.h"
 
 Tensor tensor_reshape(const Tensor t, u32 ndims, const u32 *shape) {
   if (!t)

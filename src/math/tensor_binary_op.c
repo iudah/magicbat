@@ -1,6 +1,6 @@
 #include "tensor_binary_op.h"
-#include "../../include/tensor/adt/tensor_prot.h"
-#include "../../include/tensor/tensor.h"
+#include "../../include/adt/tensor/tensor_prot.h"
+#include "../../include/tensor.h"
 #include "tensor_odometer.h"
 #include "tensor_shapes_broadcast.h"
 #include "tensor_shapes_equal.h"

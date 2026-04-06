@@ -1,5 +1,5 @@
-#include "../../include/tensor/adt/tensor_prot.h"
-#include "../../include/tensor/tensor.h"
+#include "../../include/adt/tensor/tensor_prot.h"
+#include "../../include/tensor.h"
 #include <stdint.h>
 
 Tensor tensor_matmul(const Tensor t, const Tensor s) {

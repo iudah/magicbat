@@ -1,6 +1,6 @@
 #ifndef TENSOR_ODOMETER_H
 #define TENSOR_ODOMETER_H
-#include "../../include/tensor/adt/type_alias.h"
+#include "../../include/adt/type_alias.h"
 #include "../../src/lifecycle/tensor_memory.h"
 #include <stdint.h>
 

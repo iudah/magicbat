@@ -1,4 +1,5 @@
-#include "../../include/tensor/adt/tensor_prot.h"
+#include "../../include/adt/tensor/tensor_prot.h"
+#include "../../include/tensor.h"
 
 bool tensor_fill(const Tensor t, f32 value) {
   if (t == NULL)
