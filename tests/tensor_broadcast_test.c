@@ -27,10 +27,10 @@ int main(void) {
     // Row 1: 101 101 101 101
     // Row 2: 11 11 11 11
 
-    assert(res->data[0] == 11.0f);
-    assert(res->data[4] == 101.0f); // start of second row
-    assert(res->data[7] == 101.0f);
-    assert(res->data[11] == 11.0f);
+    assert(res->data->data[0] == 11.0f);
+    assert(res->data->data[4] == 101.0f); // start of second row
+    assert(res->data->data[7] == 101.0f);
+    assert(res->data->data[11] == 11.0f);
 
     tensor_destroy(res);
     tensor_destroy(b);
@@ -45,13 +45,13 @@ int main(void) {
     assert(mat && scalar);
 
     tensor_fill(mat, 5.0f);
-    scalar->data[0] = 3.0f;
+    scalar->data->data[0] = 3.0f;
 
     Tensor res = tensor_mul(mat, scalar);
     assert(res != NULL);
 
     for (u32 i = 0; i < tensor_num_elements(res); ++i) {
-      assert(res->data[i] == 15.0f);
+      assert(res->data->data[i] == 15.0f);
     }
 
     tensor_destroy(res);

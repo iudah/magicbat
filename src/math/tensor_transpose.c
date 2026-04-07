@@ -17,10 +17,10 @@ Tensor tensor_transpose(const Tensor t) {
     return NULL;
 
   for (u32 i = 0; i < row; ++i) {
-    float *t_data = &t->data[i * col];
+    float *t_data = &t->data->data[i * col];
     for (u32 j = 0; j < col; ++j) {
       float t_val = t_data[j];
-      res->data[j * row + i] = t_val;
+      res->data->data[j * row + i] = t_val;
     }
   }
 

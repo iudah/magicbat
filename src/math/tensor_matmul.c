@@ -18,10 +18,10 @@ Tensor tensor_matmul(const Tensor t, const Tensor s) {
     return NULL;
 
   for (u32 i = 0; i < row; ++i) {
-    float *t_data = &t->data[i * com];
-    float *r_data = &res->data[i * col];
+    float *t_data = &t->data->data[i * com];
+    float *r_data = &res->data->data[i * col];
     for (u32 j = 0; j < com; ++j) {
-      float *s_data = &s->data[j * col];
+      float *s_data = &s->data->data[j * col];
       float t_val = t_data[j];
       for (u32 k = 0; k < col; ++k) {
         r_data[k] += t_val * s_data[k];

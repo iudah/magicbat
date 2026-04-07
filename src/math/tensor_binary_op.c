@@ -19,9 +19,9 @@ Tensor tensor_binary_op(const Tensor t, const Tensor s,
     auto nelement = tensor_num_elements(res);
 
     for (u32 i = 0; i < nelement; ++i) {
-      auto a = t->data[i];
-      auto b = s->data[i];
-      res->data[i] = op(a, b);
+      auto a = t->data->data[i];
+      auto b = s->data->data[i];
+      res->data->data[i] = op(a, b);
     }
 
     return res;
@@ -35,9 +35,9 @@ Tensor tensor_binary_op(const Tensor t, const Tensor s,
     auto nelement = tensor_num_elements(res);
 
     for (u32 i = 0; i < nelement; ++i) {
-      auto a = t->data[0];
-      auto b = s->data[i];
-      res->data[i] = op(a, b);
+      auto a = t->data->data[0];
+      auto b = s->data->data[i];
+      res->data->data[i] = op(a, b);
     }
     return res;
   }
@@ -50,9 +50,9 @@ Tensor tensor_binary_op(const Tensor t, const Tensor s,
     auto nelement = tensor_num_elements(res);
 
     for (u32 i = 0; i < nelement; ++i) {
-      auto a = t->data[i];
-      auto b = s->data[0];
-      res->data[i] = op(a, b);
+      auto a = t->data->data[i];
+      auto b = s->data->data[0];
+      res->data->data[i] = op(a, b);
     }
     return res;
   }
@@ -85,7 +85,8 @@ Tensor tensor_binary_op(const Tensor t, const Tensor s,
         s_indx += s_stride[i] * index[i];
       }
 
-      res->data[o_indx] = op(t->data[t_indx], s->data[s_indx]);
+      res->data->data[o_indx] =
+          op(t->data->data[t_indx], s->data->data[s_indx]);
     } while (tensor_odometer_next(index, o_ndims, o_shape));
     tensor_odometer_destroy(index);
     tfree(t_stride);

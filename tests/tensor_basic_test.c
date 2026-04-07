@@ -12,7 +12,7 @@ int main() {
   assert(t->shape[0] == 3);
   assert(t->shape[1] == 5);
   assert(t->data != NULL);
-  assert(t->nelements == 15);
+  assert(t->data->nelements == 15);
 
   tensor_destroy(t);
 

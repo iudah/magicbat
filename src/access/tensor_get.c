@@ -10,8 +10,8 @@ f32 tensor_get(const Tensor t, const u32 *index) {
     flat = flat * t->shape[i] + index[i];
   }
 
-  if (flat >= t->nelements)
+  if (flat >= t->data->nelements)
     return -INFINITY;
 
-  return t->data[flat];
+  return t->data->data[flat];
 }

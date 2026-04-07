@@ -24,18 +24,18 @@ int main(void) {
   Tensor y = tensor_new(2, (u32[]){4, 1});
 
   // Dummy data (XOR-like)
-  x->data[0] = 0;
-  x->data[1] = 0;
-  y->data[0] = 0;
-  x->data[2] = 0;
-  x->data[3] = 1;
-  y->data[1] = 1;
-  x->data[4] = 1;
-  x->data[5] = 0;
-  y->data[2] = 1;
-  x->data[6] = 1;
-  x->data[7] = 1;
-  y->data[3] = 0;
+  x->data->data[0] = 0;
+  x->data->data[1] = 0;
+  y->data->data[0] = 0;
+  x->data->data[2] = 0;
+  x->data->data[3] = 1;
+  y->data->data[1] = 1;
+  x->data->data[4] = 1;
+  x->data->data[5] = 0;
+  y->data->data[2] = 1;
+  x->data->data[6] = 1;
+  x->data->data[7] = 1;
+  y->data->data[3] = 0;
 
   tensor_fill(linear_layer_weight(fc1), 0.25f);
   tensor_fill(linear_layer_weight(fc2), 0.35f);
@@ -54,7 +54,7 @@ int main(void) {
     Tensor loss =
         tensor_scalar(tensor_sum_all(loss_sq) / tensor_num_elements(loss_sq));
 
-    printf("Epoch %d, Loss = %.4f\n", epoch, loss->data[0]);
+    printf("Epoch %d, Loss = %.4f\n", epoch, loss->data->data[0]);
 
     // === Manual Backprop (simple chain rule) ===
 

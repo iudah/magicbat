@@ -5,8 +5,8 @@ bool tensor_fill(const Tensor t, f32 value) {
   if (t == NULL)
     return false;
 
-  for (u32 i = 0; i < t->nelements; i++) {
-    t->data[i] = value;
+  for (u32 i = 0; i < t->data->nelements; i++) {
+    t->data->data[i] = value;
   }
 
   return true;

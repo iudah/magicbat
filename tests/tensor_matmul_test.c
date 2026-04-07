@@ -19,14 +19,14 @@ int main() {
     //      4 5 6]
     float t_vals[] = {1, 2, 3, 4, 5, 6};
     for (u32 i = 0; i < 6; ++i)
-      t->data[i] = t_vals[i];
+      t->data->data[i] = t_vals[i];
 
     // s = [7  8
     //      9 10
     //     11 12]
     float s_vals[] = {7, 8, 9, 10, 11, 12};
     for (u32 i = 0; i < 6; ++i)
-      s->data[i] = s_vals[i];
+      s->data->data[i] = s_vals[i];
 
     Tensor res = tensor_matmul(t, s);
     assert(res);
@@ -37,7 +37,7 @@ int main() {
     float expected[] = {58, 64, 139, 154};
 
     for (u32 i = 0; i < 4; ++i) {
-      assert(fabsf(res->data[i] - expected[i]) < EPS);
+      assert(fabsf(res->data->data[i] - expected[i]) < EPS);
     }
 
     tensor_destroy(res);
@@ -77,20 +77,20 @@ int main() {
     // t = [1 2 3]
     float t_vals[] = {1, 2, 3};
     for (u32 i = 0; i < 3; ++i)
-      t->data[i] = t_vals[i];
+      t->data->data[i] = t_vals[i];
 
     // s = [4
     //      5
     //      6]
     float s_vals[] = {4, 5, 6};
     for (u32 i = 0; i < 3; ++i)
-      s->data[i] = s_vals[i];
+      s->data->data[i] = s_vals[i];
 
     Tensor res = tensor_matmul(t, s);
     assert(res);
 
     // Expected: 1*4 + 2*5 + 3*6 = 32
-    assert(fabsf(res->data[0] - 32.0f) < EPS);
+    assert(fabsf(res->data->data[0] - 32.0f) < EPS);
 
     tensor_destroy(res);
     tensor_destroy(t);

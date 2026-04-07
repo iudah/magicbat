@@ -14,8 +14,8 @@ Tensor tensor_exp(const Tensor t) {
   auto nelement = tensor_num_elements(res);
 
   for (u32 i = 0; i < nelement; ++i) {
-    auto a = t->data[i];
-    res->data[i] = expf(a);
+    auto a = t->data->data[i];
+    res->data->data[i] = expf(a);
   }
 
   return res;

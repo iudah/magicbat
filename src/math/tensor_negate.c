@@ -13,8 +13,8 @@ Tensor tensor_negate(const Tensor t) {
   auto nelement = tensor_num_elements(res);
 
   for (u32 i = 0; i < nelement; ++i) {
-    auto a = t->data[i];
-    res->data[i] = -a;
+    auto a = t->data->data[i];
+    res->data->data[i] = -a;
   }
 
   return res;

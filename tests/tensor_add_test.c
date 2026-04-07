@@ -21,8 +21,8 @@ int main() {
     Tensor sum = tensor_add(t, s);
     assert(sum);
 
-    for (u32 i = 0; i < sum->nelements; ++i) {
-      assert(sum->data[i] == (t->data[i] + s->data[i]));
+    for (u32 i = 0; i < sum->data->nelements; ++i) {
+      assert(sum->data->data[i] == (t->data->data[i] + s->data->data[i]));
     }
 
     tensor_destroy(sum);
@@ -39,9 +39,9 @@ int main() {
 
     float vals[] = {1, 2, 3, 4};
     for (u32 i = 0; i < 4; ++i)
-      t->data[i] = vals[i];
+      t->data->data[i] = vals[i];
 
-    s->data[0] = 10.0f;
+    s->data->data[0] = 10.0f;
 
     Tensor res = tensor_add(t, s);
     assert(res);
@@ -49,7 +49,7 @@ int main() {
     float expected[] = {11, 12, 13, 14};
 
     for (u32 i = 0; i < 4; ++i)
-      assert(res->data[i] == expected[i]);
+      assert(res->data->data[i] == expected[i]);
 
     tensor_destroy(res);
     tensor_destroy(t);
@@ -65,9 +65,9 @@ int main() {
 
     float vals[] = {5, 6, 7, 8};
     for (u32 i = 0; i < 4; ++i)
-      t->data[i] = vals[i];
+      t->data->data[i] = vals[i];
 
-    s->data[0] = 2.0f;
+    s->data->data[0] = 2.0f;
 
     Tensor res = tensor_add(s, t);
     assert(res);
@@ -75,7 +75,7 @@ int main() {
     float expected[] = {7, 8, 9, 10};
 
     for (u32 i = 0; i < 4; ++i)
-      assert(res->data[i] == expected[i]);
+      assert(res->data->data[i] == expected[i]);
 
     tensor_destroy(res);
     tensor_destroy(t);

@@ -1,10 +1,8 @@
 #include "../../include/adt/tensor/tensor_prot.h"
 #include "../../include/tensor.h"
+#include "../lifecycle/data_storage.h"
 #include "../lifecycle/tensor_memory.h"
 #include <stdint.h>
-
-u32 one = 1;
-thread_local u32 *oneptr = &one;
 
 Tensor tensor_scalar(f32 value) {
   Tensor t = tmalloc(sizeof(*t));
@@ -13,11 +11,14 @@ Tensor tensor_scalar(f32 value) {
 
   t->ndims = 1;
 
-  t->data = tmalloc(sizeof(f32));
-  *t->data = value;
+  t->data = data_storage_new(1);
 
-  t->nelements = 1;
-  t->shape = oneptr;
+  *t->data->data = value;
+  t->shape[0] = 1;
+
+  t->refcount = 1;
+  t->requires_grad = false;
+  t->is_tensor_type = true;
 
   return t;
 }

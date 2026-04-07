@@ -16,8 +16,8 @@ int main() {
     Tensor res = tensor_mul(t, s);
     assert(res);
 
-    for (u32 i = 0; i < res->nelements; ++i)
-      assert(res->data[i] == 12.0f);
+    for (u32 i = 0; i < res->data->nelements; ++i)
+      assert(res->data->data[i] == 12.0f);
 
     tensor_destroy(res);
     tensor_destroy(t);
@@ -30,13 +30,13 @@ int main() {
     Tensor s = tensor_new(1, (u32[]){1});
 
     tensor_fill(t, 5.0f);
-    s->data[0] = 2.0f;
+    s->data->data[0] = 2.0f;
 
     Tensor res = tensor_mul(t, s);
     assert(res);
 
-    for (u32 i = 0; i < res->nelements; ++i)
-      assert(res->data[i] == 10.0f);
+    for (u32 i = 0; i < res->data->nelements; ++i)
+      assert(res->data->data[i] == 10.0f);
 
     tensor_destroy(res);
     tensor_destroy(t);

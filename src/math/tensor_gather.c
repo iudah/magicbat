@@ -49,8 +49,8 @@ Tensor tensor_gather_axis(const Tensor t, const Tensor indices, i32 axis) {
   for (u32 o = 0; o < outer_size; ++o) {
     u32 o_offset = o * axis_size * inner_size;
     u32 r_offset = o * inner_size;
-    float *r_data = &res->data[r_offset];
-    float *i_data = &indices->data[r_offset];
+    float *r_data = &res->data->data[r_offset];
+    float *i_data = &indices->data->data[r_offset];
     // for (u32 a = 0; a < axis_size; ++a)
     {
       for (u32 i = 0; i < inner_size; ++i) {
@@ -58,7 +58,7 @@ Tensor tensor_gather_axis(const Tensor t, const Tensor indices, i32 axis) {
         // But avoid ping-ponging res->data
         u32 cls = (u32)i_data[i];
         u32 a_offset = o_offset + cls * inner_size + i;
-        r_data[i] = t->data[a_offset];
+        r_data[i] = t->data->data[a_offset];
       }
     }
   }

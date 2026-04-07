@@ -9,10 +9,10 @@ bool tensor_set(const Tensor t, const u32 *index, f32 value) {
     flat = flat * t->shape[i] + index[i];
   }
 
-  if (flat >= t->nelements)
+  if (flat >= t->data->nelements)
     return false;
 
-  t->data[flat] = value;
+  t->data->data[flat] = value;
 
   return true;
 }

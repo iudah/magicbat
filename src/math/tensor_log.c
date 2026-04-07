@@ -14,8 +14,8 @@ Tensor tensor_log(const Tensor t) {
   auto nelement = tensor_num_elements(res);
 
   for (u32 i = 0; i < nelement; ++i) {
-    auto a = t->data[i];
-    res->data[i] = logf(a);
+    auto a = t->data->data[i];
+    res->data->data[i] = logf(a);
   }
 
   return res;

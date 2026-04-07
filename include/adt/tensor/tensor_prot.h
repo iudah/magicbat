@@ -3,11 +3,26 @@
 
 #include "../type_alias.h"
 
-struct tensor_struct {
+#include <stdatomic.h>
+
+#define MAX_DIMS 4
+
+typedef struct data_storage data_storage;
+
+struct data_storage {
   f32 *data;
-  u32 *shape;
-  u32 ndims;
   u32 nelements;
+  _Atomic u32 refcount;
+};
+
+struct tensor_struct {
+  data_storage *data;
+  u32 shape[MAX_DIMS];
+  u32 ndims;
+  _Atomic u32 refcount;
+  // struct tensor_struct* grad;
+  bool requires_grad;
+  bool is_tensor_type;
 };
 
 #endif

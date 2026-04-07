@@ -43,6 +43,8 @@ src/layers/linear_layer_new.c
 src/layers/linear_layer_forward.c
 src/layers/linear_layer_destroy.c
 src/layers/linear_layer_kernel.c
+src/var/var_destroy.c
+src/var/var_new.c
 )
 
 target_include_directories(tensor PUBLIC include)

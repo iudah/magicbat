@@ -14,8 +14,8 @@ Tensor tensor_relu(const Tensor t) {
   auto nelement = tensor_num_elements(res);
 
   for (u32 i = 0; i < nelement; ++i) {
-    auto a = t->data[i];
-    res->data[i] = fmaxf(a, 0);
+    auto a = t->data->data[i];
+    res->data->data[i] = fmaxf(a, 0);
   }
 
   return res;
@@ -34,12 +34,12 @@ Tensor tensor_relu_backward(const Tensor t, const Tensor grad) {
 
   if (grad) {
     for (u32 i = 0; i < nelement; ++i) {
-      res->data[i] = t->data[i] > EPS ? grad->data[i] : 0.0f;
+      res->data->data[i] = t->data->data[i] > EPS ? grad->data->data[i] : 0.0f;
     }
   } else {
     for (u32 i = 0; i < nelement; ++i) {
-      auto a = t->data[i];
-      res->data[i] = a > EPS ? 1.0f : 0.0f;
+      auto a = t->data->data[i];
+      res->data->data[i] = a > EPS ? 1.0f : 0.0f;
     }
   }
 

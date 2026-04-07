@@ -19,8 +19,8 @@ int main() {
     Tensor res = tensor_div(t, s);
     assert(res);
 
-    for (u32 i = 0; i < res->nelements; ++i)
-      assert(fabsf(res->data[i] - 5.0f) < EPS);
+    for (u32 i = 0; i < res->data->nelements; ++i)
+      assert(fabsf(res->data->data[i] - 5.0f) < EPS);
 
     tensor_destroy(res);
     tensor_destroy(t);
@@ -33,13 +33,13 @@ int main() {
     Tensor s = tensor_new(1, (u32[]){1});
 
     tensor_fill(t, 9.0f);
-    s->data[0] = 3.0f;
+    s->data->data[0] = 3.0f;
 
     Tensor res = tensor_div(t, s);
     assert(res);
 
-    for (u32 i = 0; i < res->nelements; ++i)
-      assert(fabsf(res->data[i] - 3.0f) < EPS);
+    for (u32 i = 0; i < res->data->nelements; ++i)
+      assert(fabsf(res->data->data[i] - 3.0f) < EPS);
 
     tensor_destroy(res);
     tensor_destroy(t);
