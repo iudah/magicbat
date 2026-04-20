@@ -27,3 +27,5 @@ Var track(Tensor t) {
 
   return v;
 }
+
+bool var_require_grad(Var v) { return v->base.requires_grad; }

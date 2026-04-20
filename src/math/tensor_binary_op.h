@@ -6,4 +6,7 @@
 Tensor tensor_binary_op(const Tensor t, const Tensor s,
                         float (*op)(float, float));
 
+bool tensor_binary_op_inplace(Tensor restrict t, const Tensor restrict s,
+                              float (*op)(float, float));
+
 #endif

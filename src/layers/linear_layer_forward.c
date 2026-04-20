@@ -1,14 +1,17 @@
 #include "../../include/adt/layers/layers_prot.h"
 #include "../../include/layers/linear_layer.h"
+#include "../../include/var/var.h"
 
 Tensor linear_layer_forward(const LinearLayer layer, const Tensor in) {
   // To Do: Use tensordot
-  auto xw = tensor_matmul(in, layer->weight);
+  auto xw = var_matmul(in, layer->weight);
   if (!xw)
     return NULL;
 
-  auto xw_b = tensor_add(xw, layer->bias);
-  tensor_destroy(xw);
+  auto xw_b = var_add((Tensor)xw, layer->bias);
 
-  return xw_b;
+  if (!var_require_grad(xw_b))
+    var_destroy(xw);
+
+  return (Tensor)xw_b;
 }

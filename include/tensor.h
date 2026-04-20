@@ -22,10 +22,13 @@ Tensor tensor_new(const u32 ndims, const u32 *shape);
 bool tensor_destroy(Tensor t);
 
 Tensor tensor_add(const Tensor t, const Tensor s);
+bool tensor_add_inplace(Tensor t, const Tensor s);
 Tensor tensor_scaled_add(const Tensor t, f32 alpha, const Tensor s);
 Tensor tensor_sub(const Tensor t, const Tensor s);
+bool tensor_sub_inplace(Tensor t, const Tensor s);
 Tensor tensor_mul(const Tensor t, const Tensor s);
 Tensor tensor_div(const Tensor t, const Tensor s);
+Tensor tensor_divisor_backward(const Tensor divisor, const Tensor grad);
 Tensor tensor_matmul(const Tensor t, const Tensor s);
 Tensor tensor_sum_axis(const Tensor t, i32 axis);
 f32 tensor_sum_all(const Tensor t);
@@ -46,6 +49,7 @@ Tensor tensor_log_sum_exp_axis(const Tensor t, i32 axis);
 
 Tensor tensor_scalar(f32 value);
 bool tensor_fill(const Tensor t, f32 value);
+Tensor tensor_zero(u32 ndims, const u32 *shape);
 Tensor tensor_reshape(const Tensor t, u32 ndims, const u32 *shape);
 bool tensor_copy_data(Tensor dst, const Tensor src);
 

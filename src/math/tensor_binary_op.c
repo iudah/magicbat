@@ -95,3 +95,25 @@ Tensor tensor_binary_op(const Tensor t, const Tensor s,
   tfree(t_stride);
   return NULL;
 }
+
+bool tensor_binary_op_inplace(Tensor restrict t, const Tensor restrict s,
+                              float (*op)(float, float)) {
+  if (!t || !s)
+    return false;
+
+  if (tensor_shapes_equal(t, s)) {
+    Tensor res = t;
+
+    auto nelement = tensor_num_elements(res);
+
+    for (u32 i = 0; i < nelement; ++i) {
+      auto a = t->data->data[i];
+      auto b = s->data->data[i];
+      res->data->data[i] = op(a, b);
+    }
+
+    return res;
+  }
+
+  return false;
+}
