@@ -33,6 +33,7 @@ src/ops/tensor_fill.c
 src/ops/tensor_reshape.c
 src/ops/tensor_scalar.c
 src/ops/tensor_copy_data.c
+src/ops/tensor_zero.c 
 src/access/tensor_get.c
 src/access/tensor_set.c
 src/access/tensor_index_out_of_bound.c
@@ -43,8 +44,18 @@ src/layers/linear_layer_new.c
 src/layers/linear_layer_forward.c
 src/layers/linear_layer_destroy.c
 src/layers/linear_layer_kernel.c
+src/layers/linear_layer_track.c
 src/var/var_destroy.c
-src/var/var_new.c
+src/var/var_new.c 
+src/var/var_add.c 
+src/var/var_div.c 
+src/var/var_mul.c 
+src/var/var_relu.c 
+src/var/var_sub.c 
+src/var/var_sum.c 
+src/var/var_matmul.c 
+src/var/var_backward.c 
+src/var/var_zero_grad.c 
 )
 
 target_include_directories(tensor PUBLIC include)
@@ -78,5 +89,8 @@ target_link_libraries(test_softmax PRIVATE ${target} m)
 add_executable(test_max tests/tensor_max_test.c)
 target_link_libraries(test_max PRIVATE ${target} m)
 
-add_executable(train_mlp tests/train_mlp.c)
-target_link_libraries(train_mlp PRIVATE tensor m)
+add_executable(test_train_mlp tests/train_mlp.c)
+target_link_libraries(test_train_mlp PRIVATE tensor m)
+
+add_executable(test_train_mlp_auto tests/train_mlp_auto.c)
+target_link_libraries(test_train_mlp_auto PRIVATE tensor m)

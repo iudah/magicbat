@@ -3,14 +3,16 @@
 #include <stdatomic.h>
 #include <stdint.h>
 
-void div_backward_fn(Var self) {
-  if (!self->base.is_tensor_type || !self->base.requires_grad)
+void div_backward_fn(Var self_) {
+  Var self = (Var)self_;
+
+  if (self->base.is_tensor_type || !self->base.requires_grad)
     return;
 
   Var a = self->parent[0];
   Var b = self->parent[1];
 
-  if (a && a->base.is_tensor_type && a->base.requires_grad) {
+  if (a && !a->base.is_tensor_type && a->base.requires_grad) {
     if (!a->grad) {
       a->grad = tensor_zero(a->base.ndims, a->base.shape);
     }
@@ -18,7 +20,7 @@ void div_backward_fn(Var self) {
     tensor_add_inplace(a->grad, tmp);
     tensor_destroy(tmp);
   }
-  if (b && b->base.is_tensor_type && b->base.requires_grad) {
+  if (b && !b->base.is_tensor_type && b->base.requires_grad) {
     if (!b->grad) {
       b->grad = tensor_zero(b->base.ndims, b->base.shape);
     }
@@ -30,7 +32,7 @@ void div_backward_fn(Var self) {
   }
 }
 
-Var var_div(Tensor a, Tensor b) {
+Tensor var_div(Tensor a, Tensor b) {
 
   Tensor tmp = tensor_mul(a, b);
   if (!tmp)
@@ -38,9 +40,9 @@ Var var_div(Tensor a, Tensor b) {
 
   if ((a->is_tensor_type || !a->requires_grad) &&
       (b->is_tensor_type || !b->requires_grad))
-    return (Var)tmp;
+    return tmp;
 
-  Var res = track(tmp);
+  Tensor res = track(tmp);
   var_track_parent(res, a, b, (VarOp){div_backward_fn, NULL}, NULL);
 
   return res;

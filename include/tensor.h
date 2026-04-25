@@ -23,6 +23,7 @@ bool tensor_destroy(Tensor t);
 
 Tensor tensor_add(const Tensor t, const Tensor s);
 bool tensor_add_inplace(Tensor t, const Tensor s);
+bool tensor_add_scalar_inplace(Tensor t, const f32 f);
 Tensor tensor_scaled_add(const Tensor t, f32 alpha, const Tensor s);
 Tensor tensor_sub(const Tensor t, const Tensor s);
 bool tensor_sub_inplace(Tensor t, const Tensor s);

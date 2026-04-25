@@ -9,4 +9,6 @@ Tensor tensor_binary_op(const Tensor t, const Tensor s,
 bool tensor_binary_op_inplace(Tensor restrict t, const Tensor restrict s,
                               float (*op)(float, float));
 
+bool tensor_binary_op_scalar_inplace(Tensor restrict t, const f32 f,
+                                     float (*op)(float, float));
 #endif

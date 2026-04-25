@@ -19,3 +19,7 @@ Tensor tensor_scaled_add(const Tensor t, f32 alpha, const Tensor s) {
 bool tensor_add_inplace(Tensor t, Tensor s) {
   return tensor_binary_op_inplace(t, s, add);
 }
+
+bool tensor_add_scalar_inplace(Tensor t, const f32 f) {
+  return tensor_binary_op_scalar_inplace(t, f, add);
+}

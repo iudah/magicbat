@@ -13,4 +13,7 @@ Tensor linear_layer_forward(const LinearLayer layer, const Tensor in);
 Tensor linear_layer_weight(const LinearLayer layer);
 Tensor linear_layer_bias(const LinearLayer layer);
 
+bool linear_layer_track(LinearLayer layer);
+bool linear_layer_untrack(LinearLayer layer);
+
 #endif

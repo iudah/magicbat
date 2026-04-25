@@ -1,5 +1,6 @@
 #include "../../include/adt/layers/layers_prot.h"
 #include "../../include/layers/linear_layer.h"
+#include "../../include/var/var.h"
 #include "../lifecycle/tensor_memory.h"
 
 bool linear_layer_destroy(LinearLayer layer) {
@@ -10,8 +11,8 @@ bool linear_layer_destroy(LinearLayer layer) {
   if (!layer->bias)
     return false;
 
-  tensor_destroy(layer->weight);
-  tensor_destroy(layer->bias);
+  var_destroy(layer->weight);
+  var_destroy(layer->bias);
 
   return tfree(layer);
 }

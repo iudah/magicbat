@@ -4,7 +4,9 @@
 #include "../lifecycle/tensor_memory.h"
 #include <stdint.h>
 
-bool var_destroy(Var v) {
+bool var_destroy(Tensor t) {
+  Var v = (Var)t;
+
   if (!v)
     return false;
 
@@ -32,7 +34,7 @@ bool var_destroy(Var v) {
     }
 
     if (v->parent[0]) {
-      vars[last++] = (v->parent[0]);
+      vars[last++] = (Var)(v->parent[0]);
       if (last == cap) {
         cap <<= 1;
         vars = trealloc(vars, cap * sizeof(*vars));
@@ -40,7 +42,7 @@ bool var_destroy(Var v) {
     }
 
     if (v->parent[1]) {
-      vars[last++] = (v->parent[1]);
+      vars[last++] = (Var)(v->parent[1]);
       if (last == cap) {
         cap <<= 1;
         vars = trealloc(vars, cap * sizeof(*vars));

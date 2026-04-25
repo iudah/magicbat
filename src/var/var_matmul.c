@@ -4,13 +4,13 @@
 #include <stdint.h>
 
 void matmul_backward_fn(Var self) {
-  if (!self->base.is_tensor_type || !self->base.requires_grad)
+  if (self->base.is_tensor_type || !self->base.requires_grad)
     return;
 
   Var a = self->parent[0];
   Var b = self->parent[1];
 
-  if (a && a->base.is_tensor_type && a->base.requires_grad) {
+  if (a && !a->base.is_tensor_type && a->base.requires_grad) {
     if (!a->grad) {
       a->grad = tensor_zero(a->base.ndims, a->base.shape);
     }
@@ -20,7 +20,7 @@ void matmul_backward_fn(Var self) {
     tensor_destroy(b_T);
     tensor_destroy(da);
   }
-  if (b && b->base.is_tensor_type && b->base.requires_grad) {
+  if (b && !b->base.is_tensor_type && b->base.requires_grad) {
     if (!b->grad) {
       b->grad = tensor_zero(b->base.ndims, b->base.shape);
     }
@@ -32,7 +32,7 @@ void matmul_backward_fn(Var self) {
   }
 }
 
-Var var_matmul(Tensor a, Tensor b) {
+Tensor var_matmul(Tensor a, Tensor b) {
 
   Tensor tmp = tensor_matmul(a, b);
   if (!tmp)
@@ -40,9 +40,9 @@ Var var_matmul(Tensor a, Tensor b) {
 
   if ((a->is_tensor_type || !a->requires_grad) &&
       (b->is_tensor_type || !b->requires_grad))
-    return (Var)tmp;
+    return tmp;
 
-  Var res = track(tmp);
+  Tensor res = track(tmp);
   var_track_parent(res, a, b, (VarOp){matmul_backward_fn, NULL}, NULL);
 
   return res;

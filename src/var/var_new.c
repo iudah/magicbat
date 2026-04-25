@@ -4,11 +4,10 @@
 #include <stdatomic.h>
 #include <stdint.h>
 
-Var track(Tensor t) {
+Tensor track(Tensor t) {
   if (!t->is_tensor_type) {
     t->requires_grad = true;
-    atomic_fetch_add(&t->refcount, 1);
-    return (Var)t;
+    return t;
   }
 
   Var v = tmalloc(sizeof(*v));
@@ -25,7 +24,11 @@ Var track(Tensor t) {
   v->grad = NULL;
   v->parent[0] = v->parent[1] = NULL;
 
-  return v;
+  return (Tensor)v;
 }
 
-bool var_require_grad(Var v) { return v->base.requires_grad; }
+void untrack(Tensor v) { v->requires_grad = false; }
+
+bool var_require_grad(Tensor v) { return v->requires_grad; }
+
+bool var_is_tensor(Tensor v) { return v->is_tensor_type; }

@@ -9,16 +9,18 @@ typedef struct op {
   void (*destroy_ctx)(mem ctx);
 } VarOp;
 
-struct var {
+struct var_struct {
   struct tensor_struct base;
   struct tensor_struct *grad;
-  struct var *parent[2];
+  struct var_struct *parent[2];
   struct op op;
   mem ctx;
+  u64 mark;
 };
 
-static inline void var_track_parent(Var res, Tensor a, Tensor b, VarOp op,
+static inline void var_track_parent(Tensor t, Tensor a, Tensor b, VarOp op,
                                     void *ctx) {
+  Var res = (Var)t;
   res->parent[0] = (Var)a;
   res->parent[1] = (Var)b;
 

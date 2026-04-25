@@ -112,8 +112,25 @@ bool tensor_binary_op_inplace(Tensor restrict t, const Tensor restrict s,
       res->data->data[i] = op(a, b);
     }
 
-    return res;
+    return true;
   }
 
   return false;
+}
+
+bool tensor_binary_op_scalar_inplace(Tensor restrict t, const f32 f,
+                                     float (*op)(float, float)) {
+  if (!t)
+    return false;
+
+  Tensor res = t;
+
+  auto nelement = tensor_num_elements(res);
+
+  for (u32 i = 0; i < nelement; ++i) {
+    auto a = t->data->data[i];
+    res->data->data[i] = op(a, f);
+  }
+
+  return true;
 }
