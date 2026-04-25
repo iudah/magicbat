@@ -14,13 +14,17 @@ void add_backward_fn(Var self) {
     if (!a->grad) {
       a->grad = tensor_zero(a->base.ndims, a->base.shape);
     }
-    tensor_add_inplace(a->grad, self->grad);
+    auto tmp = tensor_sum_to_shape(self->grad, a->base.ndims, a->base.shape);
+    tensor_add_inplace(a->grad, tmp);
+    var_destroy(tmp);
   }
   if (b && !b->base.is_tensor_type && b->base.requires_grad) {
     if (!b->grad) {
       b->grad = tensor_zero(b->base.ndims, b->base.shape);
     }
-    tensor_add_inplace(b->grad, self->grad);
+    auto tmp = tensor_sum_to_shape(self->grad, b->base.ndims, b->base.shape);
+    tensor_add_inplace(b->grad, tmp);
+    var_destroy(tmp);
   }
 }
 

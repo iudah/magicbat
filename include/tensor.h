@@ -33,6 +33,7 @@ Tensor tensor_divisor_backward(const Tensor divisor, const Tensor grad);
 Tensor tensor_matmul(const Tensor t, const Tensor s);
 Tensor tensor_sum_axis(const Tensor t, i32 axis);
 f32 tensor_sum_all(const Tensor t);
+Tensor tensor_sum_to_shape(Tensor t, u32 ndims, u32 *shape);
 Tensor tensor_max_axis(const Tensor t, i32 axis);
 f32 tensor_max_all(const Tensor t);
 Tensor tensor_gather_axis(const Tensor t, const Tensor indices, i32 axis);

@@ -2,6 +2,12 @@
 #define TENSOR_SHAPES_BROADCAST
 #include "../../include/tensor.h"
 
+static inline bool
+tensor_shapes_broadcast_from_shape(const u32 t_ndims, const u32 *t_shape,
+                                   const u32 s_ndims, const u32 *s_shape,
+                                   u32 *outshape, u32 *outstride, u32 *tstride,
+                                   u32 *sstride);
+
 static inline bool tensor_shapes_broadcast(const Tensor t, const Tensor s,
                                            u32 *outshape, u32 *outstride,
                                            u32 *tstride, u32 *sstride) {
@@ -11,6 +17,17 @@ static inline bool tensor_shapes_broadcast(const Tensor t, const Tensor s,
 
   auto t_shape = tensor_shape(t);
   auto s_shape = tensor_shape(s);
+
+  return tensor_shapes_broadcast_from_shape(t_ndims, t_shape, s_ndims, s_shape,
+                                            outshape, outstride, tstride,
+                                            sstride);
+}
+
+static inline bool
+tensor_shapes_broadcast_from_shape(const u32 t_ndims, const u32 *t_shape,
+                                   const u32 s_ndims, const u32 *s_shape,
+                                   u32 *outshape, u32 *outstride, u32 *tstride,
+                                   u32 *sstride) {
 
   if (t_shape == NULL || s_shape == NULL)
     return false;
@@ -28,10 +45,8 @@ static inline bool tensor_shapes_broadcast(const Tensor t, const Tensor s,
   u32 *stride_t = tstride;
   u32 *stride_s = sstride;
 
-  while (i > 0 && j > 0) {
-    --i;
-    --j;
-    --max;
+  for (; --i > 0 && --j > 0 && --max > 0;) {
+
     if (t_shape[i] == s_shape[j]) {
       stride_s[max] = length_s;
       stride_t[max] = length_t;

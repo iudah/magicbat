@@ -17,8 +17,10 @@ void div_backward_fn(Var self_) {
       a->grad = tensor_zero(a->base.ndims, a->base.shape);
     }
     auto tmp = tensor_div(self->grad, (Tensor)b);
-    tensor_add_inplace(a->grad, tmp);
-    tensor_destroy(tmp);
+    auto tmp_red = tensor_sum_to_shape(tmp, a->base.ndims, a->base.shape);
+    tensor_add_inplace(a->grad, tmp_red);
+    var_destroy(tmp_red);
+    var_destroy(tmp);
   }
   if (b && !b->base.is_tensor_type && b->base.requires_grad) {
     if (!b->grad) {
@@ -26,9 +28,11 @@ void div_backward_fn(Var self_) {
     }
     auto tmp = tensor_mul((Tensor)a, self->grad);
     auto db = tensor_divisor_backward((Tensor)b, tmp);
-    tensor_add_inplace(b->grad, db);
-    tensor_destroy(tmp);
-    tensor_destroy(db);
+    auto db_red = tensor_sum_to_shape(db, b->base.ndims, b->base.shape);
+    tensor_add_inplace(b->grad, db_red);
+    var_destroy(db_red);
+    var_destroy(tmp);
+    var_destroy(db);
   }
 }
 

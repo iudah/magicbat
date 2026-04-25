@@ -1,6 +1,9 @@
 #include "../../include/adt/tensor/tensor_prot.h"
 #include "../../include/tensor.h"
 #include "../lifecycle/tensor_memory.h"
+#include "tensor_odometer.h"
+#include "tensor_shapes_broadcast.h"
+#include "tensor_shapes_equal.h"
 #include <math.h>
 #include <stdint.h>
 
@@ -64,4 +67,48 @@ float tensor_sum_all(Tensor t) {
   }
 
   return sum;
+}
+
+Tensor tensor_sum_to_shape(Tensor t, u32 ndims, u32 *shape) {
+
+  u32 o_ndims = t->ndims > ndims ? t->ndims : ndims;
+  u32 *t_stride = tmalloc(o_ndims * 4 * sizeof(u32));
+  u32 *s_stride = t_stride + o_ndims;
+  u32 *o_stride = s_stride + o_ndims;
+  u32 *o_shape = o_stride + o_ndims;
+
+  if (tensor_shapes_broadcast_from_shape(t->ndims, t->shape, ndims, shape,
+                                         o_shape, o_stride, t_stride,
+                                         s_stride) &&
+      tensor_shapes_equal_from_shape(t->ndims, t->shape, o_ndims, o_stride)) {
+
+    // Guarantees a zero filled tensor
+    Tensor res = tensor_new(ndims, shape);
+    if (res == NULL) {
+      return NULL;
+    }
+
+    u32 *index = tensor_odometer_new(o_ndims);
+    if (index == NULL) {
+      tensor_destroy(res);
+      res = NULL;
+      return NULL;
+    }
+    do {
+      u32 o_indx = 0;
+      u32 t_indx = 0;
+
+      for (u32 i = 0; i < o_ndims; ++i) {
+        o_indx += o_stride[i] * index[i];
+        t_indx += t_stride[i] * index[i];
+      }
+
+      res->data->data[o_indx] += t->data->data[t_indx];
+    } while (tensor_odometer_next(index, o_ndims, o_shape));
+    tensor_odometer_destroy(index);
+    tfree(t_stride);
+    return res;
+  }
+  tfree(t_stride);
+  return NULL;
 }

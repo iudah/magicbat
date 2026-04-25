@@ -17,8 +17,8 @@ void matmul_backward_fn(Var self) {
     auto b_T = tensor_transpose((Tensor)b);
     auto da = tensor_matmul(self->grad, b_T);
     tensor_add_inplace(a->grad, da);
-    tensor_destroy(b_T);
-    tensor_destroy(da);
+    var_destroy(b_T);
+    var_destroy(da);
   }
   if (b && !b->base.is_tensor_type && b->base.requires_grad) {
     if (!b->grad) {
@@ -27,8 +27,8 @@ void matmul_backward_fn(Var self) {
     auto a_T = tensor_transpose((Tensor)a);
     auto db = tensor_matmul(a_T, self->grad);
     tensor_add_inplace(b->grad, db);
-    tensor_destroy(a_T);
-    tensor_destroy(db);
+    var_destroy(a_T);
+    var_destroy(db);
   }
 }
 

@@ -15,16 +15,20 @@ void mul_backward_fn(Var self) {
       a->grad = tensor_zero(a->base.ndims, a->base.shape);
     }
     auto tmp = tensor_mul((Tensor)b, self->grad);
-    tensor_add_inplace(a->grad, tmp);
-    tensor_destroy(tmp);
+    auto tmp_red = tensor_sum_to_shape(tmp, a->base.ndims, a->base.shape);
+    tensor_add_inplace(a->grad, tmp_red);
+    var_destroy(tmp_red);
+    var_destroy(tmp);
   }
   if (b && !b->base.is_tensor_type && b->base.requires_grad) {
     if (!b->grad) {
       b->grad = tensor_zero(b->base.ndims, b->base.shape);
     }
     auto tmp = tensor_mul((Tensor)a, self->grad);
-    tensor_add_inplace(b->grad, tmp);
-    tensor_destroy(tmp);
+    auto tmp_red = tensor_sum_to_shape(tmp, b->base.ndims, b->base.shape);
+    tensor_add_inplace(b->grad, tmp_red);
+    var_destroy(tmp_red);
+    var_destroy(tmp);
   }
 }
 

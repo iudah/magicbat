@@ -15,7 +15,7 @@ void relu_backward_fn(Var self) {
     }
     auto tmp = tensor_relu_backward((Tensor)self, self->grad);
     tensor_add_inplace(a->grad, tmp);
-    tensor_destroy(tmp);
+    var_destroy(tmp);
   }
 }
 
