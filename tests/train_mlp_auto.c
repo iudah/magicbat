@@ -20,10 +20,10 @@ int main(void) {
   Tensor b1 = linear_layer_bias(fc1);
   Tensor b2 = linear_layer_bias(fc2);
 
-  tensor_fill(w1, 0.25f);
-  tensor_fill(w2, 0.35f);
-  tensor_fill(b1, 0.20f);
-  tensor_fill(b2, 0.30f);
+  tensor_fill(w1, 0.025f);
+  tensor_fill(w2, 0.035f);
+  tensor_fill(b1, 0.020f);
+  tensor_fill(b2, 0.030f);
 
   Tensor *parameters = (Tensor[]){w1, b1, w2, b2};
 

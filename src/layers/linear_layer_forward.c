@@ -3,6 +3,8 @@
 #include "../../include/var/var.h"
 
 Tensor linear_layer_forward(const LinearLayer layer, const Tensor in) {
+  TASSERT(layer && in && "Null layer or input.");
+
   // To Do: Use tensordot
   auto xw = var_matmul(in, layer->weight);
   if (!xw)

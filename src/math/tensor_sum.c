@@ -5,9 +5,12 @@
 #include "tensor_shapes_broadcast.h"
 #include "tensor_shapes_equal.h"
 #include <math.h>
+#include <stdatomic.h>
 #include <stdint.h>
 
 Tensor tensor_sum_axis(const Tensor t, i32 axis) {
+  TASSERT(t && "Null tensor.");
+
   if (!t)
     return NULL;
 
@@ -57,6 +60,8 @@ Tensor tensor_sum_axis(const Tensor t, i32 axis) {
 }
 
 float tensor_sum_all(Tensor t) {
+  TASSERT(t && "Null tensor.");
+
   if (!t)
     return -INFINITY;
 
@@ -70,6 +75,12 @@ float tensor_sum_all(Tensor t) {
 }
 
 Tensor tensor_sum_to_shape(Tensor t, u32 ndims, u32 *shape) {
+  TASSERT(t && shape && "Null tensor or shape");
+
+  if (tensor_shapes_equal_from_shape(t->ndims, t->shape, ndims, shape)) {
+    atomic_fetch_add(&t->refcount, 1);
+    return t;
+  }
 
   u32 o_ndims = t->ndims > ndims ? t->ndims : ndims;
   u32 *t_stride = tmalloc(o_ndims * 4 * sizeof(u32));
@@ -80,7 +91,7 @@ Tensor tensor_sum_to_shape(Tensor t, u32 ndims, u32 *shape) {
   if (tensor_shapes_broadcast_from_shape(t->ndims, t->shape, ndims, shape,
                                          o_shape, o_stride, t_stride,
                                          s_stride) &&
-      tensor_shapes_equal_from_shape(t->ndims, t->shape, o_ndims, o_stride)) {
+      tensor_shapes_equal_from_shape(t->ndims, t->shape, o_ndims, o_shape)) {
 
     // Guarantees a zero filled tensor
     Tensor res = tensor_new(ndims, shape);
@@ -95,15 +106,15 @@ Tensor tensor_sum_to_shape(Tensor t, u32 ndims, u32 *shape) {
       return NULL;
     }
     do {
-      u32 o_indx = 0;
+      u32 s_indx = 0;
       u32 t_indx = 0;
 
       for (u32 i = 0; i < o_ndims; ++i) {
-        o_indx += o_stride[i] * index[i];
+        s_indx += s_stride[i] * index[i];
         t_indx += t_stride[i] * index[i];
       }
 
-      res->data->data[o_indx] += t->data->data[t_indx];
+      res->data->data[s_indx] += t->data->data[t_indx];
     } while (tensor_odometer_next(index, o_ndims, o_shape));
     tensor_odometer_destroy(index);
     tfree(t_stride);

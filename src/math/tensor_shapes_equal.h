@@ -38,7 +38,10 @@ static inline bool tensor_shapes_equal_from_shape(const u32 t_ndims,
 
   u32 i = t_ndims;
   u32 j = s_ndims;
-  for (; --i > 0 && --j > 0;) {
+  for (; i > 0 && j > 0;) {
+    --i;
+    --j;
+
     if (t_shape[i] != s_shape[j])
       return false;
   }

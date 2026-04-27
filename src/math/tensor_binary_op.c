@@ -8,6 +8,8 @@
 
 Tensor tensor_binary_op(const Tensor t, const Tensor s,
                         float (*op)(float, float)) {
+  TASSERT(t && s && op && "Null tensor or operator.");
+
   if (!t || !s)
     return NULL;
 

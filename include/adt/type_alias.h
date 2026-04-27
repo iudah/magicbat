@@ -1,7 +1,10 @@
 #ifndef TYPE_ALIAS
 #define TYPE_ALIAS
 
+#include <assert.h>
 #include <stdint.h>
+
+#define TASSERT(...) assert(__VA_ARGS__)
 
 typedef uint8_t u8;
 typedef int8_t i8;

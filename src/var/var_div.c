@@ -38,7 +38,7 @@ void div_backward_fn(Var self_) {
 
 Tensor var_div(Tensor a, Tensor b) {
 
-  Tensor tmp = tensor_mul(a, b);
+  Tensor tmp = tensor_div(a, b);
   if (!tmp)
     return NULL;
 

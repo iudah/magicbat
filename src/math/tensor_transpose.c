@@ -3,6 +3,8 @@
 #include <stdint.h>
 
 Tensor tensor_transpose(const Tensor t) {
+  TASSERT(t && "Null tensor.");
+
   if (!t)
     return NULL;
   if (t->ndims != 2)

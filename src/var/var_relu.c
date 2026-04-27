@@ -13,8 +13,10 @@ void relu_backward_fn(Var self) {
     if (!a->grad) {
       a->grad = tensor_zero(a->base.ndims, a->base.shape);
     }
-    auto tmp = tensor_relu_backward((Tensor)self, self->grad);
-    tensor_add_inplace(a->grad, tmp);
+    auto tmp = tensor_relu_backward((Tensor)a, self->grad);
+    auto tmp_red = tensor_sum_to_shape(tmp, a->base.ndims, a->base.shape);
+    tensor_add_inplace(a->grad, tmp_red);
+    var_destroy(tmp_red);
     var_destroy(tmp);
   }
 }

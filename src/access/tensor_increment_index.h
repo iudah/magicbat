@@ -5,6 +5,8 @@
 
 static inline void tensor_increment_index(u32 ndims, u32 *index,
                                           const u32 *shape) {
+  TASSERT(index && shape && "Null index or shape.");
+
   for (u32 i = ndims; i > 0;) {
     i--;
     index[i]++;

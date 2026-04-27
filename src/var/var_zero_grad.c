@@ -48,5 +48,6 @@ bool var_zero_grad(Tensor top_) {
 
   top->grad = top_grad;
 
+  tfree(list);
   return true;
 }

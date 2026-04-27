@@ -37,10 +37,10 @@ int main(void) {
   x->data->data[7] = 1;
   y->data->data[3] = 0;
 
-  tensor_fill(linear_layer_weight(fc1), 0.25f);
-  tensor_fill(linear_layer_weight(fc2), 0.35f);
-  tensor_fill(linear_layer_bias(fc1), 0.20f);
-  tensor_fill(linear_layer_bias(fc2), 0.30f);
+  tensor_fill(linear_layer_weight(fc1), 0.025f);
+  tensor_fill(linear_layer_weight(fc2), 0.035f);
+  tensor_fill(linear_layer_bias(fc1), 0.020f);
+  tensor_fill(linear_layer_bias(fc2), 0.030f);
 
   for (int epoch = 0; epoch < 100; ++epoch) {
     // Forward pass
@@ -77,7 +77,7 @@ int main(void) {
     Tensor grad_b1 = tensor_sum_axis(grad_h1, 0);
 
     // Update using SGD
-    sgd_optimize(optimizer, (Tensor[]){grad_w2, grad_b2, grad_w1, grad_b1});
+    sgd_optimize(optimizer, (Tensor[]){grad_w1, grad_b1, grad_w2, grad_b2});
 
     // Cleanup
     tensor_destroy(grad_logits);

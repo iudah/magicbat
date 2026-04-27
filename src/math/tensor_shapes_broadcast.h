@@ -45,7 +45,10 @@ tensor_shapes_broadcast_from_shape(const u32 t_ndims, const u32 *t_shape,
   u32 *stride_t = tstride;
   u32 *stride_s = sstride;
 
-  for (; --i > 0 && --j > 0 && --max > 0;) {
+  for (; i > 0 && j > 0 && max > 0;) {
+    --i;
+    --j;
+    --max;
 
     if (t_shape[i] == s_shape[j]) {
       stride_s[max] = length_s;

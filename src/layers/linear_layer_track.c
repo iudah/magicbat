@@ -4,6 +4,8 @@
 #include "../../include/var/var.h"
 
 bool linear_layer_track(LinearLayer layer) {
+  TASSERT(layer && "Null layer.");
+
   if (!layer)
     return false;
   if (!layer->weight)
@@ -28,6 +30,8 @@ bool linear_layer_track(LinearLayer layer) {
 
 bool linear_layer_untrack(LinearLayer layer);
 bool linear_layer_untrack(LinearLayer layer) {
+  TASSERT(layer && "Null layer.");
+
   if (!layer)
     return false;
   if (!layer->weight)

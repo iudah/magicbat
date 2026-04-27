@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 Tensor tensor_relu(const Tensor t) {
+  TASSERT(t && "Null tensor");
   if (!t)
     return NULL;
 
