@@ -41,6 +41,8 @@ Tensor tensor_gather_axis(const Tensor t, const Tensor indices, i32 axis);
 Tensor tensor_transpose(const Tensor t);
 Tensor tensor_relu(const Tensor t);
 Tensor tensor_relu_backward(const Tensor t, const Tensor grad);
+Tensor tensor_tanh(const Tensor t);
+Tensor tensor_tanh_backward(const Tensor t, const Tensor grad);
 Tensor tensor_negate(const Tensor t);
 Tensor tensor_exp(const Tensor t);
 Tensor tensor_log(const Tensor t);

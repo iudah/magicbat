@@ -8,4 +8,8 @@ struct linear_layer {
   Tensor bias;
 };
 
+struct rnn_cell {
+  struct linear_layer cell;
+};
+
 #endif

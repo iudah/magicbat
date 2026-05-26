@@ -1,7 +1,6 @@
-
-#include "../../include/adt/layers/layers_prot.h"
-#include "../../include/layers/linear_layer.h"
-#include "../../include/var/var.h"
+#include "../../../include/adt/layers/layers_prot.h"
+#include "../../../include/layers/linear_layer.h"
+#include "../../../include/var/var.h"
 
 bool linear_layer_track(LinearLayer layer) {
   TASSERT(layer && "Null layer.");

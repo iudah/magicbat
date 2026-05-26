@@ -1,6 +1,6 @@
-#include "../../include/adt/layers/layers_prot.h"
-#include "../../include/layers/linear_layer.h"
-#include "../../include/var/var.h"
+#include "../../../include/adt/layers/layers_prot.h"
+#include "../../../include/layers/linear_layer.h"
+#include "../../../include/var/var.h"
 
 Tensor linear_layer_forward(const LinearLayer layer, const Tensor in) {
   TASSERT(layer && in && "Null layer or input.");

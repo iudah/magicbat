@@ -40,11 +40,11 @@ src/access/tensor_index_out_of_bound.c
 src/optimizers/sgd/sgd_destroy.c
 src/optimizers/sgd/sgd_new.c
 src/optimizers/sgd/sgd_optimize.c
-src/layers/linear_layer_new.c
-src/layers/linear_layer_forward.c
-src/layers/linear_layer_destroy.c
-src/layers/linear_layer_kernel.c
-src/layers/linear_layer_track.c
+src/layers/linear/linear_layer_new.c
+src/layers/linear/linear_layer_forward.c
+src/layers/linear/linear_layer_destroy.c
+src/layers/linear/linear_layer_kernel.c
+src/layers/linear/linear_layer_track.c
 src/var/var_destroy.c
 src/var/var_new.c 
 src/var/var_add.c 
@@ -53,6 +53,7 @@ src/var/var_mul.c
 src/var/var_relu.c 
 src/var/var_sub.c 
 src/var/var_sum.c 
+src/var/var_tanh.c 
 src/var/var_matmul.c 
 src/var/var_backward.c 
 src/var/var_zero_grad.c 
