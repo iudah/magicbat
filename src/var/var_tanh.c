@@ -25,13 +25,13 @@ Tensor var_tanh(Tensor a) {
 
   Tensor tmp = tensor_tanh(a);
   if (!tmp)
-    return NULL;
+    return nullptr;
 
   if (a->is_tensor_type || !a->requires_grad)
     return tmp;
 
   Tensor res = track(tmp);
-  var_track_parent(res, a, NULL, (VarOp){tanh_backward_fn, NULL}, NULL);
+  var_track_parent(res, a, nullptr, (VarOp){tanh_backward_fn, nullptr}, nullptr);
 
   return res;
 }

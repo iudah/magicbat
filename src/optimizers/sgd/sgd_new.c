@@ -8,12 +8,12 @@ SgdOptimizer sgd_optimizer_new(Tensor *parameters, u32 n_parameters,
                                f32 learn_rate) {
   SgdOptimizer optimizer = tmalloc(sizeof(*optimizer));
   if (!optimizer)
-    return NULL;
+    return nullptr;
 
   auto tmp = tmalloc(sizeof(Tensor) * n_parameters);
   if (!tmp) {
     tfree(optimizer);
-    return NULL;
+    return nullptr;
   }
 
   optimizer->parameters = tmp;

@@ -6,20 +6,20 @@
 #include <stddef.h>
 #include <stdint.h>
 
-bool tensor_destroy(Tensor t) {
-  if (t == NULL)
+bool tensor_destroy(Tensor tensor) {
+  if (tensor == nullptr)
     return false;
 
-  if (!t->is_tensor_type)
+  if (!tensor->is_tensor_type)
     return false;
 
-  if (atomic_fetch_sub(&t->refcount, 1) != 1)
+  if (atomic_fetch_sub(&tensor->refcount, 1) != 1)
     return true;
 
-  if (t->data)
-    data_storage_destroy(t->data);
+  if (tensor->data)
+    data_storage_destroy(tensor->data);
 
-  tfree(t);
+  tfree(tensor);
 
   return true;
 }

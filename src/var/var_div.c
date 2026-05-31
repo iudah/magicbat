@@ -40,14 +40,14 @@ Tensor var_div(Tensor a, Tensor b) {
 
   Tensor tmp = tensor_div(a, b);
   if (!tmp)
-    return NULL;
+    return nullptr;
 
   if ((a->is_tensor_type || !a->requires_grad) &&
       (b->is_tensor_type || !b->requires_grad))
     return tmp;
 
   Tensor res = track(tmp);
-  var_track_parent(res, a, b, (VarOp){div_backward_fn, NULL}, NULL);
+  var_track_parent(res, a, b, (VarOp){div_backward_fn, nullptr}, nullptr);
 
   return res;
 }

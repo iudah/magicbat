@@ -5,11 +5,11 @@
 
 Tensor tensor_exp(const Tensor t) {
   if (!t)
-    return NULL;
+    return nullptr;
 
   Tensor res = tensor_new(tensor_ndims(t), tensor_shape(t));
-  if (res == NULL)
-    return NULL;
+  if (res == nullptr)
+    return nullptr;
 
   auto nelement = tensor_num_elements(res);
 

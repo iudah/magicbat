@@ -2,7 +2,7 @@
 #include "../../include/tensor.h"
 
 bool tensor_fill(const Tensor t, f32 value) {
-  if (t == NULL)
+  if (t == nullptr)
     return false;
 
   for (u32 i = 0; i < t->data->nelements; i++) {

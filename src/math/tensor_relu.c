@@ -6,11 +6,11 @@
 Tensor tensor_relu(const Tensor t) {
   TASSERT(t && "Null tensor");
   if (!t)
-    return NULL;
+    return nullptr;
 
   Tensor res = tensor_new(tensor_ndims(t), tensor_shape(t));
-  if (res == NULL)
-    return NULL;
+  if (res == nullptr)
+    return nullptr;
 
   auto nelement = tensor_num_elements(res);
 
@@ -25,11 +25,11 @@ Tensor tensor_relu(const Tensor t) {
 #define EPS (1e-8)
 Tensor tensor_relu_backward(const Tensor t, const Tensor grad) {
   if (!t)
-    return NULL;
+    return nullptr;
 
   Tensor res = tensor_new(tensor_ndims(t), tensor_shape(t));
-  if (res == NULL)
-    return NULL;
+  if (res == nullptr)
+    return nullptr;
 
   auto nelement = tensor_num_elements(res);
 

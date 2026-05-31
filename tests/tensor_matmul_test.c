@@ -105,7 +105,7 @@ int main() {
     assert(t && s);
 
     Tensor res = tensor_matmul(t, s);
-    assert(res == NULL);
+    assert(res == nullptr);
 
     tensor_destroy(t);
     tensor_destroy(s);

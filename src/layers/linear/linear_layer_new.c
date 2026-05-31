@@ -4,19 +4,19 @@
 #include <stdint.h>
 
 LinearLayer linear_layer_new(u32 in_features, u32 out_features) {
-  LinearLayer layer = NULL;
+  LinearLayer layer = nullptr;
   Tensor weight = tensor_new(2, (u32[]){in_features, out_features});
-  if (weight == NULL)
-    return NULL;
+  if (weight == nullptr)
+    return nullptr;
 
   Tensor bias = tensor_new(1, (u32[]){out_features});
-  if (bias == NULL) {
+  if (bias == nullptr) {
     goto free_weight;
   }
 
-  //  LinearLayer layer = NULL;
+  //  LinearLayer layer = nullptr;
   layer = tmalloc(sizeof(*layer));
-  if (layer == NULL) {
+  if (layer == nullptr) {
     tensor_destroy(bias);
   free_weight:
     tensor_destroy(weight);

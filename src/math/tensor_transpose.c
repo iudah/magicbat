@@ -6,17 +6,17 @@ Tensor tensor_transpose(const Tensor t) {
   TASSERT(t && "Null tensor.");
 
   if (!t)
-    return NULL;
+    return nullptr;
   if (t->ndims != 2)
-    return NULL;
+    return nullptr;
 
   u32 row = t->shape[0];
   u32 col = t->shape[1];
 
   // guarantees zeros
   Tensor res = tensor_new(2, (u32[]){col, row});
-  if (res == NULL)
-    return NULL;
+  if (res == nullptr)
+    return nullptr;
 
   for (u32 i = 0; i < row; ++i) {
     float *t_data = &t->data->data[i * col];

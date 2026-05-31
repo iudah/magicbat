@@ -6,38 +6,40 @@
 #include <stdint.h>
 
 Tensor tensor_new(const u32 ndims, const u32 *shape) {
-  if (ndims == 0 || shape == NULL || ndims > MAX_DIMS)
-    return NULL;
+  if (ndims == 0 || shape == nullptr || ndims > MAX_DIMS)
+    return nullptr;
 
-  Tensor t = tcalloc(1, sizeof(*t));
-  if (t == NULL) {
-    return NULL;
+  Tensor tensor = tcalloc(1, sizeof(*tensor));
+  if (tensor == nullptr) {
+    return nullptr;
   }
 
-  u32 *tmp = t->shape;
+  u32 *tmp = tensor->shape;
 
   u64 lenght = 1;
-  for (u32 i = 0; i < ndims; i++) {
+  for (u32 i = ndims; i-- > 0;) {
+    tensor->stride[i] = lenght;
     lenght *= shape[i];
     tmp[i] = shape[i];
   }
 
   if (lenght == 0) {
-    tfree(t);
-    return NULL;
+    tfree(tensor);
+    return nullptr;
   }
 
   auto tmpdata = data_storage_new(lenght);
-  if (tmpdata == NULL) {
-    tfree(t);
-    return NULL;
+  if (tmpdata == nullptr) {
+    tfree(tensor);
+    return nullptr;
   }
 
-  t->ndims = ndims;
-  t->data = tmpdata;
-  t->requires_grad = false;
-  t->refcount = 1;
-  t->is_tensor_type = true;
+  tensor->ndims = ndims;
+  tensor->data = tmpdata;
+  tensor->requires_grad = false;
+  tensor->refcount = 1;
+  tensor->is_tensor_type = true;
+  tensor->is_contiguous = true;
 
-  return t;
+  return tensor;
 }

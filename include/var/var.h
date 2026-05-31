@@ -11,7 +11,7 @@ bool var_require_grad(Tensor v);
 bool var_is_tensor(Tensor v);
 Tensor var_grad(Tensor v);
 
-Tensor var_add(Tensor t, Tensor s);
+Tensor var_add(Tensor var_a, Tensor var_b);
 Tensor var_sub(Tensor t, Tensor s);
 Tensor var_mul(Tensor t, Tensor s);
 Tensor var_div(Tensor t, Tensor s);

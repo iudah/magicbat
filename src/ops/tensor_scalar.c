@@ -6,8 +6,8 @@
 
 Tensor tensor_scalar(f32 value) {
   Tensor t = tmalloc(sizeof(*t));
-  if (t == NULL)
-    return NULL;
+  if (t == nullptr)
+    return nullptr;
 
   t->ndims = 1;
 

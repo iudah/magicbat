@@ -8,7 +8,7 @@ Tensor linear_layer_forward(const LinearLayer layer, const Tensor in) {
   // To Do: Use tensordot
   auto xw = var_matmul(in, layer->weight);
   if (!xw)
-    return NULL;
+    return nullptr;
 
   auto xw_b = var_add((Tensor)xw, layer->bias);
 

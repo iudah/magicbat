@@ -6,112 +6,154 @@
 #include "tensor_shapes_equal.h"
 #include <stdint.h>
 
-Tensor tensor_binary_op(const Tensor t, const Tensor s,
-                        float (*op)(float, float)) {
-  TASSERT(t && s && op && "Null tensor or operator.");
+Tensor tensor_same_shape_binary(Tensor tensor_a, Tensor tensor_b,
+                                float (*operation_callback)(float, float)) {
+  Tensor res = tensor_new(tensor_ndims(tensor_a), tensor_shape(tensor_a));
+  if (res == nullptr)
+    return nullptr;
 
-  if (!t || !s)
-    return NULL;
+  auto nelement = tensor_num_elements(res);
 
-  if (tensor_shapes_equal(t, s)) {
-    Tensor res = tensor_new(tensor_ndims(t), tensor_shape(t));
-    if (res == NULL)
-      return NULL;
-
-    auto nelement = tensor_num_elements(res);
-
-    for (u32 i = 0; i < nelement; ++i) {
-      auto a = t->data->data[i];
-      auto b = s->data->data[i];
-      res->data->data[i] = op(a, b);
-    }
-
-    return res;
+  for (u32 i = 0; i < nelement; ++i) {
+    auto val_a = tensor_a->data->data[i];
+    auto val_b = tensor_b->data->data[i];
+    res->data->data[i] = operation_callback(val_a, val_b);
   }
 
-  if (tensor_num_elements(t) == 1) {
-    Tensor res = tensor_new(tensor_ndims(s), tensor_shape(s));
-    if (res == NULL)
-      return NULL;
-
-    auto nelement = tensor_num_elements(res);
-
-    for (u32 i = 0; i < nelement; ++i) {
-      auto a = t->data->data[0];
-      auto b = s->data->data[i];
-      res->data->data[i] = op(a, b);
-    }
-    return res;
-  }
-
-  if (tensor_num_elements(s) == 1) {
-    Tensor res = tensor_new(tensor_ndims(t), tensor_shape(t));
-    if (res == NULL)
-      return NULL;
-
-    auto nelement = tensor_num_elements(res);
-
-    for (u32 i = 0; i < nelement; ++i) {
-      auto a = t->data->data[i];
-      auto b = s->data->data[0];
-      res->data->data[i] = op(a, b);
-    }
-    return res;
-  }
-
-  u32 o_ndims = t->ndims > s->ndims ? t->ndims : s->ndims;
-  u32 *t_stride = tmalloc(o_ndims * 4 * sizeof(u32));
-  u32 *s_stride = t_stride + o_ndims;
-  u32 *o_stride = s_stride + o_ndims;
-  u32 *o_shape = o_stride + o_ndims;
-  if (tensor_shapes_broadcast(t, s, o_shape, o_stride, t_stride, s_stride)) {
-    Tensor res = tensor_new(o_ndims, o_shape);
-    if (res == NULL) {
-      return NULL;
-    }
-
-    u32 *index = tensor_odometer_new(o_ndims);
-    if (index == NULL) {
-      tensor_destroy(res);
-      res = NULL;
-      return NULL;
-    }
-    do {
-      u32 o_indx = 0;
-      u32 t_indx = 0;
-      u32 s_indx = 0;
-
-      for (u32 i = 0; i < o_ndims; ++i) {
-        o_indx += o_stride[i] * index[i];
-        t_indx += t_stride[i] * index[i];
-        s_indx += s_stride[i] * index[i];
-      }
-
-      res->data->data[o_indx] =
-          op(t->data->data[t_indx], s->data->data[s_indx]);
-    } while (tensor_odometer_next(index, o_ndims, o_shape));
-    tensor_odometer_destroy(index);
-    tfree(t_stride);
-    return res;
-  }
-  tfree(t_stride);
-  return NULL;
+  return res;
 }
 
-bool tensor_binary_op_inplace(Tensor restrict t, const Tensor restrict s,
-                              float (*op)(float, float)) {
-  if (!t || !s)
+Tensor tensor_length_one_a_binary(Tensor tensor_a, Tensor tensor_b,
+                                  float (*operation_callback)(float, float)) {
+  Tensor res = tensor_new(tensor_ndims(tensor_b), tensor_shape(tensor_b));
+  if (res == nullptr)
+    return nullptr;
+
+  auto nelement = tensor_num_elements(res);
+
+  for (u32 i = 0; i < nelement; ++i) {
+    auto val_a = tensor_a->data->data[0];
+    auto val_b = tensor_b->data->data[i];
+    res->data->data[i] = operation_callback(val_a, val_b);
+  }
+  return res;
+}
+
+Tensor tensor_length_one_b_binary(Tensor tensor_a, Tensor tensor_b,
+                                  float (*operation_callback)(float, float)) {
+  Tensor res = tensor_new(tensor_ndims(tensor_a), tensor_shape(tensor_a));
+  if (res == nullptr)
+    return nullptr;
+
+  auto nelement = tensor_num_elements(res);
+
+  if (tensor_a->is_contiguous && tensor_b->is_contiguous) {
+    auto val_b = tensor_b->data->data[0];
+
+    for (u32 i = 0; i < nelement; ++i) {
+      auto val_a = tensor_a->data->data[i];
+      res->data->data[i] = operation_callback(val_a, val_b);
+    }
+  } else {
+    auto val_b = tensor_get(tensor_b, (u32[MAX_DIMS]){0});
+    auto index = tensor_odometer_new(tensor_a->ndims);
+
+    for (u32 i = 0; i < nelement; ++i) {
+      auto val_a = tensor_get(tensor_a, index);
+      res->data->data[i] = operation_callback(val_a, val_b);
+      tensor_odometer_next(index, tensor_a->ndims, tensor_a->shape);
+    }
+
+    tensor_odometer_destroy(index);
+  }
+  return res;
+}
+
+Tensor tensor_broadcast_binary(Tensor tensor_a, Tensor tensor_b, u32 o_ndims,
+                               u32 *o_shape,
+                               float (*operation_callback)(float, float)) {
+
+  Tensor res = tensor_new(o_ndims, o_shape);
+  if (res == nullptr) {
+    return nullptr;
+  }
+
+  u32 *index = tensor_odometer_new(o_ndims);
+  if (index == nullptr) {
+    tensor_destroy(res);
+    res = nullptr;
+    return nullptr;
+  }
+
+  u32 t_nindx[MAX_DIMS];
+  u32 s_nindx[MAX_DIMS];
+  u32 flat = 0;
+
+  do {
+    for (u32 i = res->ndims, j = tensor_a->ndims; i-- > 0 && j-- > 0;) {
+      t_nindx[j] = tensor_a->shape[j] > 1 ? index[i] : 0;
+    }
+
+    for (u32 i = res->ndims, k = tensor_b->ndims; i-- > 0 && k-- > 0;) {
+      s_nindx[k] = tensor_b->shape[k] > 1 ? index[i] : 0;
+    }
+
+    auto t_val = tensor_get(tensor_a, t_nindx);
+    auto s_val = tensor_get(tensor_b, s_nindx);
+
+    auto r_val = operation_callback(t_val, s_val);
+
+    res->data->data[flat] = r_val;
+    ++flat;
+
+  } while (tensor_odometer_next(index, o_ndims, o_shape));
+  tensor_odometer_destroy(index);
+  return res;
+}
+
+Tensor tensor_binary_op(const Tensor tensor_a, const Tensor tensor_b,
+                        float (*operation_callback)(float, float)) {
+  TASSERT(tensor_a && tensor_b && operation_callback &&
+          "Null tensor or operator.");
+
+  if (!tensor_a || !tensor_b)
+    return nullptr;
+
+  if (tensor_shapes_equal(tensor_a, tensor_b))
+    return tensor_same_shape_binary(tensor_a, tensor_b, operation_callback);
+
+  if (tensor_num_elements(tensor_a) == 1)
+    tensor_length_one_a_binary(tensor_a, tensor_b, operation_callback);
+
+  if (tensor_num_elements(tensor_b) == 1)
+    tensor_length_one_b_binary(tensor_a, tensor_b, operation_callback);
+
+  u32 o_ndims =
+      tensor_a->ndims > tensor_b->ndims ? tensor_a->ndims : tensor_b->ndims;
+  u32 o_shape[MAX_DIMS];
+
+  if (tensor_shapes_broadcast(tensor_a, tensor_b, o_shape)) {
+    return tensor_broadcast_binary(tensor_a, tensor_b, o_ndims, o_shape,
+                                   operation_callback);
+  }
+  return nullptr;
+}
+
+bool tensor_binary_op_inplace(Tensor restrict tensor_a,
+                              const Tensor restrict tensor_b,
+                              float (*operation_callback)(float, float)) {
+  if (!tensor_a || !tensor_b)
     return false;
 
-  if (tensor_shapes_equal(t, s)) {
-    Tensor res = t;
+  if (tensor_shapes_equal(tensor_a, tensor_b)) {
+    Tensor res = tensor_a;
 
     auto nelement = tensor_num_elements(res);
 
     for (u32 i = 0; i < nelement; ++i) {
-      auto a = t->data->data[i];
-      auto b = s->data->data[i];
-      res->data->data[i] = op(a, b);
+      auto val_a = tensor_a->data->data[i];
+      auto val_b = tensor_b->data->data[i];
+      res->data->data[i] = operation_callback(val_a, val_b);
     }
 
     return true;
@@ -120,18 +162,19 @@ bool tensor_binary_op_inplace(Tensor restrict t, const Tensor restrict s,
   return false;
 }
 
-bool tensor_binary_op_scalar_inplace(Tensor restrict t, const f32 f,
-                                     float (*op)(float, float)) {
-  if (!t)
+bool tensor_binary_op_scalar_inplace(Tensor restrict tensor_a, const f32 scalar,
+                                     float (*operation_callback)(float,
+                                                                 float)) {
+  if (!tensor_a)
     return false;
 
-  Tensor res = t;
+  Tensor res = tensor_a;
 
   auto nelement = tensor_num_elements(res);
 
   for (u32 i = 0; i < nelement; ++i) {
-    auto a = t->data->data[i];
-    res->data->data[i] = op(a, f);
+    auto value = tensor_a->data->data[i];
+    res->data->data[i] = operation_callback(value, scalar);
   }
 
   return true;

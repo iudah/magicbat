@@ -6,13 +6,13 @@
 
 Tensor tensor_max_axis(const Tensor t, i32 axis) {
   if (!t)
-    return NULL;
+    return nullptr;
 
   if (axis < 0)
     axis += t->ndims;
 
   if (axis >= (i32)t->ndims)
-    return NULL;
+    return nullptr;
 
   u32 *shape = tmalloc(sizeof(*shape) * t->ndims);
   for (u32 i = 0; i < t->ndims; ++i) {
@@ -23,7 +23,7 @@ Tensor tensor_max_axis(const Tensor t, i32 axis) {
   Tensor res = tensor_new(t->ndims, shape);
   tfree(shape);
   if (!res)
-    return NULL;
+    return nullptr;
 
   u32 outer_size = 1;
   u32 inner_size = 1;

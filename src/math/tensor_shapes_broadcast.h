@@ -3,100 +3,64 @@
 #include "../../include/tensor.h"
 
 static inline bool
-tensor_shapes_broadcast_from_shape(const u32 t_ndims, const u32 *t_shape,
-                                   const u32 s_ndims, const u32 *s_shape,
-                                   u32 *outshape, u32 *outstride, u32 *tstride,
-                                   u32 *sstride);
+tensor_shapes_broadcast_from_shape(u32 t_ndims, const u32 *t_shape, u32 s_ndims,
+                                   const u32 *s_shape, u32 *outshape);
 
-static inline bool tensor_shapes_broadcast(const Tensor t, const Tensor s,
-                                           u32 *outshape, u32 *outstride,
-                                           u32 *tstride, u32 *sstride) {
+static inline bool tensor_shapes_broadcast(const Tensor tensor_a,
+                                           const Tensor tensor_b,
+                                           u32 *outshape) {
 
-  auto t_ndims = tensor_ndims(t);
-  auto s_ndims = tensor_ndims(s);
+  auto t_ndims = tensor_ndims(tensor_a);
+  auto s_ndims = tensor_ndims(tensor_b);
 
-  auto t_shape = tensor_shape(t);
-  auto s_shape = tensor_shape(s);
+  auto t_shape = tensor_shape(tensor_a);
+  auto s_shape = tensor_shape(tensor_b);
 
   return tensor_shapes_broadcast_from_shape(t_ndims, t_shape, s_ndims, s_shape,
-                                            outshape, outstride, tstride,
-                                            sstride);
+                                            outshape);
 }
 
-static inline bool
-tensor_shapes_broadcast_from_shape(const u32 t_ndims, const u32 *t_shape,
-                                   const u32 s_ndims, const u32 *s_shape,
-                                   u32 *outshape, u32 *outstride, u32 *tstride,
-                                   u32 *sstride) {
+static inline bool tensor_shapes_broadcast_from_shape(const u32 t_ndims,
+                                                      const u32 *t_shape,
+                                                      const u32 s_ndims,
+                                                      const u32 *s_shape,
+                                                      u32 *outshape) {
 
   if (t_shape == NULL || s_shape == NULL)
     return false;
 
-  u32 i = t_ndims;
-  u32 j = s_ndims;
-  u32 max = i > j ? i : j;
-
-  u32 length_o = 1;
-  u32 length_s = 1;
-  u32 length_t = 1;
+  u32 indx_t = t_ndims;
+  u32 indx_s = s_ndims;
+  u32 indx_o = indx_t > indx_s ? indx_t : indx_s;
 
   u32 *shape_o = outshape;
-  u32 *stride_o = outstride;
-  u32 *stride_t = tstride;
-  u32 *stride_s = sstride;
 
-  for (; i > 0 && j > 0 && max > 0;) {
-    --i;
-    --j;
-    --max;
+  for (; indx_t > 0 && indx_s > 0 && indx_o > 0;) {
+    --indx_t;
+    --indx_s;
+    --indx_o;
 
-    if (t_shape[i] == s_shape[j]) {
-      stride_s[max] = length_s;
-      stride_t[max] = length_t;
-      stride_o[max] = length_o;
-      shape_o[max] = t_shape[i];
-      length_t *= t_shape[i];
-      length_s *= s_shape[j];
-      length_o *= t_shape[i];
-    } else if (s_shape[j] == 1) {
-      stride_s[max] = 0;
-      stride_t[max] = length_t;
-      stride_o[max] = length_o;
-      shape_o[max] = t_shape[i];
-      length_t *= t_shape[i];
-      length_o *= t_shape[i];
-    } else if (t_shape[i] == 1) {
-      stride_s[max] = length_s;
-      stride_t[max] = 0;
-      stride_o[max] = length_o;
-      shape_o[max] = s_shape[j];
-      length_s *= s_shape[j];
-      length_o *= s_shape[j];
+    if (t_shape[indx_t] == s_shape[indx_s]) {
+      shape_o[indx_o] = t_shape[indx_t];
+    } else if (s_shape[indx_s] == 1) {
+      shape_o[indx_o] = t_shape[indx_t];
+    } else if (t_shape[indx_t] == 1) {
+      shape_o[indx_o] = s_shape[indx_s];
     } else {
       return false;
     }
   }
 
-  while (i > 0) {
-    --i;
-    --max;
-    stride_s[max] = 0;
-    stride_t[max] = length_t;
-    stride_o[max] = length_o;
-    shape_o[max] = t_shape[i];
-    length_t *= t_shape[i];
-    length_o *= t_shape[i];
+  while (indx_t > 0) {
+    --indx_t;
+    --indx_o;
+    shape_o[indx_o] = t_shape[indx_t];
   }
 
-  while (j > 0) {
-    --j;
-    --max;
-    stride_s[max] = length_s;
-    stride_t[max] = 0;
-    stride_o[max] = length_o;
-    shape_o[max] = s_shape[j];
-    length_s *= s_shape[j];
-    length_o *= s_shape[j];
+  while (indx_s > 0) {
+    --indx_s;
+    --indx_o;
+    shape_o[indx_o] = s_shape[indx_s];
   }
 
   return true;

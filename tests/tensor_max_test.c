@@ -23,7 +23,7 @@ int main(void) {
     }
 
     Tensor maxed = tensor_max_axis(t, 1); // max along last axis (per row)
-    assert(maxed != NULL);
+    assert(maxed != nullptr);
 
     // Expected: [8, 9, 10]  (one value per row, keepdim style)
     assert(fabsf(maxed->data->data[0] - 8.0f) < EPS);
@@ -54,7 +54,7 @@ int main(void) {
     t->data->data[5] = 2;
 
     Tensor maxed = tensor_max_axis(t, 0); // max down each column
-    assert(maxed != NULL);
+    assert(maxed != nullptr);
 
     // Expected: [9, 5]
     assert(fabsf(maxed->data->data[0] - 9.0f) < EPS);
@@ -91,7 +91,7 @@ int main(void) {
     assert(fabsf(tensor_max_all(single) - 42.0f) < EPS);
 
     Tensor max_single = tensor_max_axis(single, 0);
-    assert(max_single != NULL);
+    assert(max_single != nullptr);
     assert(fabsf(max_single->data->data[0] - 42.0f) < EPS);
 
     tensor_destroy(max_single);

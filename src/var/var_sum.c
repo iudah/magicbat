@@ -21,13 +21,13 @@ Tensor var_sum_all(Tensor t) {
 
   Tensor tmp = tensor_scalar(tensor_sum_all(t));
   if (!tmp)
-    return NULL;
+    return nullptr;
 
   if (t->is_tensor_type || !t->requires_grad)
     return tmp;
 
   Tensor res = track(tmp);
-  var_track_parent(res, t, NULL, (VarOp){sum_all_backward_fn, NULL}, NULL);
+  var_track_parent(res, t, nullptr, (VarOp){sum_all_backward_fn, nullptr}, nullptr);
 
   return res;
 }

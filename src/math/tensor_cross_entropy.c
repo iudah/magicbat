@@ -5,15 +5,15 @@ Tensor tensor_cross_entropy_from_logits_axis(const Tensor logits,
                                              const Tensor expectation,
                                              TensorType tensor_type, i32 axis) {
   if (!logits || !expectation)
-    return NULL;
+    return nullptr;
 
-  Tensor res = NULL;
+  Tensor res = nullptr;
 
   Tensor logsumexp = tensor_log_sum_exp_axis(logits, axis);
-  if (logsumexp == NULL)
-    return NULL;
+  if (logsumexp == nullptr)
+    return nullptr;
 
-  Tensor loss = NULL;
+  Tensor loss = nullptr;
   if (tensor_type & TENSOR_CE_INDEXED) {
     auto selection = tensor_gather_axis(logits, expectation, axis);
     if (selection) {
@@ -30,7 +30,7 @@ Tensor tensor_cross_entropy_from_logits_axis(const Tensor logits,
       tensor_destroy(yx);
     }
   }
-  if (loss == NULL)
+  if (loss == nullptr)
     goto free_logsumexp;
 
   res = loss;

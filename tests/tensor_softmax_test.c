@@ -25,7 +25,7 @@ int main(void) {
 
     Tensor softmaxed =
         tensor_softmax_axis(t, 1); // softmax along last axis (columns)
-    assert(softmaxed != NULL);
+    assert(softmaxed != nullptr);
 
     // Check that each row sums to \~1.0
     // Row 0
@@ -60,7 +60,7 @@ int main(void) {
     t->data->data[5] = 0.0f;
 
     Tensor softmaxed = tensor_softmax_axis(t, 0); // softmax down each column
-    assert(softmaxed != NULL);
+    assert(softmaxed != nullptr);
 
     // Each column should sum to \~1.0
     float col0_sum = softmaxed->data->data[0] + softmaxed->data->data[2] +
@@ -81,7 +81,7 @@ int main(void) {
     t->data->data[0] = 42.0f;
 
     Tensor res = tensor_softmax_axis(t, 0);
-    assert(res != NULL);
+    assert(res != nullptr);
     assert(fabsf(res->data->data[0] - 1.0f) < EPS);
 
     tensor_destroy(res);

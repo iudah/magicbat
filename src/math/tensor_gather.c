@@ -5,19 +5,19 @@
 
 Tensor tensor_gather_axis(const Tensor t, const Tensor indices, i32 axis) {
   if (!t || !indices)
-    return NULL;
+    return nullptr;
 
   bool same_dim = false;
   if (t->ndims == indices->ndims)
     same_dim = true;
   else if (t->ndims != (indices->ndims + 1))
-    return NULL;
+    return nullptr;
 
   if (axis < 0)
     axis += t->ndims;
 
   if (axis >= (i32)t->ndims)
-    return NULL;
+    return nullptr;
 
   u32 *shape = tmalloc(sizeof(*shape) * t->ndims);
   for (u32 i = 0; i < t->ndims; ++i) {
@@ -25,7 +25,7 @@ Tensor tensor_gather_axis(const Tensor t, const Tensor indices, i32 axis) {
     if (shape[i] !=
         indices->shape[i + ((!same_dim && i >= (u32)axis) ? 1 : 0)]) {
       tfree(shape);
-      return NULL;
+      return nullptr;
     }
   }
   shape[axis] = 1;
@@ -33,7 +33,7 @@ Tensor tensor_gather_axis(const Tensor t, const Tensor indices, i32 axis) {
   Tensor res = tensor_new(t->ndims, shape);
   tfree(shape);
   if (!res)
-    return NULL;
+    return nullptr;
 
   u32 outer_size = 1;
   u32 inner_size = 1;

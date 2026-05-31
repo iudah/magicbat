@@ -7,11 +7,11 @@
 int main() {
   Tensor t = tensor_new(2, (u32[]){3, 5});
 
-  assert(t != NULL && "tensor_new returned NULL");
+  assert(t != nullptr && "tensor_new returned nullptr");
   assert(t->ndims == 2);
   assert(t->shape[0] == 3);
   assert(t->shape[1] == 5);
-  assert(t->data != NULL);
+  assert(t->data != nullptr);
   assert(t->data->nelements == 15);
 
   tensor_destroy(t);

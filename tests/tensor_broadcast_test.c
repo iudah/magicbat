@@ -20,7 +20,7 @@ int main(void) {
     tensor_set(a, (u32[]){1, 0}, 100.0f); // middle row becomes 100
 
     Tensor res = tensor_add(a, b);
-    assert(res != NULL);
+    assert(res != nullptr);
 
     // Expected:
     // Row 0: 11 11 11 11
@@ -48,7 +48,7 @@ int main(void) {
     scalar->data->data[0] = 3.0f;
 
     Tensor res = tensor_mul(mat, scalar);
-    assert(res != NULL);
+    assert(res != nullptr);
 
     for (u32 i = 0; i < tensor_num_elements(res); ++i) {
       assert(res->data->data[i] == 15.0f);
@@ -65,7 +65,7 @@ int main(void) {
     Tensor b = tensor_new(2, (u32[]){4, 2});
 
     Tensor res = tensor_add(a, b);
-    assert(res == NULL);
+    assert(res == nullptr);
 
     tensor_destroy(a);
     tensor_destroy(b);

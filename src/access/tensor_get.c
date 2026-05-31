@@ -1,19 +1,15 @@
 #include "../../include/adt/tensor/tensor_prot.h"
 #include "../../include/tensor.h"
+#include "tensor_ndim_flat_index.h"
 #include <math.h>
 
-f32 tensor_get(const Tensor t, const u32 *index) {
-  TASSERT(t && "Null tensor");
+f32 tensor_get(const Tensor tensor, const u32 *index) {
+  TASSERT(tensor && "Null tensor");
 
-  u32 flat = 0;
-  for (u32 i = 0; i < t->ndims; ++i) {
-    if (index[i] >= t->shape[i])
-      return -INFINITY;
-    flat = flat * t->shape[i] + index[i];
-  }
+  auto flat = tensor_ndim_flat_index(tensor, index);
 
-  if (flat >= t->data->nelements)
-    return -INFINITY;
+  if (flat >= tensor->data->nelements)
+    return NAN;
 
-  return t->data->data[flat];
+  return tensor->data->data[flat];
 }

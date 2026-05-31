@@ -51,7 +51,7 @@ int main() {
     Tensor s = tensor_new(2, (u32[]){3, 2});
 
     Tensor res = tensor_sub(t, s);
-    assert(res == NULL);
+    assert(res == nullptr);
 
     tensor_destroy(t);
     tensor_destroy(s);

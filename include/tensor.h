@@ -11,6 +11,12 @@ typedef enum {
   TENSOR_CE_PROBS = 1 << 3
 } TensorType;
 
+typedef struct {
+  u32 start;
+  u32 stop;
+  u32 step;
+} TensorSlice;
+
 f32 tensor_get(const Tensor t, const u32 *index);
 bool tensor_index_out_of_bound(const Tensor t, const u32 *index);
 u32 tensor_ndims(const Tensor t);
@@ -19,12 +25,12 @@ bool tensor_set(const Tensor t, const u32 *index, f32 value);
 const u32 *tensor_shape(const Tensor t);
 
 Tensor tensor_new(const u32 ndims, const u32 *shape);
-bool tensor_destroy(Tensor t);
+bool tensor_destroy(Tensor tensor);
 
-Tensor tensor_add(const Tensor t, const Tensor s);
-bool tensor_add_inplace(Tensor t, const Tensor s);
-bool tensor_add_scalar_inplace(Tensor t, const f32 f);
-Tensor tensor_scaled_add(const Tensor t, f32 alpha, const Tensor s);
+Tensor tensor_add(Tensor tensor_a, Tensor tensor_b);
+bool tensor_add_inplace(Tensor tensor_a, Tensor tensor_b);
+bool tensor_add_scalar_inplace(Tensor tensor_a, f32 f_value);
+Tensor tensor_scaled_add(Tensor tensor_a, f32 alpha, Tensor tensor_b);
 Tensor tensor_sub(const Tensor t, const Tensor s);
 bool tensor_sub_inplace(Tensor t, const Tensor s);
 Tensor tensor_mul(const Tensor t, const Tensor s);

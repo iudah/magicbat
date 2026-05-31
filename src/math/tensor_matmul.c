@@ -4,9 +4,9 @@
 
 Tensor tensor_matmul(const Tensor t, const Tensor s) {
   if (!t || !s)
-    return NULL;
+    return nullptr;
   if (s->ndims != 2 || t->ndims != 2 || t->shape[1] != s->shape[0])
-    return NULL;
+    return nullptr;
 
   u32 row = t->shape[0];
   u32 col = s->shape[1];
@@ -14,8 +14,8 @@ Tensor tensor_matmul(const Tensor t, const Tensor s) {
 
   // guarantees zeros
   Tensor res = tensor_new(2, (u32[]){row, col});
-  if (res == NULL)
-    return NULL;
+  if (res == nullptr)
+    return nullptr;
 
   for (u32 i = 0; i < row; ++i) {
     float *t_data = &t->data->data[i * com];

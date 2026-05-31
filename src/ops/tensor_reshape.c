@@ -3,15 +3,15 @@
 
 Tensor tensor_reshape(const Tensor t, u32 ndims, const u32 *shape) {
   if (!t)
-    return NULL;
+    return nullptr;
 
   Tensor res = tensor_new(ndims, shape);
   if (!res)
-    return NULL;
+    return nullptr;
 
   if (tensor_num_elements(res) != tensor_num_elements(t)) {
     tensor_destroy(res);
-    return NULL;
+    return nullptr;
   }
 
   // ToDo: Implement views

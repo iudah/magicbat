@@ -1,7 +1,7 @@
 #ifndef TENSOR_PROT_H
 #define TENSOR_PROT_H
 
-#include "../type_alias.h"
+#include "type_alias.h"
 
 #include <stdatomic.h>
 
@@ -18,11 +18,13 @@ struct data_storage {
 struct tensor_struct {
   data_storage *data;
   u32 shape[MAX_DIMS];
+  u32 stride[MAX_DIMS];
+  u32 offset;
   u32 ndims;
   _Atomic u32 refcount;
-  // struct tensor_struct* grad;
   bool requires_grad;
   bool is_tensor_type;
+  bool is_contiguous;
 };
 
 #endif

@@ -21,8 +21,8 @@ Tensor track(Tensor t) {
   for (u32 i = 0; i < t->ndims; ++i) {
     v->base.shape[i] = t->shape[i];
   }
-  v->grad = NULL;
-  v->parent[0] = v->parent[1] = NULL;
+  v->grad = nullptr;
+  v->parent[0] = v->parent[1] = nullptr;
 
   return (Tensor)v;
 }

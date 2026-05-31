@@ -3,12 +3,13 @@
 #include "../../include/tensor.h"
 #include <stdint.h>
 
-Tensor tensor_binary_op(const Tensor t, const Tensor s,
-                        float (*op)(float, float));
+Tensor tensor_binary_op(Tensor tensor_a, Tensor tensor_b,
+                        float (*operation_callback)(float, float));
 
-bool tensor_binary_op_inplace(Tensor restrict t, const Tensor restrict s,
-                              float (*op)(float, float));
+bool tensor_binary_op_inplace(Tensor restrict tensor_a,
+                              Tensor restrict tensor_b,
+                              float (*operation_callback)(float, float));
 
-bool tensor_binary_op_scalar_inplace(Tensor restrict t, const f32 f,
-                                     float (*op)(float, float));
+bool tensor_binary_op_scalar_inplace(Tensor restrict tensor_a, f32 scalar,
+                                     float (*operation_callback)(float, float));
 #endif

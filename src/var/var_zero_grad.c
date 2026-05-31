@@ -19,7 +19,7 @@ bool var_zero_grad(Tensor top_) {
   Var *list = tmalloc(cap * sizeof(*list));
   u32 count = 0;
   mem top_grad = top->grad;
-  top->grad = NULL;
+  top->grad = nullptr;
 
   list[count++] = top;
   for (u32 i = 0; i < count; ++i) {

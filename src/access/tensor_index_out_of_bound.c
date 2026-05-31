@@ -4,7 +4,7 @@
 bool tensor_index_out_of_bound(const Tensor t, const u32 *index) {
   TASSERT(t && index && "Null tensor or index.");
 
-  if (t == NULL || index == NULL)
+  if (t == nullptr || index == nullptr)
     return false;
 
   for (u32 i = 0; i < t->ndims; ++i) {
