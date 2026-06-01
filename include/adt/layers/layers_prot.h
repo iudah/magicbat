@@ -10,6 +10,8 @@ struct linear_layer {
 
 struct rnn_cell {
   struct linear_layer cell;
+  // Untrack hidden_state  befor e  next sequence.
+  Tensor hidden_state;
 };
 
 #endif

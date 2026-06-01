@@ -4,31 +4,34 @@
 #include <stdatomic.h>
 #include <stdint.h>
 
-Tensor track(Tensor t) {
-  if (!t->is_tensor_type) {
-    t->requires_grad = true;
-    return t;
+Tensor track(Tensor tensor) {
+  if (!tensor->is_tensor_type) {
+    tensor->requires_grad = true;
+    return tensor;
   }
 
-  Var v = tmalloc(sizeof(*v));
+  Var var = tmalloc(sizeof(*var));
 
-  v->base.data = t->data;
-  atomic_fetch_add(&v->base.data->refcount, 1);
-  v->base.ndims = t->ndims;
-  v->base.requires_grad = true;
-  v->base.refcount = 1;
-  v->base.is_tensor_type = false;
-  for (u32 i = 0; i < t->ndims; ++i) {
-    v->base.shape[i] = t->shape[i];
+  var->base.data = tensor->data;
+  atomic_fetch_add(&var->base.data->refcount, 1);
+  var->base.ndims = tensor->ndims;
+  var->base.requires_grad = true;
+  var->base.refcount = 1;
+  var->base.is_tensor_type = false;
+  var->base.is_contiguous = tensor->is_contiguous;
+  var->base.offset = tensor->offset;
+  for (u32 i = 0; i < tensor->ndims; ++i) {
+    var->base.shape[i] = tensor->shape[i];
+    var->base.stride[i] = tensor->stride[i];
   }
-  v->grad = nullptr;
-  v->parent[0] = v->parent[1] = nullptr;
+  var->grad = nullptr;
+  var->parent[0] = var->parent[1] = nullptr;
 
-  return (Tensor)v;
+  return (Tensor)var;
 }
 
-void untrack(Tensor v) { v->requires_grad = false; }
+void untrack(Tensor var) { var->requires_grad = false; }
 
-bool var_require_grad(Tensor v) { return v->requires_grad; }
+bool var_require_grad(Tensor var) { return var->requires_grad; }
 
-bool var_is_tensor(Tensor v) { return v->is_tensor_type; }
+bool var_is_tensor(Tensor var) { return var->is_tensor_type; }

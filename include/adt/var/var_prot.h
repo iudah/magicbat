@@ -18,18 +18,19 @@ struct var_struct {
   u64 mark;
 };
 
-static inline void var_track_parent(Tensor t, Tensor a, Tensor b, VarOp op,
+static inline void var_track_parent(Tensor tensor, Tensor parent_a,
+                                    Tensor parent_b, VarOp operation,
                                     void *ctx) {
-  Var res = (Var)t;
-  res->parent[0] = (Var)a;
-  res->parent[1] = (Var)b;
+  Var res = (Var)tensor;
+  res->parent[0] = (Var)parent_a;
+  res->parent[1] = (Var)parent_b;
 
-  if (a)
-    atomic_fetch_add(&a->refcount, 1);
-  if (b)
-    atomic_fetch_add(&b->refcount, 1);
+  if (parent_a)
+    atomic_fetch_add(&parent_a->refcount, 1);
+  if (parent_b)
+    atomic_fetch_add(&parent_b->refcount, 1);
 
-  res->op = op;
+  res->op = operation;
   res->ctx = ctx;
 }
 

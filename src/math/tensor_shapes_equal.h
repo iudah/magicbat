@@ -2,23 +2,23 @@
 #define TENSOR_SHAPES_EQUAL
 #include "../../include/tensor.h"
 
-static inline bool tensor_shapes_equal_from_shape(const u32 t_ndims,
+static inline bool tensor_shapes_equal_from_shape(u32 t_ndims,
                                                   const u32 *t_shape,
-                                                  const u32 s_ndims,
+                                                  u32 s_ndims,
                                                   const u32 *s_shape);
 
-static inline bool tensor_shapes_equal(const Tensor t, const Tensor s) {
-  auto t_size = tensor_num_elements(t);
-  auto s_size = tensor_num_elements(s);
+static inline bool tensor_shapes_equal(const Tensor var_a, const Tensor var_b) {
+  auto t_size = tensor_num_elements(var_a);
+  auto s_size = tensor_num_elements(var_b);
 
   if (t_size != s_size)
     return false;
 
-  auto t_ndims = tensor_ndims(t);
-  auto s_ndims = tensor_ndims(s);
+  auto t_ndims = tensor_ndims(var_a);
+  auto s_ndims = tensor_ndims(var_b);
 
-  auto t_shape = tensor_shape(t);
-  auto s_shape = tensor_shape(s);
+  auto t_shape = tensor_shape(var_a);
+  auto s_shape = tensor_shape(var_b);
 
   return tensor_shapes_equal_from_shape(t_ndims, t_shape, s_ndims, s_shape);
 }
@@ -36,13 +36,13 @@ static inline bool tensor_shapes_equal_from_shape(const u32 t_ndims,
   if (t_shape == NULL || s_shape == NULL)
     return false;
 
-  u32 i = t_ndims;
-  u32 j = s_ndims;
-  for (; i > 0 && j > 0;) {
-    --i;
-    --j;
+  u32 t_indx = t_ndims;
+  u32 s_indx = s_ndims;
+  for (; t_indx > 0 && s_indx > 0;) {
+    --t_indx;
+    --s_indx;
 
-    if (t_shape[i] != s_shape[j])
+    if (t_shape[t_indx] != s_shape[s_indx])
       return false;
   }
 

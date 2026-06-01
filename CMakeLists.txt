@@ -35,6 +35,7 @@ src/ops/tensor_copy_data.c
 src/ops/tensor_scalar.c
 src/ops/tensor_zero.c
 src/ops/tensor_slice.c
+src/ops/tensor_concat.c
 src/access/tensor_get.c
 src/access/tensor_set.c
 src/access/tensor_index_out_of_bound.c
@@ -63,6 +64,8 @@ src/var/var_sub.c
 src/var/var_sum.c
 src/var/var_zero_grad.c
 src/var/var_tanh.c
+src/var/var_copy_data.c
+src/var/var_concat.c
 )
 
 set (HEADERS
@@ -87,12 +90,7 @@ src/access/tensor_increment_index.h
 src/access/tensor_ndim_flat_index.h
 )
 
-set(target tensor)
-add_library(${target} STATIC ${SOURCES})
-target_sources(${target} PRIVATE ${HEADERS})
-
-target_include_directories(tensor PUBLIC include)
-target_include_directories(tensor PRIVATE 
+set(INCLUDE_DIRS
 include/
 include/adt
 include/adt/layers
@@ -118,36 +116,70 @@ src/optimizers/sgd
 src/var
 )
 
+set(target tensor)
+add_library(${target} STATIC ${SOURCES})
+target_sources(${target} PRIVATE ${HEADERS})
+
+target_include_directories(tensor PUBLIC include)
+target_include_directories(tensor PRIVATE ${INCLUDE_DIRS})
+
 # Test 
 add_executable(test_basic tests/tensor_basic_test.c)
 target_link_libraries(test_basic PRIVATE ${target})
+target_include_directories(test_basic PRIVATE ${INCLUDE_DIRS})
+target_sources(test_basic PRIVATE ${HEADERS})
 
 add_executable(test_add tests/tensor_add_test.c)
 target_link_libraries(test_add PRIVATE ${target})
+target_include_directories(test_add PRIVATE ${INCLUDE_DIRS})
+target_sources(test_add PRIVATE ${HEADERS})
 
 add_executable(test_sub tests/tensor_sub_test.c)
 target_link_libraries(test_sub PRIVATE ${target})
+target_include_directories(test_sub PRIVATE ${INCLUDE_DIRS})
+target_sources(test_sub PRIVATE ${HEADERS})
 
 add_executable(test_mul tests/tensor_mul_test.c)
 target_link_libraries(test_mul PRIVATE ${target})
+target_include_directories(test_mul PRIVATE ${INCLUDE_DIRS})
+target_sources(test_mul PRIVATE ${HEADERS})
 
 add_executable(test_matmul tests/tensor_matmul_test.c)
 target_link_libraries(test_matmul PRIVATE ${target})
+target_include_directories(test_matmul PRIVATE ${INCLUDE_DIRS})
+target_sources(test_matmul PRIVATE ${HEADERS})
 
 add_executable(test_div tests/tensor_div_test.c)
 target_link_libraries(test_div PRIVATE ${target})
+target_include_directories(test_div PRIVATE ${INCLUDE_DIRS})
+target_sources(test_div PRIVATE ${HEADERS})
 
 add_executable(test_broadcast tests/tensor_broadcast_test.c)
 target_link_libraries(test_broadcast PRIVATE ${target})
+target_include_directories(test_broadcast PRIVATE ${INCLUDE_DIRS})
+target_sources(test_broadcast PRIVATE ${HEADERS})
 
 add_executable(test_softmax tests/tensor_softmax_test.c)
 target_link_libraries(test_softmax PRIVATE ${target} m)
+target_include_directories(test_softmax PRIVATE ${INCLUDE_DIRS})
+target_sources(test_softmax PRIVATE ${HEADERS})
 
 add_executable(test_max tests/tensor_max_test.c)
 target_link_libraries(test_max PRIVATE ${target} m)
+target_include_directories(test_max PRIVATE ${INCLUDE_DIRS})
+target_sources(test_max PRIVATE ${HEADERS})
 
 add_executable(test_train_mlp tests/train_mlp.c)
 target_link_libraries(test_train_mlp PRIVATE tensor m)
+target_include_directories(test_train_mlp PRIVATE ${INCLUDE_DIRS})
+target_sources(test_train_mlp PRIVATE ${HEADERS})
 
 add_executable(test_train_mlp_auto tests/train_mlp_auto.c)
 target_link_libraries(test_train_mlp_auto PRIVATE tensor m)
+target_include_directories(test_train_mlp_auto PRIVATE ${INCLUDE_DIRS})
+target_sources(test_train_mlp_auto PRIVATE ${HEADERS})
+
+add_executable(test_train_rnn_auto tests/train_rnn_auto.c)
+target_link_libraries(test_train_rnn_auto PRIVATE tensor m)
+target_include_directories(test_train_rnn_auto PRIVATE ${INCLUDE_DIRS})
+target_sources(test_train_rnn_auto PRIVATE ${HEADERS})
