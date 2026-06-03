@@ -6,6 +6,24 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 add_compile_options(-Wall -Wpedantic -Wextra -O0 -g)
 
 set(SOURCES 
+pcg/extras/entropy.c
+pcg/src/pcg-advance-128.c
+pcg/src/pcg-advance-16.c
+pcg/src/pcg-advance-32.c
+pcg/src/pcg-advance-64.c
+pcg/src/pcg-advance-8.c
+pcg/src/pcg-global-32.c
+pcg/src/pcg-global-64.c
+pcg/src/pcg-output-128.c
+pcg/src/pcg-output-16.c
+pcg/src/pcg-output-32.c
+pcg/src/pcg-output-64.c
+pcg/src/pcg-output-8.c
+pcg/src/pcg-rngs-128.c
+pcg/src/pcg-rngs-16.c
+pcg/src/pcg-rngs-32.c
+pcg/src/pcg-rngs-64.c
+pcg/src/pcg-rngs-8.c
 src/info/tensor_ndims.c
 src/info/tensor_num_elements.c
 src/info/tensor_shape.c
@@ -79,6 +97,9 @@ include/layers/linear_layer.h
 include/layers/rnn/rnn_cell.h
 include/optimizers/sgd.h
 include/var/var.h
+pcg/extras/entropy.h
+pcg/extras/pcg_spinlock.h
+pcg/include/pcg_variants.h
 src/lifecycle/tensor_memory.h
 src/lifecycle/data_storage.h
 src/math/tensor_shapes_equal.h
@@ -102,6 +123,10 @@ include/layers/rnn
 include/layers/linear
 include/optimizers
 include/var
+pcg
+pcg/extras
+pcg/include
+pcg/src
 src/
 src/info
 src/lifecycle
