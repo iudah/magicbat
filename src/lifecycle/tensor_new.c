@@ -2,6 +2,7 @@
 #include "../../include/tensor.h"
 #include "data_storage.h"
 #include "tensor_memory.h"
+#include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -40,6 +41,24 @@ Tensor tensor_new(const u32 ndims, const u32 *shape) {
   tensor->refcount = 1;
   tensor->is_tensor_type = true;
   tensor->is_contiguous = true;
+
+  return tensor;
+}
+
+Tensor tensor_view(const Tensor src) {
+
+  Tensor tensor = tcalloc(1, sizeof(*tensor));
+  if (tensor == nullptr) {
+    return nullptr;
+  }
+
+  *tensor = *src;
+
+  atomic_fetch_add(&tensor->refcount, 1);
+  atomic_fetch_add(&tensor->data->refcount, 1);
+  tensor->is_tensor_type = true;
+  tensor->requires_grad = false;
+  tensor->is_contiguous = false;
 
   return tensor;
 }

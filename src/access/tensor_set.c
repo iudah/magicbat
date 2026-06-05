@@ -25,6 +25,8 @@ bool tensor_set(const Tensor tensor, const u32 *index, f32 value) {
 
   auto flat = tensor_ndim_flat_index(tensor, index);
 
+  TASSERT(flat < tensor->data->nelements && "Index out of bound");
+
   if (flat >= tensor->data->nelements)
     return false;
 

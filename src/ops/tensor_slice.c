@@ -1,17 +1,9 @@
 #include "tensor.h"
-#include "tensor_memory.h"
 #include "tensor_prot.h"
-#include <stdatomic.h>
 
 Tensor tensor_slice(Tensor tensor, TensorSlice *slices) {
-  Tensor slice = tmalloc(sizeof(*slice));
+  Tensor slice = tensor_view(tensor);
 
-  slice->ndims = tensor->ndims;
-  slice->is_contiguous = false;
-  slice->data = tensor->data;
-  atomic_fetch_add(&slice->data->refcount, 1);
-
-  slice->offset = tensor->offset;
   u32 steps[MAX_DIMS];
   for (u32 i = 0; i < slice->ndims; ++i) {
     steps[i] = (slices[i].step <= 1) ? 1 : slices[i].step;

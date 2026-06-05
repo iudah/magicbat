@@ -8,6 +8,8 @@ f32 tensor_get(const Tensor tensor, const u32 *index) {
 
   auto flat = tensor_ndim_flat_index(tensor, index);
 
+  TASSERT(flat < tensor->data->nelements && "Index out of bound");
+
   if (flat >= tensor->data->nelements)
     return NAN;
 

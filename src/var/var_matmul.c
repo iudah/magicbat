@@ -7,29 +7,34 @@ void matmul_backward_fn(Var self) {
   if (self->base.is_tensor_type || !self->base.requires_grad)
     return;
 
-  Var a = self->parent[0];
-  Var b = self->parent[1];
+  Var parent_a = self->parent[0];
+  Var parent_b = self->parent[1];
 
-  if (a && !a->base.is_tensor_type && a->base.requires_grad) {
-    if (!a->grad) {
-      a->grad = tensor_zero(a->base.ndims, a->base.shape);
+  if (parent_a && !parent_a->base.is_tensor_type &&
+      parent_a->base.requires_grad) {
+    if (!parent_a->grad) {
+      parent_a->grad = tensor_zero(parent_a->base.ndims, parent_a->base.shape);
     }
-    auto b_T = tensor_transpose((Tensor)b);
-    auto da = tensor_matmul(self->grad, b_T);
-    auto da_red = tensor_sum_to_shape(da, a->base.ndims, a->base.shape);
-    tensor_add_inplace(a->grad, da_red);
-    var_destroy(b_T);
-    var_destroy(da_red);
-    var_destroy(da);
+    // auto b_T = tensor_transpose((Tensor)parent_b);
+    auto grad_wrt_a = tensor_matmul_wrt_a(self->grad, &parent_a->base);
+    auto da_red = grad_wrt_a;
+    // tensor_sum_to_shape(grad_wrt_a, parent_a->base.ndims,
+    // parent_a->base.shape);
+    tensor_add_inplace(parent_a->grad, da_red);
+    // var_destroy(b_T);
+    // var_destroy(da_red);
+    var_destroy(grad_wrt_a);
   }
-  if (b && !b->base.is_tensor_type && b->base.requires_grad) {
-    if (!b->grad) {
-      b->grad = tensor_zero(b->base.ndims, b->base.shape);
+  if (parent_b && !parent_b->base.is_tensor_type &&
+      parent_b->base.requires_grad) {
+    if (!parent_b->grad) {
+      parent_b->grad = tensor_zero(parent_b->base.ndims, parent_b->base.shape);
     }
-    auto a_T = tensor_transpose((Tensor)a);
+    auto a_T = tensor_transpose((Tensor)parent_a);
     auto db = tensor_matmul(a_T, self->grad);
-    auto db_red = tensor_sum_to_shape(db, b->base.ndims, b->base.shape);
-    tensor_add_inplace(b->grad, db_red);
+    auto db_red =
+        tensor_sum_to_shape(db, parent_b->base.ndims, parent_b->base.shape);
+    tensor_add_inplace(parent_b->grad, db_red);
     var_destroy(a_T);
     var_destroy(db_red);
     var_destroy(db);

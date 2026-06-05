@@ -11,6 +11,7 @@ static inline u32 tensor_ndim_flat_index(const Tensor tensor,
 
   u32 flat = tensor->offset;
   for (u32 i = 0; i < tensor->ndims; ++i) {
+    TASSERT(index[i] < tensor->shape[i] && "Index out of bound");
     if (index[i] >= tensor->shape[i])
       return -1;
     flat += tensor->stride[i] * index[i];

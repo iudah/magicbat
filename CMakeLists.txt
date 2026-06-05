@@ -106,7 +106,6 @@ src/math/tensor_shapes_equal.h
 src/math/tensor_binary_op.h
 src/math/tensor_odometer.h
 src/math/tensor_shapes_broadcast.h
-src/math/tensor_shapes_broadcast_old.h
 src/access/tensor_increment_index.h
 src/access/tensor_ndim_flat_index.h
 )
