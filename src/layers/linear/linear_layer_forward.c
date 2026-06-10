@@ -15,5 +15,5 @@ Tensor linear_layer_forward(const LinearLayer layer, const Tensor in) {
   if (!var_require_grad(xw_b))
     var_destroy(xw);
 
-  return (Tensor)xw_b;
+  return xw_b;
 }

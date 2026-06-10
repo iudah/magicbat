@@ -5,7 +5,7 @@
 
 #include <stdatomic.h>
 
-#define MAX_DIMS 4
+#define MAX_DIMS 5
 
 typedef struct data_storage data_storage;
 

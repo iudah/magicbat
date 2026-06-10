@@ -159,6 +159,29 @@ bool tensor_binary_op_inplace(Tensor restrict tensor_a,
     return true;
   }
 
+  if (tensor_shape_is_broadcast(tensor_b->ndims, tensor_b->shape,
+                                tensor_a->ndims, tensor_a->shape)) {
+
+    Tensor res = tensor_a;
+    u32 index[MAX_DIMS] = {0};
+    u32 *odometer = tensor_odometer_new(tensor_a->ndims);
+    auto nelement = tensor_num_elements(res);
+
+    for (u32 i = 0; i < nelement; ++i) {
+      for (u32 j = tensor_a->ndims, k = tensor_b->ndims; j-- > 0 && k-- > 0;) {
+        index[k] = tensor_b->shape[k] == 1 ? 0 : odometer[j];
+      }
+
+      auto val_a = tensor_a->data->data[i];
+      auto val_b = tensor_get(tensor_b, index);
+      res->data->data[i] = operation_callback(val_a, val_b);
+
+      tensor_odometer_next(odometer, tensor_a->ndims, tensor_a->shape);
+    }
+    tensor_odometer_destroy(odometer);
+
+    return true;
+  }
   return false;
 }
 

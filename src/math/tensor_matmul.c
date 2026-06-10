@@ -1,3 +1,5 @@
+#include "matmul.h"
+#include "matmul_tile.h"
 #include "tensor.h"
 #include "tensor_prot.h"
 
@@ -5,7 +7,7 @@ static inline bool matmul_tensors_invalid(const Tensor tensor_a,
                                           const Tensor tensor_b) {
   TASSERT(tensor_a && tensor_b && tensor_a->ndims == 2 &&
           tensor_b->ndims == 2 && "Tensors dimensions not 2");
-  TASSERT(tensor_a && tensor_b && tensor_a->shape[1] == tensor_b.shape[0] &&
+  TASSERT(tensor_a && tensor_b && tensor_a->shape[1] == tensor_b->shape[0] &&
           "Tensors common size are mismatched.");
   return !tensor_a || !tensor_b || tensor_b->ndims != 2 ||
          tensor_a->ndims != 2 || tensor_a->shape[1] != tensor_b->shape[0];
@@ -27,16 +29,14 @@ Tensor tensor_matmul(const Tensor tensor_a, const Tensor tensor_b) {
   if (!tensor_a->is_contiguous || !tensor_b->is_contiguous)
     goto non_contiguous_matmul;
 
-  for (u32 i = 0; i < row; ++i) {
-    float *a_data = &tensor_a->data->data[i * com];
-    float *p_data = &product->data->data[i * col];
-    for (u32 j = 0; j < com; ++j) {
-      float *b_data = &tensor_b->data->data[j * col];
-      float a_val = a_data[j];
-      for (u32 k = 0; k < col; ++k) {
-        p_data[k] += a_val * b_data[k];
-      }
-    }
+  if (row < BLOCK_SIZE || col < BLOCK_SIZE || com < BLOCK_SIZE) {
+
+    matmul_lt_block_size(row, col, com, tensor_a->data->data,
+                         tensor_b->data->data, product->data->data);
+  } else {
+
+    matmul_gt_block_size(row, col, com, tensor_a->data->data,
+                         tensor_b->data->data, product->data->data);
   }
 
   goto return_statement;
@@ -76,19 +76,14 @@ Tensor tensor_matmul_wrt_a(const Tensor tensor_grad, const Tensor tensor_b) {
   if (!tensor_grad->is_contiguous || !tensor_b->is_contiguous)
     goto non_contiguous_matmul;
 
-  for (u32 i = 0; i < row; ++i) {
-    f32 *a_data = &tensor_grad->data->data[i * com];
-    f32 *p_data = &product->data->data[i * col];
-    for (u32 k = 0; k < col; ++k) {
-      f32 *b_data = &tensor_b->data->data[k * com];
-      f32 sum = 0;
-      for (u32 j = 0; j < com; ++j) {
-        f32 a_val = a_data[j];
-        f32 b_val = b_data[j];
-        sum += a_val * b_val;
-      }
-      p_data[k] = sum;
-    }
+  if (row < BLOCK_SIZE || col < BLOCK_SIZE || com < BLOCK_SIZE) {
+
+    matmul_transpose_b_lt_block_size(row, col, com, tensor_grad->data->data,
+                                     tensor_b->data->data, product->data->data);
+  } else {
+
+    matmul_transpose_b_gt_block_size(row, col, com, tensor_grad->data->data,
+                                     tensor_b->data->data, product->data->data);
   }
 
   goto return_statement;
@@ -130,15 +125,16 @@ Tensor tensor_matmul_wrt_b(const Tensor tensor_a, const Tensor tensor_grad) {
   if (!tensor_a->is_contiguous || !tensor_grad->is_contiguous)
     goto non_contiguous_matmul;
 
-  for (u32 j = 0; j < com; ++j) {
-    float *a_data = &tensor_a->data->data[j * row];
-    float *b_data = &tensor_grad->data->data[j * col];
-    for (u32 i = 0; i < row; ++i) {
-      float *p_data = &product->data->data[i * col];
-      for (u32 k = 0; k < col; ++k) {
-        p_data[k] += a_data[i] * b_data[k];
-      }
-    }
+  if (row < BLOCK_SIZE || col < BLOCK_SIZE || com < BLOCK_SIZE) {
+
+    matmul_transpose_a_lt_block_size(row, col, com, tensor_a->data->data,
+                                     tensor_grad->data->data,
+                                     product->data->data);
+  } else {
+
+    matmul_transpose_a_gt_block_size(row, col, com, tensor_a->data->data,
+                                     tensor_grad->data->data,
+                                     product->data->data);
   }
 
   goto return_statement;

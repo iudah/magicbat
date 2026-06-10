@@ -1,6 +1,6 @@
-#include "../../../include/adt/layers/layers_prot.h"
-#include "../../../include/layers/linear_layer.h"
-#include "../../lifecycle/tensor_memory.h"
+#include "layers_prot.h"
+#include "linear_layer.h"
+#include "tensor_memory.h"
 #include <stdint.h>
 
 LinearLayer linear_layer_new(u32 in_features, u32 out_features) {

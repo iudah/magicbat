@@ -1,8 +1,8 @@
 #ifndef LINEAR_LAYER_H
 #define LINEAR_LAYER_H
 
-#include "../adt/type_alias.h"
-#include "../tensor.h"
+#include "tensor.h"
+#include "type_alias.h"
 
 typedef struct linear_layer *LinearLayer;
 

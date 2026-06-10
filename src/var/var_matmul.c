@@ -1,5 +1,5 @@
-#include "../../include/adt/var/var_prot.h"
-#include "../../include/tensor.h"
+#include "tensor.h"
+#include "var_prot.h"
 #include <stdatomic.h>
 #include <stdint.h>
 
@@ -30,29 +30,31 @@ void matmul_backward_fn(Var self) {
     if (!parent_b->grad) {
       parent_b->grad = tensor_zero(parent_b->base.ndims, parent_b->base.shape);
     }
-    auto a_T = tensor_transpose((Tensor)parent_a);
-    auto db = tensor_matmul(a_T, self->grad);
-    auto db_red =
-        tensor_sum_to_shape(db, parent_b->base.ndims, parent_b->base.shape);
+    // auto a_T = tensor_transpose((Tensor)parent_a);
+    auto grad_wrt_b = tensor_matmul_wrt_b(&parent_a->base, self->grad);
+    // tensor_matmul(a_T, self->grad);
+    auto db_red = grad_wrt_b;
+    // tensor_sum_to_shape(db, parent_b->base.ndims, parent_b->base.shape);
     tensor_add_inplace(parent_b->grad, db_red);
-    var_destroy(a_T);
-    var_destroy(db_red);
-    var_destroy(db);
+    // var_destroy(a_T);
+    // var_destroy(db_red);
+    var_destroy(grad_wrt_b);
   }
 }
 
-Tensor var_matmul(Tensor a, Tensor b) {
+Tensor var_matmul(Tensor var_a, Tensor var_b) {
 
-  Tensor tmp = tensor_matmul(a, b);
+  Tensor tmp = tensor_matmul(var_a, var_b);
   if (!tmp)
     return nullptr;
 
-  if ((a->is_tensor_type || !a->requires_grad) &&
-      (b->is_tensor_type || !b->requires_grad))
+  if ((var_a->is_tensor_type || !var_a->requires_grad) &&
+      (var_b->is_tensor_type || !var_b->requires_grad))
     return tmp;
 
   Tensor res = track(tmp);
-  var_track_parent(res, a, b, (VarOp){matmul_backward_fn, nullptr}, nullptr);
+  var_track_parent(res, var_a, var_b, (VarOp){matmul_backward_fn, nullptr},
+                   nullptr);
 
   return res;
 }

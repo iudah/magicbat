@@ -54,6 +54,10 @@ Tensor tensor_sum_to_shape(Tensor tensor, u32 ndims, u32 *shape);
 Tensor tensor_max_axis(Tensor tensor, i32 axis);
 f32 tensor_max_all(Tensor tensor);
 Tensor tensor_gather_axis(Tensor tensor, Tensor indices, i32 axis);
+Tensor tensor_mean_axis(Tensor tensor, u32 axis);
+Tensor tensor_layer_norm_axis(Tensor tensor, u32 axis, Tensor *variance_holder);
+Tensor tensor_layer_norm_axis_backward(Tensor gradient, Tensor normal, u32 axis,
+                                       Tensor variance);
 
 Tensor tensor_transpose(Tensor tensor);
 Tensor tensor_transpose_dims(Tensor tensor, u32 nswap, TensorDimSwap swaps[]);
@@ -78,6 +82,7 @@ Tensor tensor_reshape(Tensor var_a, u32 ndims, const u32 *shape);
 bool tensor_copy_data(Tensor dst, Tensor src);
 Tensor tensor_concat(u32 n_tensor, Tensor *tensor, u32 axis);
 Tensor tensor_slice(Tensor tensor, TensorSlice slices[MAX_DIMS]);
+Tensor tensor_to_contiguous(Tensor tensor);
 void tensor_random(Tensor tensor);
 void tensor_random_bound(Tensor tensor, f32 lower_bound, f32 upper_bound);
 void tensor_xavier(Tensor tensor, f32 fanin, f32 fanout);

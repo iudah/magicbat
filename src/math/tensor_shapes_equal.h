@@ -48,4 +48,31 @@ static inline bool tensor_shapes_equal_from_shape(const u32 t_ndims,
 
   return true;
 }
+
+static inline bool tensor_shape_is_broadcast(const u32 base_ndims,
+                                             const u32 *base_shape,
+                                             const u32 broadcast_ndims,
+                                             const u32 *broadcast_shape) {
+
+  if (base_ndims > broadcast_ndims)
+    return false;
+  if (base_ndims == 0)
+    return false;
+
+  if (base_shape == NULL || broadcast_shape == NULL)
+    return false;
+
+  u32 t_indx = base_ndims;
+  u32 s_indx = broadcast_ndims;
+  for (; t_indx > 0 && s_indx > 0;) {
+    --t_indx;
+    --s_indx;
+
+    if (base_shape[t_indx] != broadcast_shape[s_indx] &&
+        base_shape[t_indx] != 1)
+      return false;
+  }
+
+  return true;
+}
 #endif

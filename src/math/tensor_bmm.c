@@ -1,3 +1,6 @@
+#include "matmul.h"
+#include "matmul_batched_tile.h"
+#include "matmul_tile.h"
 #include "tensor.h"
 #include "tensor_prot.h"
 #include <stdint.h>
@@ -6,8 +9,8 @@ static inline bool bmm_tensors_invalid(const Tensor tensor_a,
                                        const Tensor tensor_b) {
   TASSERT(tensor_a && tensor_b && tensor_a->ndims == 3 &&
           tensor_b->ndims == 3 && "Tensors dimensions not 3");
-  TASSERT(tensor_a && tensor_b && tensor_a->shape[0] == tensor_b.shape[0] &&
-          tensor_a->shape[2] == tensor_b.shape[1] &&
+  TASSERT(tensor_a && tensor_b && tensor_a->shape[0] == tensor_b->shape[0] &&
+          tensor_a->shape[2] == tensor_b->shape[1] &&
           "Tensors common size are mismatched.");
   return !tensor_a || !tensor_b || tensor_b->ndims != 3 ||
          tensor_a->ndims != 3 || tensor_a->shape[0] != tensor_b->shape[0] ||
@@ -47,18 +50,28 @@ Tensor tensor_bmm(const Tensor tensor_a, const Tensor tensor_b) {
   if (!tensor_a->is_contiguous || !tensor_b->is_contiguous)
     goto non_contiguous_matmul;
 
-  for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
-    for (u32 i = 0; i < row; ++i) {
-      float *a_data = &tensor_a->data->data[(batch_index * row + i) * com];
-      float *p_data = &product->data->data[(batch_index * row + i) * col];
-      for (u32 j = 0; j < com; ++j) {
-        float *b_data = &tensor_b->data->data[(batch_index * com + j) * col];
-        float a_val = a_data[j];
-        for (u32 k = 0; k < col; ++k) {
-          p_data[k] += a_val * b_data[k];
-        }
-      }
+  if (row < BLOCK_SIZE || col < BLOCK_SIZE || com < BLOCK_SIZE) {
+
+    for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
+      matmul_lt_block_size(
+          row, col, com,
+          &tensor_a->data->data[batch_index * tensor_a->stride[0]],
+          &tensor_b->data->data[batch_index * tensor_b->stride[0]],
+          &product->data->data[batch_index * product->stride[0]]);
     }
+  } else if (batch < BLOCK_SIZE) {
+
+    for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
+      matmul_gt_block_size(
+          row, col, com,
+          &tensor_a->data->data[batch_index * tensor_a->stride[0]],
+          &tensor_b->data->data[batch_index * tensor_b->stride[0]],
+          &product->data->data[batch_index * product->stride[0]]);
+    }
+
+  } else {
+    bmatmul_gt_block_size(batch, row, col, com, tensor_a->data->data,
+                          tensor_b->data->data, product->data->data);
   }
 
   goto return_statement;
@@ -87,21 +100,29 @@ Tensor tensor_bmm_wrt_a(const Tensor tensor_grad, const Tensor tensor_b) {
   if (!tensor_grad->is_contiguous || !tensor_b->is_contiguous)
     goto non_contiguous_matmul;
 
-  for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
-    for (u32 i = 0; i < row; ++i) {
-      f32 *a_data = &tensor_grad->data->data[(batch_index * row + i) * com];
-      f32 *p_data = &product->data->data[(batch_index * row + i) * col];
-      for (u32 k = 0; k < col; ++k) {
-        f32 *b_data = &tensor_b->data->data[(batch_index * col + k) * com];
-        f32 sum = 0;
-        for (u32 j = 0; j < com; ++j) {
-          f32 a_val = a_data[j];
-          f32 b_val = b_data[j];
-          sum += a_val * b_val;
-        }
-        p_data[k] = sum;
-      }
+  if (row < BLOCK_SIZE || col < BLOCK_SIZE || com < BLOCK_SIZE) {
+
+    for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
+      matmul_transpose_b_lt_block_size(
+          row, col, com,
+          &tensor_grad->data->data[batch_index * tensor_grad->stride[0]],
+          &tensor_b->data->data[batch_index * tensor_b->stride[0]],
+          &product->data->data[batch_index * product->stride[0]]);
     }
+  } else if (batch < BLOCK_SIZE) {
+
+    for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
+      matmul_transpose_b_gt_block_size(
+          row, col, com,
+          &tensor_grad->data->data[batch_index * tensor_grad->stride[0]],
+          &tensor_b->data->data[batch_index * tensor_b->stride[0]],
+          &product->data->data[batch_index * product->stride[0]]);
+    }
+
+  } else {
+    bmatmul_transpose_b_gt_block_size(
+        batch, row, col, com, tensor_grad->data->data, tensor_b->data->data,
+        product->data->data);
   }
 
   goto return_statement;
@@ -144,17 +165,29 @@ Tensor tensor_bmm_wrt_b(const Tensor tensor_a, const Tensor tensor_grad) {
   if (!tensor_a->is_contiguous || !tensor_grad->is_contiguous)
     goto non_contiguous_matmul;
 
-  for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
-    for (u32 j = 0; j < com; ++j) {
-      float *a_data = &tensor_a->data->data[(batch_index * com + j) * row];
-      float *b_data = &tensor_grad->data->data[(batch_index * com + j) * col];
-      for (u32 i = 0; i < row; ++i) {
-        float *p_data = &product->data->data[(batch_index * row + i) * col];
-        for (u32 k = 0; k < col; ++k) {
-          p_data[k] += a_data[i] * b_data[k];
-        }
-      }
+  if (row < BLOCK_SIZE || col < BLOCK_SIZE || com < BLOCK_SIZE) {
+
+    for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
+      matmul_transpose_a_lt_block_size(
+          row, col, com,
+          &tensor_a->data->data[batch_index * tensor_a->stride[0]],
+          &tensor_grad->data->data[batch_index * tensor_grad->stride[0]],
+          &product->data->data[batch_index * product->stride[0]]);
     }
+  } else if (batch < BLOCK_SIZE) {
+
+    for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
+      matmul_transpose_a_gt_block_size(
+          row, col, com,
+          &tensor_a->data->data[batch_index * tensor_a->stride[0]],
+          &tensor_grad->data->data[batch_index * tensor_grad->stride[0]],
+          &product->data->data[batch_index * product->stride[0]]);
+    }
+
+  } else {
+    bmatmul_transpose_a_gt_block_size(
+        batch, row, col, com, tensor_a->data->data, tensor_grad->data->data,
+        product->data->data);
   }
 
   goto return_statement;

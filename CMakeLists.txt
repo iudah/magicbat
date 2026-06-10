@@ -47,6 +47,9 @@ src/math/tensor_log_sum_exp.c
 src/math/tensor_negate.c
 src/math/tensor_transpose.c
 src/math/tensor_tanh.c
+src/math/tensor_bmm.c
+src/math/tensor_mean.c
+src/math/tensor_variance.c
 src/ops/tensor_fill.c
 src/ops/tensor_reshape.c
 src/ops/tensor_copy_data.c
@@ -54,14 +57,16 @@ src/ops/tensor_scalar.c
 src/ops/tensor_zero.c
 src/ops/tensor_slice.c
 src/ops/tensor_concat.c
+src/ops/tensor_random.c
 src/access/tensor_get.c
 src/access/tensor_set.c
 src/access/tensor_index_out_of_bound.c
-src/layers/rnn/rnn_cell_track.c
-src/layers/rnn/rnn_cell_new.c
+src/layers/rnn/rnn_cell_destroy.c
 src/layers/rnn/rnn_cell_forward.c
 src/layers/rnn/rnn_cell_kernel.c
-src/layers/rnn/rnn_cell_destroy.c
+src/layers/rnn/rnn_cell_new.c
+src/layers/rnn/rnn_cell_track.c
+src/layers/layer_norm/layer_norm.c
 src/layers/linear/linear_layer_destroy.c
 src/layers/linear/linear_layer_forward.c
 src/layers/linear/linear_layer_kernel.c
@@ -82,21 +87,11 @@ src/var/var_sub.c
 src/var/var_sum.c
 src/var/var_zero_grad.c
 src/var/var_tanh.c
-src/var/var_copy_data.c
 src/var/var_concat.c
+src/var/var_copy_data.c
 )
 
 set (HEADERS
-include/tensor.h
-include/adt/layers/layers_prot.h
-include/adt/optimizers/sgd_prot.h
-include/adt/tensor/tensor_prot.h
-include/adt/type_alias.h
-include/adt/var/var_prot.h
-include/layers/linear_layer.h
-include/layers/rnn/rnn_cell.h
-include/optimizers/sgd.h
-include/var/var.h
 pcg/extras/entropy.h
 pcg/extras/pcg_spinlock.h
 pcg/include/pcg_variants.h
@@ -106,22 +101,23 @@ src/math/tensor_shapes_equal.h
 src/math/tensor_binary_op.h
 src/math/tensor_odometer.h
 src/math/tensor_shapes_broadcast.h
+src/math/tensor_reduce.h
 src/access/tensor_increment_index.h
 src/access/tensor_ndim_flat_index.h
+include/tensor.h
+include/adt/layers/layers_prot.h
+include/adt/optimizers/sgd_prot.h
+include/adt/tensor/tensor_prot.h
+include/adt/type_alias.h
+include/adt/var/var_prot.h
+include/layers/linear_layer.h
+include/layers/rnn/rnn_cell.h
+include/layers/layer_norm/layer_norm.h
+include/optimizers/sgd.h
+include/var/var.h
 )
 
 set(INCLUDE_DIRS
-include/
-include/adt
-include/adt/layers
-include/adt/optimizers
-include/adt/tensor
-include/adt/var
-include/layers
-include/layers/rnn
-include/layers/linear
-include/optimizers
-include/var
 pcg
 pcg/extras
 pcg/include
@@ -138,6 +134,18 @@ src/layers/linear
 src/optimizers
 src/optimizers/sgd
 src/var
+include/
+include/adt
+include/adt/layers
+include/adt/optimizers
+include/adt/tensor
+include/adt/var
+include/layers
+include/layers/rnn
+include/layers/linear
+include/layers/layer_norm
+include/optimizers
+include/var
 )
 
 set(target tensor)

@@ -22,6 +22,7 @@ Tensor var_concat(u32 ntensor, Tensor *tensors, u32 axis);
 Tensor var_relu(Tensor var);
 Tensor var_tanh(Tensor var);
 Tensor var_sum_all(Tensor var);
+Tensor var_layer_norm_axis(Tensor input, u32 axis);
 
 bool var_backward(Tensor top);
 bool var_backward_with_grad(Tensor top, Tensor grad);
