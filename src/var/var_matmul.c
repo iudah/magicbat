@@ -16,7 +16,7 @@ void matmul_backward_fn(Var self) {
       parent_a->grad = tensor_zero(parent_a->base.ndims, parent_a->base.shape);
     }
     // auto b_T = tensor_transpose((Tensor)parent_b);
-    auto grad_wrt_a = tensor_matmul_wrt_a(self->grad, &parent_a->base);
+    auto grad_wrt_a = tensor_matmul_wrt_a(self->grad, &parent_b->base);
     auto da_red = grad_wrt_a;
     // tensor_sum_to_shape(grad_wrt_a, parent_a->base.ndims,
     // parent_a->base.shape);

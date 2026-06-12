@@ -5,10 +5,13 @@
 #include <stdint.h>
 
 struct layer_norm_ctx {
-  Tensor deviation;
   Tensor variance;
   u32 axis;
 };
+
+void destroy_layer_norm_ctx(struct layer_norm_ctx *ctx) {
+  tensor_destroy(ctx->variance);
+}
 
 void layer_norm_backward_fn(Var self) {
   if (self->base.is_tensor_type || !self->base.requires_grad)
@@ -34,7 +37,6 @@ void layer_norm_backward_fn(Var self) {
 
 Tensor var_layer_norm_axis(Tensor input, u32 axis) {
 
-  Tensor deviation = nullptr;
   Tensor variance = nullptr;
 
   Tensor tmp = tensor_layer_norm_axis(input, axis, &variance);
@@ -45,11 +47,13 @@ Tensor var_layer_norm_axis(Tensor input, u32 axis) {
     return tmp;
 
   struct layer_norm_ctx *ctx = tmalloc(sizeof(*ctx));
-  *ctx = (struct layer_norm_ctx){deviation, variance, axis};
+  *ctx = (struct layer_norm_ctx){variance, axis};
 
   Tensor res = track(tmp);
-  var_track_parent(res, input, nullptr,
-                   (VarOp){layer_norm_backward_fn, nullptr}, nullptr);
+  var_track_parent(
+      res, input, nullptr,
+      (VarOp){layer_norm_backward_fn, (void (*)(mem))destroy_layer_norm_ctx},
+      ctx);
 
   return res;
 }
