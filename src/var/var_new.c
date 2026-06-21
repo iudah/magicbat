@@ -10,7 +10,7 @@ Tensor track(Tensor tensor) {
     return tensor;
   }
 
-  Var var = tmalloc(sizeof(*var));
+  Var var = tcalloc(1, sizeof(*var));
 
   var->base.data = tensor->data;
   atomic_fetch_add(&var->base.data->refcount, 1);

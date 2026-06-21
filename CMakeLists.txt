@@ -50,6 +50,9 @@ src/math/tensor_tanh.c
 src/math/tensor_bmm.c
 src/math/tensor_mean.c
 src/math/tensor_variance.c
+src/math/tensor_mse.c
+src/math/tensor_bmm_bt.c
+src/math/tensor_bmm_at.c
 src/ops/tensor_fill.c
 src/ops/tensor_reshape.c
 src/ops/tensor_copy_data.c
@@ -58,6 +61,7 @@ src/ops/tensor_zero.c
 src/ops/tensor_slice.c
 src/ops/tensor_concat.c
 src/ops/tensor_random.c
+src/ops/tensor_to_contiguous.c
 src/access/tensor_get.c
 src/access/tensor_set.c
 src/access/tensor_index_out_of_bound.c
@@ -89,6 +93,11 @@ src/var/var_zero_grad.c
 src/var/var_tanh.c
 src/var/var_concat.c
 src/var/var_copy_data.c
+src/var/var_layer_norm.c
+src/var/var_mha.c
+src/var/var_mse.c
+src/var/var_bmm.c
+src/var/var_softmax.c
 )
 
 set (HEADERS
@@ -155,6 +164,14 @@ target_sources(${target} PRIVATE ${HEADERS})
 target_include_directories(tensor PUBLIC include)
 target_include_directories(tensor PRIVATE ${INCLUDE_DIRS})
 
+if(NOT MSVC)
+    add_compile_options(-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -g)
+    add_link_options(-fsanitize=address -fsanitize=undefined)
+else()
+    add_compile_options(/fsanitize=address /Zi)
+    add_link_options(/INCREMENTAL:NO)
+endif()
+
 # Test 
 add_executable(test_basic tests/tensor_basic_test.c)
 target_link_libraries(test_basic PRIVATE ${target})
@@ -215,3 +232,13 @@ add_executable(test_train_rnn_auto tests/train_rnn_auto.c)
 target_link_libraries(test_train_rnn_auto PRIVATE tensor m)
 target_include_directories(test_train_rnn_auto PRIVATE ${INCLUDE_DIRS})
 target_sources(test_train_rnn_auto PRIVATE ${HEADERS})
+
+add_executable(test_bmm tests/tensor_bmm.c)
+target_link_libraries(test_bmm PRIVATE tensor m)
+target_include_directories(test_bmm PRIVATE ${INCLUDE_DIRS})
+target_sources(test_bmm PRIVATE ${HEADERS})
+
+add_executable(test_mha tests/test_mha_fused.c tests/test_mha_discrete.c tests/test_mha.c)
+target_link_libraries(test_mha PRIVATE tensor m)
+target_include_directories(test_mha PRIVATE ${INCLUDE_DIRS})
+target_sources(test_mha PRIVATE ${HEADERS})

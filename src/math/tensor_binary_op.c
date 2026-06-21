@@ -6,8 +6,9 @@
 #include "tensor_shapes_equal.h"
 #include <stdint.h>
 
-Tensor tensor_same_shape_binary(Tensor tensor_a, Tensor tensor_b,
-                                float (*operation_callback)(float, float)) {
+Tensor tensor_same_shape_binary(Tensor tensor_a, Tensor tensor_b, f32 alpha,
+                                float (*operation_callback)(float, float,
+                                                            float)) {
   Tensor res = tensor_new(tensor_ndims(tensor_a), tensor_shape(tensor_a));
   if (res == nullptr)
     return nullptr;
@@ -17,14 +18,15 @@ Tensor tensor_same_shape_binary(Tensor tensor_a, Tensor tensor_b,
   for (u32 i = 0; i < nelement; ++i) {
     auto val_a = tensor_a->data->data[i];
     auto val_b = tensor_b->data->data[i];
-    res->data->data[i] = operation_callback(val_a, val_b);
+    res->data->data[i] = operation_callback(val_a, val_b, alpha);
   }
 
   return res;
 }
 
-Tensor tensor_length_one_a_binary(Tensor tensor_a, Tensor tensor_b,
-                                  float (*operation_callback)(float, float)) {
+Tensor tensor_length_one_a_binary(Tensor tensor_a, Tensor tensor_b, f32 alpha,
+                                  float (*operation_callback)(float, float,
+                                                              float)) {
   Tensor res = tensor_new(tensor_ndims(tensor_b), tensor_shape(tensor_b));
   if (res == nullptr)
     return nullptr;
@@ -34,13 +36,14 @@ Tensor tensor_length_one_a_binary(Tensor tensor_a, Tensor tensor_b,
   for (u32 i = 0; i < nelement; ++i) {
     auto val_a = tensor_a->data->data[0];
     auto val_b = tensor_b->data->data[i];
-    res->data->data[i] = operation_callback(val_a, val_b);
+    res->data->data[i] = operation_callback(val_a, val_b, alpha);
   }
   return res;
 }
 
-Tensor tensor_length_one_b_binary(Tensor tensor_a, Tensor tensor_b,
-                                  float (*operation_callback)(float, float)) {
+Tensor tensor_length_one_b_binary(Tensor tensor_a, Tensor tensor_b, f32 alpha,
+                                  float (*operation_callback)(float, float,
+                                                              float)) {
   Tensor res = tensor_new(tensor_ndims(tensor_a), tensor_shape(tensor_a));
   if (res == nullptr)
     return nullptr;
@@ -52,7 +55,7 @@ Tensor tensor_length_one_b_binary(Tensor tensor_a, Tensor tensor_b,
 
     for (u32 i = 0; i < nelement; ++i) {
       auto val_a = tensor_a->data->data[i];
-      res->data->data[i] = operation_callback(val_a, val_b);
+      res->data->data[i] = operation_callback(val_a, val_b, alpha);
     }
   } else {
     auto val_b = tensor_get(tensor_b, (u32[MAX_DIMS]){0});
@@ -60,7 +63,7 @@ Tensor tensor_length_one_b_binary(Tensor tensor_a, Tensor tensor_b,
 
     for (u32 i = 0; i < nelement; ++i) {
       auto val_a = tensor_get(tensor_a, index);
-      res->data->data[i] = operation_callback(val_a, val_b);
+      res->data->data[i] = operation_callback(val_a, val_b, alpha);
       tensor_odometer_next(index, tensor_a->ndims, tensor_a->shape);
     }
 
@@ -70,8 +73,9 @@ Tensor tensor_length_one_b_binary(Tensor tensor_a, Tensor tensor_b,
 }
 
 Tensor tensor_broadcast_binary(Tensor tensor_a, Tensor tensor_b, u32 o_ndims,
-                               u32 *o_shape,
-                               float (*operation_callback)(float, float)) {
+                               u32 *o_shape, f32 alpha,
+                               float (*operation_callback)(float, float,
+                                                           float)) {
 
   Tensor res = tensor_new(o_ndims, o_shape);
   if (res == nullptr) {
@@ -101,7 +105,7 @@ Tensor tensor_broadcast_binary(Tensor tensor_a, Tensor tensor_b, u32 o_ndims,
     auto t_val = tensor_get(tensor_a, t_nindx);
     auto s_val = tensor_get(tensor_b, s_nindx);
 
-    auto r_val = operation_callback(t_val, s_val);
+    auto r_val = operation_callback(t_val, s_val, alpha);
 
     res->data->data[flat] = r_val;
     ++flat;
@@ -111,8 +115,8 @@ Tensor tensor_broadcast_binary(Tensor tensor_a, Tensor tensor_b, u32 o_ndims,
   return res;
 }
 
-Tensor tensor_binary_op(const Tensor tensor_a, const Tensor tensor_b,
-                        float (*operation_callback)(float, float)) {
+Tensor tensor_binary_op(const Tensor tensor_a, const Tensor tensor_b, f32 alpha,
+                        float (*operation_callback)(float, float, float)) {
   TASSERT(tensor_a && tensor_b && operation_callback &&
           "Null tensor or operator.");
 
@@ -120,28 +124,30 @@ Tensor tensor_binary_op(const Tensor tensor_a, const Tensor tensor_b,
     return nullptr;
 
   if (tensor_shapes_equal(tensor_a, tensor_b))
-    return tensor_same_shape_binary(tensor_a, tensor_b, operation_callback);
+    return tensor_same_shape_binary(tensor_a, tensor_b, alpha,
+                                    operation_callback);
 
   if (tensor_num_elements(tensor_a) == 1)
-    tensor_length_one_a_binary(tensor_a, tensor_b, operation_callback);
+    tensor_length_one_a_binary(tensor_a, tensor_b, alpha, operation_callback);
 
   if (tensor_num_elements(tensor_b) == 1)
-    tensor_length_one_b_binary(tensor_a, tensor_b, operation_callback);
+    tensor_length_one_b_binary(tensor_a, tensor_b, alpha, operation_callback);
 
   u32 o_ndims =
       tensor_a->ndims > tensor_b->ndims ? tensor_a->ndims : tensor_b->ndims;
   u32 o_shape[MAX_DIMS];
 
   if (tensor_shapes_broadcast(tensor_a, tensor_b, o_shape)) {
-    return tensor_broadcast_binary(tensor_a, tensor_b, o_ndims, o_shape,
+    return tensor_broadcast_binary(tensor_a, tensor_b, o_ndims, o_shape, alpha,
                                    operation_callback);
   }
   return nullptr;
 }
 
 bool tensor_binary_op_inplace(Tensor restrict tensor_a,
-                              const Tensor restrict tensor_b,
-                              float (*operation_callback)(float, float)) {
+                              const Tensor restrict tensor_b, f32 alpha,
+                              float (*operation_callback)(float, float,
+                                                          float)) {
   if (!tensor_a || !tensor_b)
     return false;
 
@@ -153,7 +159,7 @@ bool tensor_binary_op_inplace(Tensor restrict tensor_a,
     for (u32 i = 0; i < nelement; ++i) {
       auto val_a = tensor_a->data->data[i];
       auto val_b = tensor_b->data->data[i];
-      res->data->data[i] = operation_callback(val_a, val_b);
+      res->data->data[i] = operation_callback(val_a, val_b, alpha);
     }
 
     return true;
@@ -174,7 +180,7 @@ bool tensor_binary_op_inplace(Tensor restrict tensor_a,
 
       auto val_a = tensor_a->data->data[i];
       auto val_b = tensor_get(tensor_b, index);
-      res->data->data[i] = operation_callback(val_a, val_b);
+      res->data->data[i] = operation_callback(val_a, val_b, alpha);
 
       tensor_odometer_next(odometer, tensor_a->ndims, tensor_a->shape);
     }

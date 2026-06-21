@@ -54,7 +54,6 @@ Tensor tensor_view(const Tensor src) {
 
   *tensor = *src;
 
-  atomic_fetch_add(&tensor->refcount, 1);
   atomic_fetch_add(&tensor->data->refcount, 1);
   tensor->is_tensor_type = true;
   tensor->requires_grad = false;

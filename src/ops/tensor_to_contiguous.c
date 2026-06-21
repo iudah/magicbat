@@ -1,3 +1,4 @@
+#include "data_storage.h"
 #include "tensor.h"
 #include "tensor_ndim_flat_index.h"
 #include "tensor_odometer.h"
@@ -23,31 +24,26 @@ void tensor_to_contiguous_inplace(Tensor tensor) {
     return;
 
   u32 len = 1;
-  for (u32 i = tensor->ndims; i-- > 0; --i) {
+  for (u32 i = tensor->ndims; i-- > 0;) {
     len *= tensor->shape[i];
   }
 
-#define N_BITS 64
-  u32 n_packs = (len / N_BITS) + 1;
-  u64 swapped[n_packs];
-  for (u32 i = 0; i < n_packs; ++i)
-    swapped[i] = 0;
-#define SWAP(x) swapped[(x) / N_BITS] |= (1 << ((x) & (~N_BITS)))
-#define IS_SWAPPED(x) (swapped[(x) / N_BITS] & (1 << ((x) & (~N_BITS))))
+  auto dest = data_storage_new(len);
 
   auto index = tensor_odometer_new(tensor->ndims);
-  for (u32 i = 0; i < tensor->data->nelements; ++i) {
+  for (u32 i = 0; i < dest->nelements; ++i) {
 
-    auto flat = tensor_ndim_flat_index(tensor, index);
-    if (!IS_SWAPPED(i) && !IS_SWAPPED(flat)) {
-      auto tmp = tensor->data->data[flat];
-      tensor->data->data[flat] = tensor->data->data[i];
-      tensor->data->data[i] = tmp;
-      SWAP(i);
-      SWAP(flat);
-    }
-
+    auto val = tensor_get(tensor, index);
+    dest->data[i] = val;
     tensor_odometer_next(index, tensor->ndims, tensor->shape);
   }
   tensor_destroy(index);
+  data_storage_destroy(tensor->data);
+  tensor->data = dest;
+  tensor->is_contiguous = true;
+  tensor->offset = 0;
+  for (u32 len = 1, i = tensor->ndims; i-- > 0;) {
+    tensor->stride[i] = len;
+    len *= tensor->shape[i];
+  }
 }

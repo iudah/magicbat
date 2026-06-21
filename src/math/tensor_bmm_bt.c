@@ -33,8 +33,9 @@ static inline void bmm_non_contiguous_no_bc(Tensor tensor_a, Tensor tensor_b,
                                             u32 col, u32 com,
                                             bool UNUSED_ARG broadcast_a,
                                             bool UNUSED_ARG broadcast_b);
-Tensor tensor_bmm(const Tensor tensor_a, const Tensor tensor_b) {
-  if (bmm_tensors_invalid(tensor_a, tensor_b, false, false))
+Tensor tensor_bmatmul_transpose_b(const Tensor tensor_a,
+                                  const Tensor tensor_b) {
+  if (bmm_tensors_invalid(tensor_a, tensor_b, false, true))
     return nullptr;
 
   auto broadcast_a =
@@ -48,8 +49,8 @@ Tensor tensor_bmm(const Tensor tensor_a, const Tensor tensor_b) {
                   ? 1
                   : (!broadcast_a ? tensor_a : tensor_b)->shape[0];
   u32 row = tensor_a->shape[tensor_a->ndims - 2];
-  u32 col = tensor_b->shape[tensor_b->ndims - 1];
-  u32 com = tensor_b->shape[tensor_b->ndims - 2];
+  u32 col = tensor_b->shape[tensor_b->ndims - 2];
+  u32 com = tensor_b->shape[tensor_b->ndims - 1];
 
   // guarantees zeros
   Tensor product = tensor_new(3, (u32[]){batch, row, col});
@@ -96,21 +97,23 @@ Tensor tensor_bmm(const Tensor tensor_a, const Tensor tensor_b) {
     break;
   case 1ULL << CONTIGUOUS_DUO | 1ULL << NO_BROADCAST | 1ULL << FULL_DIM_A |
       1ULL << FULL_DIM_B | 1ULL << ALL_CAN_TILE | 1ULL << BATCH_CAN_TILE:
-    bmatmul_gt_block_size(batch, row, col, com, tensor_a->data->data,
-                          tensor_b->data->data, product->data->data);
+    bmatmul_transpose_b_gt_block_size(
+        batch, row, col, com, tensor_a->data->data, tensor_b->data->data,
+        product->data->data);
     break;
   }
-
   return product;
 }
 
-void contiguous_lt_bs_unbatched(bool broadcast_a, bool broadcast_b, u32 batch,
-                                u32 row, u32 col, u32 com, Tensor tensor_a,
-                                Tensor tensor_b, Tensor product) {
+static inline void contiguous_lt_bs_unbatched(bool broadcast_a,
+                                              bool broadcast_b, u32 batch,
+                                              u32 row, u32 col, u32 com,
+                                              Tensor tensor_a, Tensor tensor_b,
+                                              Tensor product) {
   if (!broadcast_a && !broadcast_b) {
 
     for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
-      matmul_lt_block_size(
+      matmul_transpose_b_lt_block_size(
           row, col, com,
           &tensor_a->data->data[batch_index * tensor_a->stride[0]],
           &tensor_b->data->data[batch_index * tensor_b->stride[0]],
@@ -118,32 +121,34 @@ void contiguous_lt_bs_unbatched(bool broadcast_a, bool broadcast_b, u32 batch,
     }
   } else if (broadcast_a && !broadcast_b) {
     for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
-      matmul_lt_block_size(
+      matmul_transpose_b_lt_block_size(
           row, col, com, tensor_a->data->data,
           &tensor_b->data->data[batch_index * tensor_b->stride[0]],
           &product->data->data[batch_index * product->stride[0]]);
     }
   } else if (!broadcast_a && broadcast_b) {
     for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
-      matmul_lt_block_size(
+      matmul_transpose_b_lt_block_size(
           row, col, com,
           &tensor_a->data->data[batch_index * tensor_a->stride[0]],
           tensor_b->data->data,
           &product->data->data[batch_index * product->stride[0]]);
     }
   } else if (broadcast_a && broadcast_b) {
-    matmul_lt_block_size(row, col, com, tensor_a->data->data,
-                         tensor_b->data->data, product->data->data);
+    matmul_transpose_b_lt_block_size(row, col, com, tensor_a->data->data,
+                                     tensor_b->data->data, product->data->data);
   }
 }
 
-void contiguous_gt_bs_unbatched(bool broadcast_a, bool broadcast_b, u32 batch,
-                                u32 row, u32 col, u32 com, Tensor tensor_a,
-                                Tensor tensor_b, Tensor product) {
+static inline void contiguous_gt_bs_unbatched(bool broadcast_a,
+                                              bool broadcast_b, u32 batch,
+                                              u32 row, u32 col, u32 com,
+                                              Tensor tensor_a, Tensor tensor_b,
+                                              Tensor product) {
   if (!broadcast_a && !broadcast_b) {
 
     for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
-      matmul_gt_block_size(
+      matmul_transpose_b_gt_block_size(
           row, col, com,
           &tensor_a->data->data[batch_index * tensor_a->stride[0]],
           &tensor_b->data->data[batch_index * tensor_b->stride[0]],
@@ -151,22 +156,22 @@ void contiguous_gt_bs_unbatched(bool broadcast_a, bool broadcast_b, u32 batch,
     }
   } else if (broadcast_a && !broadcast_b) {
     for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
-      matmul_gt_block_size(
+      matmul_transpose_b_gt_block_size(
           row, col, com, tensor_a->data->data,
           &tensor_b->data->data[batch_index * tensor_b->stride[0]],
           &product->data->data[batch_index * product->stride[0]]);
     }
   } else if (!broadcast_a && broadcast_b) {
     for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
-      matmul_gt_block_size(
+      matmul_transpose_b_gt_block_size(
           row, col, com,
           &tensor_a->data->data[batch_index * tensor_a->stride[0]],
           tensor_b->data->data,
           &product->data->data[batch_index * product->stride[0]]);
     }
   } else if (broadcast_a && broadcast_b) {
-    matmul_gt_block_size(row, col, com, tensor_a->data->data,
-                         tensor_b->data->data, product->data->data);
+    matmul_transpose_b_gt_block_size(row, col, com, tensor_a->data->data,
+                                     tensor_b->data->data, product->data->data);
   }
 }
 
@@ -177,13 +182,15 @@ static inline void bmm_non_contiguous_no_bc(Tensor tensor_a, Tensor tensor_b,
                                             bool UNUSED_ARG broadcast_b) {
   for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
     for (u32 i = 0; i < row; ++i) {
-      float *p_data = &product->data->data[(batch_index * row + i) * col];
-      for (u32 j = 0; j < com; ++j) {
-        for (u32 k = 0; k < col; ++k) {
-          auto a_val = tensor_get(tensor_a, (u32[MAX_DIMS]){batch_index, i, j});
-          auto b_val = tensor_get(tensor_b, (u32[MAX_DIMS]){batch_index, j, k});
-          p_data[k] += a_val * b_val;
+      f32 *p_data = &product->data->data[(batch_index * row + i) * col];
+      for (u32 k = 0; k < col; ++k) {
+        f32 sum = 0;
+        for (u32 j = 0; j < com; ++j) {
+          f32 a_val = tensor_get(tensor_a, (u32[MAX_DIMS]){batch_index, i, j});
+          f32 b_val = tensor_get(tensor_b, (u32[MAX_DIMS]){batch_index, k, j});
+          sum += a_val * b_val;
         }
+        p_data[k] = sum;
       }
     }
   }
@@ -194,15 +201,17 @@ static inline void bmm_non_contiguous_bc_3(Tensor tensor_a, Tensor tensor_b,
                                            bool broadcast_b) {
   for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
     for (u32 i = 0; i < row; ++i) {
-      float *p_data = &product->data->data[(batch_index * row + i) * col];
-      for (u32 j = 0; j < com; ++j) {
-        for (u32 k = 0; k < col; ++k) {
+      f32 *p_data = &product->data->data[(batch_index * row + i) * col];
+      for (u32 k = 0; k < col; ++k) {
+        f32 sum = 0;
+        for (u32 j = 0; j < com; ++j) {
           auto a_val = tensor_get(
               tensor_a, (u32[MAX_DIMS]){broadcast_a ? 0 : batch_index, i, j});
           auto b_val = tensor_get(
-              tensor_b, (u32[MAX_DIMS]){broadcast_b ? 0 : batch_index, j, k});
-          p_data[k] += a_val * b_val;
+              tensor_b, (u32[MAX_DIMS]){broadcast_b ? 0 : batch_index, k, j});
+          sum += a_val * b_val;
         }
+        p_data[k] = sum;
       }
     }
   }
@@ -213,19 +222,21 @@ static inline void bmm_non_contiguous_bc_a_2(Tensor tensor_a, Tensor tensor_b,
                                              bool UNUSED_ARG broadcast_b) {
   for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
     for (u32 i = 0; i < row; ++i) {
-      float *p_data = &product->data->data[(batch_index * row + i) * col];
-      for (u32 j = 0; j < com; ++j) {
-        for (u32 k = 0; k < col; ++k) {
+      f32 *p_data = &product->data->data[(batch_index * row + i) * col];
+      for (u32 k = 0; k < col; ++k) {
+        f32 sum = 0;
+        for (u32 j = 0; j < com; ++j) {
           auto idx_a_0 = broadcast_a ? i : batch_index;
           auto idx_a_1 = broadcast_a ? j : i;
           auto idx_b_0 = batch_index;
-          auto idx_b_1 = j;
+          auto idx_b_1 = k;
           auto a_val =
               tensor_get(tensor_a, (u32[MAX_DIMS]){idx_a_0, idx_a_1, j});
           auto b_val =
               tensor_get(tensor_b, (u32[MAX_DIMS]){idx_b_0, idx_b_1, k});
-          p_data[k] += a_val * b_val;
+          sum += a_val * b_val;
         }
+        p_data[k] = sum;
       }
     }
   }
@@ -237,28 +248,38 @@ static inline void bmm_non_contiguous_bc_b_2(Tensor tensor_a, Tensor tensor_b,
                                              bool broadcast_b) {
   for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
     for (u32 i = 0; i < row; ++i) {
-      float *p_data = &product->data->data[(batch_index * row + i) * col];
-      for (u32 j = 0; j < com; ++j) {
-        for (u32 k = 0; k < col; ++k) {
+      f32 *p_data = &product->data->data[(batch_index * row + i) * col];
+      for (u32 k = 0; k < col; ++k) {
+        f32 sum = 0;
+        for (u32 j = 0; j < com; ++j) {
           auto idx_a_0 = batch_index;
           auto idx_a_1 = i;
-          auto idx_b_0 = broadcast_b ? j : batch_index;
-          auto idx_b_1 = broadcast_b ? k : j;
+          auto idx_b_0 = broadcast_b ? k : batch_index;
+          auto idx_b_1 = broadcast_b ? j : k;
           auto a_val =
               tensor_get(tensor_a, (u32[MAX_DIMS]){idx_a_0, idx_a_1, j});
           auto b_val =
               tensor_get(tensor_b, (u32[MAX_DIMS]){idx_b_0, idx_b_1, k});
-          p_data[k] += a_val * b_val;
+          sum += a_val * b_val;
         }
+        p_data[k] = sum;
       }
     }
   }
 }
 
-Tensor tensor_bmm_wrt_a(const Tensor tensor_grad, const Tensor tensor_b) {
-  return tensor_bmatmul_transpose_b(tensor_grad, tensor_b);
+Tensor tensor_bmm_transpose_b(const Tensor tensor_a, const Tensor tensor_b) {
+  return tensor_bmatmul_transpose_b(tensor_a, tensor_b);
 }
 
-Tensor tensor_bmm_wrt_b(const Tensor tensor_a, const Tensor tensor_grad) {
-  return tensor_bmatmul_transpose_a(tensor_a, tensor_grad);
+Tensor tensor_bmm_transpose_b_wrt_a(const Tensor tensor_grad,
+                                    const Tensor tensor_b) {
+  return tensor_bmm(tensor_grad, tensor_b);
+}
+
+Tensor tensor_bmm_transpose_b_wrt_b(const Tensor tensor_a,
+                                    const Tensor tensor_grad) {
+  auto arg_a = tensor_grad;
+  auto arg_b = tensor_a;
+  return tensor_bmatmul_transpose_a(arg_a, arg_b);
 }

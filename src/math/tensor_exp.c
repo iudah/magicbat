@@ -3,19 +3,19 @@
 #include <math.h>
 #include <stdint.h>
 
-Tensor tensor_exp(const Tensor t) {
-  if (!t)
+Tensor tensor_exp(const Tensor tensor) {
+  if (!tensor)
     return nullptr;
 
-  Tensor res = tensor_new(tensor_ndims(t), tensor_shape(t));
+  Tensor res = tensor_new(tensor_ndims(tensor), tensor_shape(tensor));
   if (res == nullptr)
     return nullptr;
 
   auto nelement = tensor_num_elements(res);
 
   for (u32 i = 0; i < nelement; ++i) {
-    auto a = t->data->data[i];
-    res->data->data[i] = expf(a);
+    auto val = tensor->data->data[i];
+    res->data->data[i] = expf(val);
   }
 
   return res;

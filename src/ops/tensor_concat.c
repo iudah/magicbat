@@ -4,8 +4,8 @@
 #include <string.h>
 #include <strings.h>
 
-void concat_non_contiguous(Tensor concat, u32 axis, u32 n_tensor,
-                           Tensor *tensors, const u32 *bounds) {
+void concat_non_contiguous(Tensor concat, u32 axis, Tensor *tensors,
+                           const u32 *bounds) {
   u32 pivot_index = 0;
   u32 pivot = 0;
   u32 pivot_tensor = 0;
@@ -83,7 +83,7 @@ Tensor tensor_concat(u32 n_tensor, Tensor *tensors, u32 axis) {
              tensors[i]->data->nelements * sizeof(f32));
     }
   } else {
-    concat_non_contiguous(concat, axis, n_tensor, tensors, bounds);
+    concat_non_contiguous(concat, axis, tensors, bounds);
   }
 
   return concat;

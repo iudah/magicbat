@@ -1,7 +1,7 @@
 #ifndef SGD_H
 #define SGD_H
 
-#include "../tensor.h"
+#include "tensor.h"
 
 typedef struct sgd_optimizer *SgdOptimizer;
 

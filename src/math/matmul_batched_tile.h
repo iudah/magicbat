@@ -3,7 +3,24 @@
 
 #include "matmul.h"
 #include "matmul_tile.h"
+#include "tensor.h"
 #include "type_alias.h"
+
+#define CONTIGUOUS_DUO 0
+#define NO_BROADCAST 1
+#define ALL_CAN_TILE 2
+#define FULL_DIM_A 3
+#define FULL_DIM_B 4
+#define BATCH_CAN_TILE 5
+#define SWITCH_FLAG                                                            \
+  (((u32)(tensor_a->is_contiguous && tensor_b->is_contiguous))                 \
+   << CONTIGUOUS_DUO) |                                                        \
+      ((u32)(!broadcast_a && !broadcast_b)) << NO_BROADCAST |                  \
+      ((u32)(row >= BLOCK_SIZE && col >= BLOCK_SIZE && com >= BLOCK_SIZE))     \
+          << ALL_CAN_TILE |                                                    \
+      ((u32)tensor_a->ndims == 3) << FULL_DIM_A |                              \
+      ((u32)tensor_b->ndims == 3) << FULL_DIM_B |                              \
+      ((u32)batch >= BLOCK_SIZE) << BATCH_CAN_TILE
 
 #define BMATMUL_FAST_PIPELINE(fn)                                              \
   static inline void fn##_fast(                                                \
@@ -299,6 +316,23 @@ static inline f32 *bmatmul_transpose_b_gt_block_size(u32 b_len, u32 m_len,
                                            n_data, r_data);
 
   return r_data;
+}
+
+static inline bool bmm_tensors_invalid(const Tensor tensor_a,
+                                       const Tensor tensor_b, bool transpose_a,
+                                       bool transpose_b) {
+  if (!tensor_a || !tensor_b)
+    return true;
+
+  auto com_a = tensor_a->shape[tensor_a->ndims - (transpose_a ? 2 : 1)];
+  auto com_b = tensor_b->shape[tensor_b->ndims - (transpose_b ? 1 : 2)];
+  auto valid_dim_a = tensor_a->ndims == 2 || tensor_a->ndims == 3;
+  auto valid_dim_b = tensor_b->ndims == 2 || tensor_b->ndims == 3;
+  auto valid_pair = tensor_a->ndims == 3 && tensor_b->ndims == 3
+                        ? tensor_a->shape[0] == tensor_b->shape[0] ||
+                              tensor_a->shape[0] == 1 || tensor_b->shape[0] == 1
+                        : true;
+  return !(com_a == com_b && valid_dim_a && valid_dim_b && valid_pair);
 }
 
 #endif

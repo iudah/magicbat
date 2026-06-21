@@ -4,15 +4,14 @@
 
 #define EPS 1e-6
 
-f32 layer_norm_var(f32 accumulator, f32 curr, f32 alpha, bool is_last_in_axis) {
+static inline f32 layer_norm_var(f32 accumulator, f32 curr, f32 alpha,
+                                 bool is_last_in_axis) {
   accumulator += curr * curr;
-  if (is_last_in_axis) {
-    return (accumulator / alpha) + EPS;
-  }
-  return accumulator;
+  return !is_last_in_axis ? accumulator : ((accumulator / alpha) + EPS);
 }
 
-static inline float divide(float deviation, float variance) {
+static inline float divide(float deviation, float variance,
+                           float UNUSED_ARG arg) {
   return deviation / sqrtf(variance);
 }
 
@@ -31,10 +30,14 @@ Tensor tensor_layer_norm_axis(Tensor tensor, u32 axis,
   if (variance_holder)
     *variance_holder = var;
 
-  return tensor_binary_op(deviation, var, divide);
+  tensor_destroy(deviation);
+  tensor_destroy(mean);
+
+  return tensor_binary_op(deviation, var, 0, divide);
 }
 
-static inline float divide_grad(float net_grad, float variance) {
+static inline float divide_grad(float net_grad, float variance,
+                                float UNUSED_ARG args) {
   return -net_grad / sqrtf(variance);
 }
 Tensor tensor_layer_norm_axis_backward(Tensor gradient, Tensor normal, u32 axis,
@@ -47,7 +50,7 @@ Tensor tensor_layer_norm_axis_backward(Tensor gradient, Tensor normal, u32 axis,
   auto net_grad = norm_x_mu_dy_norm;
   tensor_sub_inplace(norm_x_mu_dy_norm, gradient);
 
-  auto grad = tensor_binary_op(net_grad, variance, divide_grad);
+  auto grad = tensor_binary_op(net_grad, variance, 0, divide_grad);
 
   // tensor_destroy(net_grad);
   tensor_destroy(norm_x_mu_dy_norm);

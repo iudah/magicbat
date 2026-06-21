@@ -29,6 +29,29 @@ Tensor tensor_fused_attention(const u32 *shape, const f32 *q_mat,
 
 void multihead_attention_backward_fn(Var self);
 
+static inline void dim_swap(u32 nswaps, u32 *swaps, u32 *shape, u32 *stride) {
+  u32 shape_cache[] = {shape[0], shape[1], shape[2], shape[3], shape[4]};
+  u32 stride_cache[] = {stride[0], stride[1], stride[2], stride[3], stride[4]};
+
+  switch (nswaps) {
+  case 5:
+    shape[4] = shape_cache[swaps[4]];
+    stride[4] = stride_cache[swaps[4]];
+  case 4:
+    shape[3] = shape_cache[swaps[3]];
+    stride[3] = stride_cache[swaps[3]];
+  case 3:
+    shape[2] = shape_cache[swaps[2]];
+    stride[2] = stride_cache[swaps[2]];
+  case 2:
+    shape[1] = shape_cache[swaps[1]];
+    stride[1] = stride_cache[swaps[1]];
+  case 1:
+    shape[0] = shape_cache[swaps[0]];
+    stride[0] = stride_cache[swaps[0]];
+  }
+}
+
 Tensor var_multihead_attention(Tensor input, Tensor W_qkv, u32 n_head,
                                f32 mha_d) {
 
@@ -46,16 +69,16 @@ Tensor var_multihead_attention(Tensor input, Tensor W_qkv, u32 n_head,
     flattened->shape[0] = batch * seq;
     flattened->shape[1] = tokens;
 
-    flattened->shape[1] = tokens;
-    flattened->shape[0] = 1;
+    flattened->stride[0] = tokens;
+    flattened->stride[1] = 1;
 
     flattened->ndims = 2;
 
-    flattened->is_contiguous = false;
+    flattened->is_contiguous = true;
   }
   // shape(qkv)=[batch, seq,3*heads*states]
   Tensor qkv = tensor_matmul(flattened, W_qkv);
-  u32 head_dim = W_qkv->shape[1] / n_head;
+  u32 head_dim = W_qkv->shape[1] / n_head / 3;
 #define QKV_DIM 5
   // shape(qkv_reshaped)=[batch, seq, 3, heads, states]
   Tensor qkv_reshaped = qkv;
@@ -65,18 +88,23 @@ Tensor var_multihead_attention(Tensor input, Tensor W_qkv, u32 n_head,
   qkv_reshaped->shape[2] = 3;
   qkv_reshaped->shape[3] = n_head;
   qkv_reshaped->shape[4] = head_dim;
+  qkv_reshaped->stride[0] =
+      seq * (qkv_reshaped->stride[1] =
+                 3 * (qkv_reshaped->stride[2] =
+                          n_head * (qkv_reshaped->stride[3] = head_dim)));
+  qkv_reshaped->stride[4] = 1;
+  dim_swap(5, (u32[]){2, 0, 3, 1, 4}, qkv_reshaped->shape,
+           qkv_reshaped->stride);
+  qkv_reshaped->is_contiguous = false;
   // shape(qkv_t)=[3, seq, batch, heads, states]
   // shape(qkv_t)=[3, batch, seq, heads, states]
   // shape(qkv_t)=[3, batch, heads, seq, states]
-  Tensor qkv_t = tensor_transpose_dims(
-      qkv_reshaped, 3,
-      (TensorDimSwap[]){
-          {.src = 2, .dest = 0}, {.src = 1, .dest = 2}, {.src = 2, .dest = 3}});
+  Tensor qkv_t = qkv_reshaped;
 
   Tensor qkv_contiguous = qkv_t;
   tensor_to_contiguous_inplace(qkv_t);
 
-  auto data_len = qkv_contiguous->data->nelements / 3;
+  auto data_len = qkv_contiguous->stride[0];
   f32 *q_mat_data = qkv_contiguous->data->data;
   f32 *k_mat_data = qkv_contiguous->data->data + data_len;
   f32 *v_mat_data = qkv_contiguous->data->data + (data_len * 2);
@@ -96,8 +124,12 @@ Tensor var_multihead_attention(Tensor input, Tensor W_qkv, u32 n_head,
       tensor_fused_attention((u32[4]){batch, n_head, seq, head_dim}, q_mat_data,
                              k_mat_data, v_mat_data, sqrt_d, maxs, sums);
 
-  tensor_destroy(qkv_reshaped);
-  tensor_destroy(qkv);
+  dim_swap(4, (u32[]){0, 2, 1, 3}, fused_att->shape, fused_att->stride);
+  fused_att->is_contiguous = false;
+  tensor_to_contiguous_inplace(fused_att);
+  fused_att->ndims = 3;
+  fused_att->shape[2] *= fused_att->shape[3];
+  fused_att->stride[2] = 1;
 
   if (!fused_att || ((input->is_tensor_type || !input->requires_grad) &&
                      (W_qkv->is_tensor_type || !W_qkv->requires_grad))) {
@@ -128,7 +160,7 @@ Tensor tensor_fused_attention(const u32 *shape, const f32 *q_mat,
   auto row = shape[2];
   auto col = shape[2];
   auto com = shape[3];
-  auto batch_stride = row * col;
+  auto batch_stride = row * com;
 
   if (row < BLOCK_SIZE || col < BLOCK_SIZE || com < BLOCK_SIZE) {
 
@@ -137,7 +169,7 @@ Tensor tensor_fused_attention(const u32 *shape, const f32 *q_mat,
           row, col, com, &q_mat[batch_index * batch_stride],
           &k_mat[batch_index * batch_stride],
           &v_mat[batch_index * batch_stride],
-          &fused_att->data->data[batch_index * fused_att->stride[0]], sqrt_d,
+          &fused_att->data->data[batch_index * batch_stride], sqrt_d,
           &maxs[batch_index * row], &sums[batch_index * row]);
     }
   } else if (batch < BLOCK_SIZE) {
@@ -147,7 +179,7 @@ Tensor tensor_fused_attention(const u32 *shape, const f32 *q_mat,
           row, col, com, &q_mat[batch_index * batch_stride],
           &k_mat[batch_index * batch_stride],
           &v_mat[batch_index * batch_stride],
-          &fused_att->data->data[batch_index * fused_att->stride[0]], sqrt_d,
+          &fused_att->data->data[batch_index * batch_stride], sqrt_d,
           &maxs[batch_index * row], &sums[batch_index * row]);
     }
 
@@ -185,25 +217,47 @@ void multihead_attention_backward_fn(Var self) {
   Var parent_b = self->parent[1];
 
   if (!(parent_a && !parent_a->base.is_tensor_type &&
-        parent_a->base.requires_grad) ||
+        parent_a->base.requires_grad) &&
       !(parent_b && !parent_b->base.is_tensor_type &&
         parent_b->base.requires_grad))
     return;
 
-  u32 batch = self->base.shape[0];
-  u32 n_head = self->base.shape[1];
-  u32 seq = self->base.shape[2];
-  u32 head_dim = self->base.shape[3];
+  struct mha_ctx *ctx = self->ctx;
+
+  Tensor qkv_contiguous = ctx->qkv_contiguous;
+
+  u32 batch = qkv_contiguous->shape[1];
+  u32 n_head = qkv_contiguous->shape[2];
+  u32 seq = qkv_contiguous->shape[3];
+  u32 head_dim = qkv_contiguous->shape[4];
 
   u32 full_batch = batch * n_head * seq;
+
+  auto grad = (self->grad);
+  auto out = (&self->base);
+  out->ndims = grad->ndims = 4;
+  out->shape[0] = grad->shape[0] = batch;
+  out->shape[1] = grad->shape[1] = seq;
+  out->shape[2] = grad->shape[2] = n_head;
+  out->shape[3] = grad->shape[3] = head_dim;
+
+  out->stride[0] = grad->stride[0] =
+      seq * (out->stride[1] = grad->stride[1] =
+                 n_head * (out->stride[2] = grad->stride[2] = head_dim));
+  out->stride[3] = grad->stride[3] = 1;
+
+  dim_swap(4, (u32[]){0, 2, 1, 3}, grad->shape, grad->stride);
+  dim_swap(4, (u32[]){0, 2, 1, 3}, out->shape, out->stride);
+
+  grad->is_contiguous = false;
+  out->is_contiguous = false;
+
+  tensor_to_contiguous_inplace(grad);
+  tensor_to_contiguous_inplace(out);
 
   f32 *row_sum_do_o = tcalloc(full_batch, sizeof(f32));
   compute_row_sum((u32[]){full_batch, head_dim}, self->base.data->data,
                   self->grad->data->data, row_sum_do_o);
-
-  struct mha_ctx *ctx = self->ctx;
-
-  Tensor qkv_contiguous = ctx->qkv_contiguous;
 
   auto data_len = qkv_contiguous->data->nelements / 3;
   f32 *q_mat_data = qkv_contiguous->data->data;
@@ -229,16 +283,19 @@ void multihead_attention_backward_fn(Var self) {
   // shape(qkv_t)=[batch, 3, heads, seq, states]
   // shape(qkv_t)=[batch, heads, 3, seq, states]
   // shape(qkv_t)=[batch, seq, 3, heads, states]
-  Tensor qkv_grad = tensor_transpose_dims(
-      qkv_t_grad, 3,
-      (TensorDimSwap[]){
-          {.src = 0, .dest = 1}, {.src = 1, .dest = 2}, {.src = 1, .dest = 3}});
-
+  dim_swap(5, (u32[]){1, 3, 0, 2, 4}, qkv_t_grad->shape, qkv_t_grad->stride);
+  /* Tensor qkv_grad = tensor_transpose_dims(
+       qkv_t_grad, 3,
+       (TensorDimSwap[]){
+           {.src = 0, .dest = 1}, {.src = 1, .dest = 2}, {.src = 1, .dest =
+     3}});
+ */
+  Tensor qkv_grad = qkv_t_grad;
   tensor_to_contiguous_inplace(qkv_grad);
 
-  qkv_grad->shape[0] = batch * seq * 3 * n_head;
-  qkv_grad->shape[1] = head_dim;
-  qkv_grad->stride[0] = head_dim;
+  qkv_grad->shape[0] = batch * seq;
+  qkv_grad->shape[1] = 3 * n_head * head_dim;
+  qkv_grad->stride[0] = 3 * n_head * head_dim;
   qkv_grad->stride[1] = 1;
   qkv_grad->ndims = 2;
   qkv_grad->is_contiguous = true;
@@ -282,7 +339,6 @@ void multihead_attention_backward_fn(Var self) {
     var_destroy(grad_wrt_b);
   }
 
-  tensor_destroy(qkv_t_grad);
   tensor_destroy(qkv_grad);
   tfree(row_sum_do_o);
 }
@@ -298,7 +354,7 @@ void tensor_fused_attention_backward(const u32 *shape, const f32 *q_mat,
   auto row = shape[2];
   auto col = shape[2];
   auto com = shape[3];
-  auto batch_stride = row * col;
+  auto batch_stride = row * com;
 
   if (row <= BLOCK_SIZE || col <= BLOCK_SIZE || com <= BLOCK_SIZE) {
 

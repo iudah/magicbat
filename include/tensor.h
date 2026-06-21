@@ -5,6 +5,8 @@
 #include "adt/type_alias.h"
 #include <stdbool.h>
 
+#define UNUSED_ARG __attribute__((unused))
+
 typedef struct tensor_struct *Tensor;
 typedef enum {
   TENSOR_CE_INDEXED = 1 << 1,
@@ -40,6 +42,7 @@ Tensor tensor_scaled_add(Tensor tensor_a, f32 alpha, Tensor tensor_b);
 Tensor tensor_sub(Tensor tensor_a, Tensor tensor_b);
 bool tensor_sub_inplace(Tensor tensor_a, Tensor tensor_b);
 Tensor tensor_mul(Tensor tensor_a, Tensor tensor_b);
+Tensor tensor_scale(Tensor tensor, f32 scalar);
 Tensor tensor_div(Tensor tensor_a, Tensor tensor_b);
 Tensor tensor_divisor_backward(Tensor divisor, Tensor grad);
 Tensor tensor_matmul(Tensor tensor_a, Tensor tensor_b);
@@ -48,6 +51,11 @@ Tensor tensor_matmul_wrt_b(Tensor tensor_a, Tensor tensor_grad);
 Tensor tensor_bmm(Tensor tensor_a, Tensor tensor_b);
 Tensor tensor_bmm_wrt_a(Tensor tensor_grad, Tensor tensor_b);
 Tensor tensor_bmm_wrt_b(Tensor tensor_a, Tensor tensor_grad);
+Tensor tensor_bmatmul_transpose_b(Tensor tensor_a, Tensor tensor_b);
+Tensor tensor_bmatmul_transpose_a(Tensor tensor_a, Tensor tensor_b);
+Tensor tensor_bmm_transpose_b(Tensor tensor_a, Tensor tensor_b);
+Tensor tensor_bmm_transpose_b_wrt_a(Tensor tensor_grad, Tensor tensor_b);
+Tensor tensor_bmm_transpose_b_wrt_b(Tensor tensor_a, Tensor tensor_grad);
 Tensor tensor_sum_axis(Tensor tensor, i32 axis);
 f32 tensor_sum_all(Tensor tensor);
 Tensor tensor_sum_to_shape(Tensor tensor, u32 ndims, u32 *shape);
@@ -58,6 +66,10 @@ Tensor tensor_mean_axis(Tensor tensor, u32 axis);
 Tensor tensor_layer_norm_axis(Tensor tensor, u32 axis, Tensor *variance_holder);
 Tensor tensor_layer_norm_axis_backward(Tensor gradient, Tensor normal, u32 axis,
                                        Tensor variance);
+Tensor tensor_mean_sqr_axis(Tensor tensor, u32 axis);
+Tensor tensor_mean_sqr_axis_backward(Tensor gradient, Tensor tensor, u32 axis);
+f32 tensor_mean_sqr_all(Tensor tensor);
+Tensor tensor_mean_sqr_all_backward(f32 gradient, Tensor tensor);
 
 Tensor tensor_transpose(Tensor tensor);
 Tensor tensor_transpose_dims(Tensor tensor, u32 nswap, TensorDimSwap swaps[]);
@@ -66,12 +78,14 @@ Tensor tensor_relu_backward(Tensor tensor, Tensor grad);
 Tensor tensor_tanh(Tensor tensor);
 Tensor tensor_tanh_backward(Tensor tensor, Tensor grad);
 Tensor tensor_negate(Tensor tensor);
-Tensor tensor_exp(Tensor tensor);
+void tensor_negate_inplace(Tensor restrict tensor);
 Tensor tensor_log(Tensor tensor);
 Tensor tensor_softmax_all(Tensor tensor);
-Tensor tensor_softmax_axis(Tensor tensor, i32 axis);
+Tensor tensor_softmax(Tensor tensor, i32 axis);
+Tensor tensor_softmax_backward(Tensor grad, Tensor softmax, u32 axis);
 Tensor tensor_log_sum_exp_all(Tensor tensor);
 Tensor tensor_log_sum_exp_axis(Tensor tensor, i32 axis);
+Tensor tensor_exp(Tensor tensor);
 
 Tensor tensor_scalar(f32 value);
 Tensor tensor_view(Tensor src);
