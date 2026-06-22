@@ -29,12 +29,20 @@ Tensor tensor_fused_attention(const u32 *shape, const f32 *q_mat,
 
 void multihead_attention_backward_fn(Var self);
 
-static inline void dim_swap(u32 nswaps, u32 *swaps, u32 *shape, u32 *stride) {
+static inline void dim_swap(u32 nswaps, const u32 *swaps, u32 *shape,
+                            u32 *stride, bool *is_contiguous) {
+  TASSERT(*is_contiguous && "Trying to dim swap non-contiguous tensor");
+  if (!*is_contiguous) {
+    return;
+  }
+
   u32 shape_cache[] = {shape[0], shape[1], shape[2], shape[3], shape[4]};
   u32 stride_cache[] = {stride[0], stride[1], stride[2], stride[3], stride[4]};
 
+#define MAX_MHA_DIM 5
+
   switch (nswaps) {
-  case 5:
+  case MAX_MHA_DIM:
     shape[4] = shape_cache[swaps[4]];
     stride[4] = stride_cache[swaps[4]];
   case 4:
@@ -50,6 +58,8 @@ static inline void dim_swap(u32 nswaps, u32 *swaps, u32 *shape, u32 *stride) {
     shape[0] = shape_cache[swaps[0]];
     stride[0] = stride_cache[swaps[0]];
   }
+
+  *is_contiguous = false;
 }
 
 Tensor var_multihead_attention(Tensor input, Tensor W_qkv, u32 n_head,
@@ -76,38 +86,32 @@ Tensor var_multihead_attention(Tensor input, Tensor W_qkv, u32 n_head,
 
     flattened->is_contiguous = true;
   }
+
   // shape(qkv)=[batch, seq,3*heads*states]
   Tensor qkv = tensor_matmul(flattened, W_qkv);
   u32 head_dim = W_qkv->shape[1] / n_head / 3;
 #define QKV_DIM 5
   // shape(qkv_reshaped)=[batch, seq, 3, heads, states]
-  Tensor qkv_reshaped = qkv;
-  qkv_reshaped->ndims = QKV_DIM;
-  qkv_reshaped->shape[0] = batch;
-  qkv_reshaped->shape[1] = seq;
-  qkv_reshaped->shape[2] = 3;
-  qkv_reshaped->shape[3] = n_head;
-  qkv_reshaped->shape[4] = head_dim;
-  qkv_reshaped->stride[0] =
-      seq * (qkv_reshaped->stride[1] =
-                 3 * (qkv_reshaped->stride[2] =
-                          n_head * (qkv_reshaped->stride[3] = head_dim)));
-  qkv_reshaped->stride[4] = 1;
-  dim_swap(5, (u32[]){2, 0, 3, 1, 4}, qkv_reshaped->shape,
-           qkv_reshaped->stride);
-  qkv_reshaped->is_contiguous = false;
-  // shape(qkv_t)=[3, seq, batch, heads, states]
-  // shape(qkv_t)=[3, batch, seq, heads, states]
+  qkv->ndims = QKV_DIM;
+  qkv->shape[0] = batch;
+  qkv->shape[1] = seq;
+  qkv->shape[2] = 3;
+  qkv->shape[3] = n_head;
+  qkv->shape[4] = head_dim;
+  qkv->stride[0] =
+      seq * (qkv->stride[1] =
+                 3 * (qkv->stride[2] = n_head * (qkv->stride[3] = head_dim)));
+  qkv->stride[4] = 1;
   // shape(qkv_t)=[3, batch, heads, seq, states]
-  Tensor qkv_t = qkv_reshaped;
+  dim_swap(MAX_MHA_DIM, (u32[]){2, 0, 3, 1, 4}, qkv->shape, qkv->stride,
+           &qkv->is_contiguous);
 
-  Tensor qkv_contiguous = qkv_t;
-  tensor_to_contiguous_inplace(qkv_t);
+  tensor_to_contiguous_inplace(qkv);
 
-  auto data_len = qkv_contiguous->stride[0];
-  f32 *q_mat_data = qkv_contiguous->data->data;
-  f32 *k_mat_data = qkv_contiguous->data->data + data_len;
-  f32 *v_mat_data = qkv_contiguous->data->data + (data_len * 2);
+  auto data_len = qkv->stride[0];
+  f32 *q_mat_data = qkv->data->data;
+  f32 *k_mat_data = qkv->data->data + data_len;
+  f32 *v_mat_data = qkv->data->data + (data_len * 2);
 
   u32 cache_len = batch * n_head * seq;
   f32 *maxs = tmalloc(cache_len * sizeof(f32));
@@ -124,8 +128,8 @@ Tensor var_multihead_attention(Tensor input, Tensor W_qkv, u32 n_head,
       tensor_fused_attention((u32[4]){batch, n_head, seq, head_dim}, q_mat_data,
                              k_mat_data, v_mat_data, sqrt_d, maxs, sums);
 
-  dim_swap(4, (u32[]){0, 2, 1, 3}, fused_att->shape, fused_att->stride);
-  fused_att->is_contiguous = false;
+  dim_swap(4, (u32[]){0, 2, 1, 3}, fused_att->shape, fused_att->stride,
+           &fused_att->is_contiguous);
   tensor_to_contiguous_inplace(fused_att);
   fused_att->ndims = 3;
   fused_att->shape[2] *= fused_att->shape[3];
@@ -140,8 +144,11 @@ Tensor var_multihead_attention(Tensor input, Tensor W_qkv, u32 n_head,
   }
 
   struct mha_ctx *ctx = tmalloc(sizeof(*ctx));
-  *ctx = (struct mha_ctx){qkv_contiguous, .maxs = maxs, .sums = sums,
-                          .sqrt_d = sqrt_d, .input = flattened};
+  *ctx = (struct mha_ctx){.qkv_contiguous = qkv,
+                          .maxs = maxs,
+                          .sums = sums,
+                          .sqrt_d = sqrt_d,
+                          .input = flattened};
 
   Tensor res = track(fused_att);
   var_track_parent(
@@ -223,7 +230,10 @@ void multihead_attention_backward_fn(Var self) {
     return;
 
   struct mha_ctx *ctx = self->ctx;
-
+  f32 sqrt_d = ctx->sqrt_d;
+  f32 *maxs = ctx->maxs;
+  f32 *sums = ctx->sums;
+  Tensor flattened = ctx->input;
   Tensor qkv_contiguous = ctx->qkv_contiguous;
 
   u32 batch = qkv_contiguous->shape[1];
@@ -246,11 +256,10 @@ void multihead_attention_backward_fn(Var self) {
                  n_head * (out->stride[2] = grad->stride[2] = head_dim));
   out->stride[3] = grad->stride[3] = 1;
 
-  dim_swap(4, (u32[]){0, 2, 1, 3}, grad->shape, grad->stride);
-  dim_swap(4, (u32[]){0, 2, 1, 3}, out->shape, out->stride);
-
-  grad->is_contiguous = false;
-  out->is_contiguous = false;
+  dim_swap(4, (u32[]){0, 2, 1, 3}, grad->shape, grad->stride,
+           &grad->is_contiguous);
+  dim_swap(4, (u32[]){0, 2, 1, 3}, out->shape, out->stride,
+           &out->is_contiguous);
 
   tensor_to_contiguous_inplace(grad);
   tensor_to_contiguous_inplace(out);
@@ -264,33 +273,21 @@ void multihead_attention_backward_fn(Var self) {
   f32 *k_mat_data = qkv_contiguous->data->data + data_len;
   f32 *v_mat_data = qkv_contiguous->data->data + (data_len * 2);
 
-  f32 *maxs = ctx->maxs;
-  f32 *sums = ctx->sums;
-
   // guarantees zeros
-  auto qkv_t_grad = tensor_zero(qkv_contiguous->ndims, qkv_contiguous->shape);
-  f32 *q_grad_mat_data = qkv_t_grad->data->data;
-  f32 *k_grad_mat_data = qkv_t_grad->data->data + data_len;
-  f32 *v_grad_mat_data = qkv_t_grad->data->data + (data_len * 2);
+  auto qkv_grad = tensor_zero(qkv_contiguous->ndims, qkv_contiguous->shape);
+  f32 *q_grad_mat_data = qkv_grad->data->data;
+  f32 *k_grad_mat_data = qkv_grad->data->data + data_len;
+  f32 *v_grad_mat_data = qkv_grad->data->data + (data_len * 2);
 
   // shape(qkv_t)=[3, batch, heads, seq, states]
   tensor_fused_attention_backward(
       self->base.shape, q_mat_data, k_mat_data, v_mat_data,
       self->grad->data->data, q_grad_mat_data, k_grad_mat_data, v_grad_mat_data,
-      ctx->sqrt_d, maxs, sums, row_sum_do_o);
+      sqrt_d, maxs, sums, row_sum_do_o);
 
-  // shape(qkv_t)=[3, batch, heads, seq, states]
-  // shape(qkv_t)=[batch, 3, heads, seq, states]
-  // shape(qkv_t)=[batch, heads, 3, seq, states]
   // shape(qkv_t)=[batch, seq, 3, heads, states]
-  dim_swap(5, (u32[]){1, 3, 0, 2, 4}, qkv_t_grad->shape, qkv_t_grad->stride);
-  /* Tensor qkv_grad = tensor_transpose_dims(
-       qkv_t_grad, 3,
-       (TensorDimSwap[]){
-           {.src = 0, .dest = 1}, {.src = 1, .dest = 2}, {.src = 1, .dest =
-     3}});
- */
-  Tensor qkv_grad = qkv_t_grad;
+  dim_swap(MAX_MHA_DIM, (u32[]){1, 3, 0, 2, 4}, qkv_grad->shape,
+           qkv_grad->stride, &qkv_grad->is_contiguous);
   tensor_to_contiguous_inplace(qkv_grad);
 
   qkv_grad->shape[0] = batch * seq;
@@ -323,19 +320,21 @@ void multihead_attention_backward_fn(Var self) {
     // var_destroy(da_red);
     var_destroy(grad_wrt_a);
   }
+
   if (parent_b && !parent_b->base.is_tensor_type &&
       parent_b->base.requires_grad) {
     if (!parent_b->grad) {
       parent_b->grad = tensor_zero(parent_b->base.ndims, parent_b->base.shape);
     }
     // auto a_T = tensor_transpose((Tensor)parent_a);
-    auto grad_wrt_b = tensor_matmul_wrt_b(ctx->input, qkv_grad);
+    auto grad_wrt_b = tensor_matmul_wrt_b(flattened, qkv_grad);
     // tensor_multihead_attention(a_T, self->grad);
     auto db_red = grad_wrt_b;
     // tensor_sum_to_shape(db, parent_b->base.ndims, parent_b->base.shape);
     tensor_add_inplace(parent_b->grad, db_red);
     // var_destroy(a_T);
     // var_destroy(db_red);
+
     var_destroy(grad_wrt_b);
   }
 

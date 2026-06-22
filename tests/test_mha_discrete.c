@@ -55,7 +55,7 @@ void test_discrete_mha(u32 seq_len) {
 
     // 2. Attention Math
     auto scores = var_bmm_transpose_b(query, key);
-    auto scaled = var_scale(scores, sqrt_d);
+    auto scaled = var_scale(scores, 1 / sqrt_d);
     auto attn = var_softmax(scaled, -1);
     auto out = var_bmm(attn, value);
 

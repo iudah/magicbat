@@ -3,7 +3,7 @@ project(tensor C)
 
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-add_compile_options(-Wall -Wpedantic -Wextra -O0 -g)
+add_compile_options(-Wall -Wpedantic -Wextra -O0 -g -DNDEBUG)
 
 set(SOURCES 
 pcg/extras/entropy.c
@@ -242,3 +242,8 @@ add_executable(test_mha tests/test_mha_fused.c tests/test_mha_discrete.c tests/t
 target_link_libraries(test_mha PRIVATE tensor m)
 target_include_directories(test_mha PRIVATE ${INCLUDE_DIRS})
 target_sources(test_mha PRIVATE ${HEADERS})
+
+add_executable(test_matmul_other tests/tensor_matmul_other.c)
+target_link_libraries(test_matmul_other PRIVATE ${target})
+target_include_directories(test_matmul_other PRIVATE ${INCLUDE_DIRS})
+target_sources(test_matmul_other PRIVATE ${HEADERS})

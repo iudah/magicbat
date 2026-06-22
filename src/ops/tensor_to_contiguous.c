@@ -1,6 +1,5 @@
 #include "data_storage.h"
 #include "tensor.h"
-#include "tensor_ndim_flat_index.h"
 #include "tensor_odometer.h"
 #include <stdatomic.h>
 #include <stdint.h>
@@ -30,14 +29,13 @@ void tensor_to_contiguous_inplace(Tensor tensor) {
 
   auto dest = data_storage_new(len);
 
-  auto index = tensor_odometer_new(tensor->ndims);
+  u32 index[MAX_DIMS] = {0};
   for (u32 i = 0; i < dest->nelements; ++i) {
 
     auto val = tensor_get(tensor, index);
     dest->data[i] = val;
     tensor_odometer_next(index, tensor->ndims, tensor->shape);
   }
-  tensor_destroy(index);
   data_storage_destroy(tensor->data);
   tensor->data = dest;
   tensor->is_contiguous = true;
