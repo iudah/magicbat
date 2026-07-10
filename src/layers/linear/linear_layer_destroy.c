@@ -1,9 +1,9 @@
-#include "../../../include/adt/layers/layers_prot.h"
-#include "../../../include/layers/linear_layer.h"
-#include "../../../include/var/var.h"
-#include "../../lifecycle/tensor_memory.h"
+#include "layers_prot.h"
+#include "linear_layer.h"
+#include "tensor_memory.h"
+#include "var.h"
 
-bool linear_layer_destroy(LinearLayer layer) {
+bool linear_layer_deinit(LinearLayer layer) {
   if (!layer)
     return false;
   if (!layer->weight)
@@ -14,5 +14,9 @@ bool linear_layer_destroy(LinearLayer layer) {
   var_destroy(layer->weight);
   var_destroy(layer->bias);
 
-  return tfree(layer);
+  return true;
+}
+
+bool linear_layer_destroy(LinearLayer layer) {
+  return linear_layer_deinit(layer) && tfree(layer);
 }

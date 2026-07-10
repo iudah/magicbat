@@ -1,8 +1,7 @@
-// #include "../include/adt/layers/layers_prot.h"
-#include "../include/adt/tensor/tensor_prot.h"
-#include "../include/layers/linear_layer.h"
-#include "../include/optimizers/sgd.h"
-#include "../include/tensor.h"
+#include "linear_layer.h"
+#include "sgd.h"
+#include "tensor.h"
+#include "tensor_prot.h"
 #include <assert.h>
 #include <stdio.h>
 
@@ -12,12 +11,6 @@ int main(void) {
   // Create a tiny 2-layer MLP: 2 -> 4 -> 1
   LinearLayer fc1 = linear_layer_new(2, 4);
   LinearLayer fc2 = linear_layer_new(4, 1);
-
-  Tensor *parameters =
-      (Tensor[]){linear_layer_weight(fc1), linear_layer_bias(fc1),
-                 linear_layer_weight(fc2), linear_layer_bias(fc2)};
-
-  SgdOptimizer optimizer = sgd_optimizer_new(parameters, 4, 0.1f);
 
   // Tiny dataset: 4 samples, 2 features
   Tensor x = tensor_new(2, (u32[]){4, 2});
@@ -37,10 +30,15 @@ int main(void) {
   x->data->data[7] = 1;
   y->data->data[3] = 0;
 
-  tensor_fill(linear_layer_weight(fc1), 0.025f);
-  tensor_fill(linear_layer_weight(fc2), 0.035f);
-  tensor_fill(linear_layer_bias(fc1), 0.020f);
-  tensor_fill(linear_layer_bias(fc2), 0.030f);
+  Tensor kernels[4] = {nullptr};
+  linear_layer_kernels(fc1, kernels, 2);
+  linear_layer_kernels(fc2, kernels + 2, 2);
+  SgdOptimizer optimizer = sgd_optimizer_new(kernels, 4, 0.1f);
+
+  tensor_fill(kernels[0], 0.025f);
+  tensor_fill(kernels[2], 0.035f);
+  tensor_fill(kernels[1], 0.020f);
+  tensor_fill(kernels[3], 0.030f);
 
   for (int epoch = 0; epoch < 100; ++epoch) {
     // Forward pass
@@ -70,7 +68,7 @@ int main(void) {
 
     // Layer 1 backprop (through ReLU)
     Tensor grad_h1_act =
-        tensor_matmul(grad_logits, tensor_transpose(linear_layer_weight(fc2)));
+        tensor_matmul(grad_logits, tensor_transpose(kernels[2]));
     Tensor grad_h1 = tensor_relu_backward(h1, grad_h1_act);
 
     Tensor grad_w1 = tensor_matmul(tensor_transpose(x), grad_h1);

@@ -1,7 +1,7 @@
 #include "tensor_binary_op.h"
-#include "../../include/adt/tensor/tensor_prot.h"
-#include "../../include/tensor.h"
+#include "tensor.h"
 #include "tensor_odometer.h"
+#include "tensor_prot.h"
 #include "tensor_shapes_broadcast.h"
 #include "tensor_shapes_equal.h"
 #include <stdint.h>
@@ -32,11 +32,22 @@ Tensor tensor_length_one_a_binary(Tensor tensor_a, Tensor tensor_b, f32 alpha,
     return nullptr;
 
   auto nelement = tensor_num_elements(res);
+  auto val_a = tensor_get(tensor_a, (u32[MAX_DIMS]){0});
 
-  for (u32 i = 0; i < nelement; ++i) {
-    auto val_a = tensor_a->data->data[0];
-    auto val_b = tensor_b->data->data[i];
-    res->data->data[i] = operation_callback(val_a, val_b, alpha);
+  if (tensor_a->is_contiguous) {
+    for (u32 i = 0; i < nelement; ++i) {
+      auto val_b = tensor_b->data->data[i];
+      res->data->data[i] = operation_callback(val_a, val_b, alpha);
+    }
+
+  } else {
+    u32 index[MAX_DIMS] = {0};
+
+    for (u32 i = 0; i < nelement; ++i) {
+      auto val_b = tensor_get(tensor_b, index);
+      res->data->data[i] = operation_callback(val_a, val_b, alpha);
+      tensor_odometer_next(index, tensor_b->ndims, tensor_b->shape);
+    }
   }
   return res;
 }
@@ -49,25 +60,22 @@ Tensor tensor_length_one_b_binary(Tensor tensor_a, Tensor tensor_b, f32 alpha,
     return nullptr;
 
   auto nelement = tensor_num_elements(res);
+  auto val_b = tensor_get(tensor_b, (u32[MAX_DIMS]){0});
 
-  if (tensor_a->is_contiguous && tensor_b->is_contiguous) {
-    auto val_b = tensor_b->data->data[0];
+  if (tensor_a->is_contiguous) {
 
     for (u32 i = 0; i < nelement; ++i) {
       auto val_a = tensor_a->data->data[i];
       res->data->data[i] = operation_callback(val_a, val_b, alpha);
     }
   } else {
-    auto val_b = tensor_get(tensor_b, (u32[MAX_DIMS]){0});
-    auto index = tensor_odometer_new(tensor_a->ndims);
+    u32 index[MAX_DIMS] = {0};
 
     for (u32 i = 0; i < nelement; ++i) {
       auto val_a = tensor_get(tensor_a, index);
       res->data->data[i] = operation_callback(val_a, val_b, alpha);
       tensor_odometer_next(index, tensor_a->ndims, tensor_a->shape);
     }
-
-    tensor_odometer_destroy(index);
   }
   return res;
 }
@@ -123,7 +131,9 @@ Tensor tensor_binary_op(const Tensor tensor_a, const Tensor tensor_b, f32 alpha,
   if (!tensor_a || !tensor_b)
     return nullptr;
 
-  if (tensor_shapes_equal(tensor_a, tensor_b))
+  bool contiguous_duo = tensor_a->is_contiguous && tensor_b->is_contiguous;
+
+  if (contiguous_duo && tensor_shapes_equal(tensor_a, tensor_b))
     return tensor_same_shape_binary(tensor_a, tensor_b, alpha,
                                     operation_callback);
 

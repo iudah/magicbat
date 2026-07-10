@@ -1,8 +1,8 @@
-#include "../include/adt/tensor/tensor_prot.h"
-#include "../include/layers/linear_layer.h"
-#include "../include/optimizers/sgd.h"
-#include "../include/tensor.h"
-#include "../include/var/var.h"
+#include "linear_layer.h"
+#include "sgd.h"
+#include "tensor.h"
+#include "tensor_prot.h"
+#include "var.h"
 #include <assert.h>
 #include <stdio.h>
 
@@ -15,10 +15,10 @@ int main(void) {
   linear_layer_track(fc1);
   linear_layer_track(fc2);
 
-  Tensor w1 = linear_layer_weight(fc1);
-  Tensor w2 = linear_layer_weight(fc2);
-  Tensor b1 = linear_layer_bias(fc1);
-  Tensor b2 = linear_layer_bias(fc2);
+  Tensor w1 = linear_layer_kernels(fc1, (Tensor[2]){nullptr}, 2)[0];
+  Tensor w2 = linear_layer_kernels(fc2, (Tensor[2]){nullptr}, 2)[0];
+  Tensor b1 = linear_layer_kernels(fc1, (Tensor[2]){nullptr}, 2)[1];
+  Tensor b2 = linear_layer_kernels(fc2, (Tensor[2]){nullptr}, 2)[1];
 
   tensor_fill(w1, 0.025f);
   tensor_fill(w2, 0.035f);

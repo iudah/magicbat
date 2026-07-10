@@ -33,6 +33,8 @@ RNNCell rnn_cell_new(u32 in_features, u32 batch_size, u32 hidden_features,
     layer->hidden_state = hidden_state;
     layer->cell.weight = weight;
     layer->cell.bias = bias;
+
+    tensor_xavier(layer->cell.weight, in_features, out_features);
   }
 
   return layer;

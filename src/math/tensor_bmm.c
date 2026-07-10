@@ -34,6 +34,7 @@ static inline void bmm_non_contiguous_no_bc(Tensor tensor_a, Tensor tensor_b,
                                             bool UNUSED_ARG broadcast_a,
                                             bool UNUSED_ARG broadcast_b);
 Tensor tensor_bmm(const Tensor tensor_a, const Tensor tensor_b) {
+
   if (bmm_tensors_invalid(tensor_a, tensor_b, false, false))
     return nullptr;
 

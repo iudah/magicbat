@@ -30,10 +30,12 @@ Tensor tensor_layer_norm_axis(Tensor tensor, u32 axis,
   if (variance_holder)
     *variance_holder = var;
 
+  auto res = tensor_binary_op(deviation, var, 0, divide);
+
   tensor_destroy(deviation);
   tensor_destroy(mean);
 
-  return tensor_binary_op(deviation, var, 0, divide);
+  return res;
 }
 
 static inline float divide_grad(float net_grad, float variance,

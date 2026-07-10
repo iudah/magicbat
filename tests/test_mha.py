@@ -40,9 +40,9 @@ def run_test(seq_len = 8):
     head_dim = 8
     d_model = head_dim * n_heads
     
-    X= torch.from_numpy(X_np.reshape(-1)[:batch_size*seq_len*d_model].reshape(batch_size,seq_len,d_model))
-    W_qkv= torch.from_numpy(W_qkv_np.reshape(-1)[:d_model*3*d_model].reshape(d_model, 3*d_model))
-    target= torch.from_numpy(target_np.reshape(-1)[:batch_size*seq_len*d_model].reshape(batch_size,seq_len,d_model))
+    X= torch.tensor(X_np.reshape(-1)[:batch_size*seq_len*d_model].reshape(batch_size,seq_len,d_model))
+    W_qkv= torch.tensor(W_qkv_np.reshape(-1)[:d_model*3*d_model].reshape(d_model, 3*d_model))
+    target= torch.tensor(target_np.reshape(-1)[:batch_size*seq_len*d_model].reshape(batch_size,seq_len,d_model))
     
     W_qkv.requires_grad=True
     
@@ -82,5 +82,5 @@ def run_test(seq_len = 8):
             W_qkv -= learning_rate * W_qkv.grad
             W_qkv.grad.zero_()
     
-run_test(8)
 run_test(32)
+run_test(8)

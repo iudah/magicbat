@@ -1,6 +1,6 @@
 #ifndef TENSOR_SHAPES_BROADCAST
 #define TENSOR_SHAPES_BROADCAST
-#include "../../include/tensor.h"
+#include "tensor.h"
 
 static inline bool
 tensor_shapes_broadcast_from_shape(u32 t_ndims, const u32 *t_shape, u32 s_ndims,

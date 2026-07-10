@@ -84,10 +84,7 @@ Tensor tensor_sum_to_shape(Tensor tensor, u32 ndims, u32 *shape) {
   }
 
   u32 o_ndims = tensor->ndims > ndims ? tensor->ndims : ndims;
-  u32 *t_stride = tmalloc(o_ndims * 4 * sizeof(u32));
-  u32 *s_stride = t_stride + o_ndims;
-  u32 *o_stride = s_stride + o_ndims;
-  u32 *o_shape = o_stride + o_ndims;
+  u32 o_shape[MAX_DIMS] = {0};
 
   if (tensor_shapes_broadcast_from_shape(tensor->ndims, tensor->shape, ndims,
                                          shape, o_shape) &&
@@ -100,27 +97,21 @@ Tensor tensor_sum_to_shape(Tensor tensor, u32 ndims, u32 *shape) {
       return nullptr;
     }
 
-    u32 *index = tensor_odometer_new(o_ndims);
-    if (index == nullptr) {
-      tensor_destroy(res);
-      res = nullptr;
-      return nullptr;
-    }
+    u32 index[MAX_DIMS] = {0};
     do {
       u32 s_indx = 0;
       u32 t_indx = 0;
 
-      for (u32 i = 0; i < o_ndims; ++i) {
-        s_indx += s_stride[i] * index[i];
-        t_indx += t_stride[i] * index[i];
+      for (u32 i = o_ndims, j = res->ndims; i-- > 0 && j-- > 0;) {
+        s_indx += res->stride[j] * index[i];
+      }
+      for (u32 i = o_ndims, k = tensor->ndims; i-- > 0 && k-- > 0;) {
+        t_indx += tensor->stride[k] * index[i];
       }
 
       res->data->data[s_indx] += tensor->data->data[t_indx];
     } while (tensor_odometer_next(index, o_ndims, o_shape));
-    tensor_odometer_destroy(index);
-    tfree(t_stride);
     return res;
   }
-  tfree(t_stride);
   return nullptr;
 }

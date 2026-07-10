@@ -22,8 +22,14 @@ Tensor var_bmm_transpose_b(Tensor var_a, Tensor var_b);
 bool var_copy_data(Tensor dst, Tensor src);
 Tensor var_concat(u32 ntensor, Tensor *tensors, u32 axis);
 Tensor var_multihead_attention(Tensor input, Tensor W_qkv, u32 n_head,
-                               f32 mha_d);
+                               u32 head_dim);
+Tensor var_multihead_attention_causal(Tensor input, Tensor W_qkv, u32 n_head,
+                                      u32 head_dim);
 Tensor var_mse_loss(Tensor pred, Tensor target);
+Tensor var_cross_entropy_one_hot(Tensor logits, Tensor targets, i32 axis);
+Tensor var_cross_entropy_probs(Tensor logits, Tensor targets, i32 axis);
+Tensor var_cross_entropy_indexed(Tensor logits, Tensor targets, i32 axis);
+Tensor var_embedding(Tensor input_tokens, Tensor weight_matrix);
 
 Tensor var_relu(Tensor var);
 Tensor var_tanh(Tensor var);

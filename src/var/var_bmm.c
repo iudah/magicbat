@@ -44,6 +44,9 @@ void bmatmul_backward_fn(Var self) {
 
 Tensor var_bmm(Tensor var_a, Tensor var_b) {
 
+  if (var_a->ndims == 2 && var_b->ndims == 2)
+    return var_matmul(var_a, var_b);
+
   Tensor tmp = tensor_bmm(var_a, var_b);
   if (!tmp)
     return nullptr;

@@ -60,6 +60,8 @@ static void softmax_not_last_axis(u32 outer, u32 target, u32 inner,
       }
     }
   }
+  tfree(sum_array);
+  tfree(max_array);
 }
 static void softmax_not_contiguous_axis(u32 outer_dim, const u32 *outer,
                                         u32 axis, u32 target, u32 inner_dim,

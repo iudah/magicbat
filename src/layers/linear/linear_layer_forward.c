@@ -1,19 +1,18 @@
-#include "../../../include/adt/layers/layers_prot.h"
-#include "../../../include/layers/linear_layer.h"
-#include "../../../include/var/var.h"
+#include "layers_prot.h"
+#include "linear_layer.h"
+#include "var.h"
 
-Tensor linear_layer_forward(const LinearLayer layer, const Tensor in) {
+Tensor linear_layer_forward(const LinearLayer layer, const Tensor input) {
   TASSERT(layer && in && "Null layer or input.");
 
-  // To Do: Use tensordot
-  auto xw = var_matmul(in, layer->weight);
-  if (!xw)
+  auto weighted_sum = var_bmm(input, layer->weight);
+  if (!weighted_sum)
     return nullptr;
 
-  auto xw_b = var_add((Tensor)xw, layer->bias);
+  auto xw_b = var_add(weighted_sum, layer->bias);
 
   if (!var_require_grad(xw_b))
-    var_destroy(xw);
+    var_destroy(weighted_sum);
 
   return xw_b;
 }

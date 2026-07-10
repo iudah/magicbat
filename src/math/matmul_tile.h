@@ -41,6 +41,10 @@
 #define MATMUL_N_VAL(type) n_data[(k_##type * n_len) + n_##type]
 #define MATMUL_N_T_VAL(type) n_data[(n_##type * k_len) + k_##type]
 
+#define MATMUL_CAUSAL_LOOP(var_name, mask)                                     \
+  for (u32 var_name##_indx = ((int)(!(mask)) * var_name##_len);                \
+       var_name##_indx < var_name##_len; ++var_name##_indx)
+
 MATMUL_FAST_PIPELINE(matmul_gt_block_size) {
   (void)m_len;
 

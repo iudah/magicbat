@@ -1,8 +1,8 @@
 #ifndef TENSOR_H
 #define TENSOR_H
 
-#include "adt/tensor/tensor_prot.h"
-#include "adt/type_alias.h"
+#include "tensor_prot.h"
+#include "type_alias.h"
 #include <stdbool.h>
 
 #define UNUSED_ARG __attribute__((unused))
@@ -70,6 +70,9 @@ Tensor tensor_mean_sqr_axis(Tensor tensor, u32 axis);
 Tensor tensor_mean_sqr_axis_backward(Tensor gradient, Tensor tensor, u32 axis);
 f32 tensor_mean_sqr_all(Tensor tensor);
 Tensor tensor_mean_sqr_all_backward(f32 gradient, Tensor tensor);
+Tensor tensor_embedding(Tensor input_tokens, Tensor weight_matrix);
+Tensor tensor_embedding_backward(Tensor input_tokens, Tensor weight_matrix,
+                                 Tensor grad);
 
 Tensor tensor_transpose(Tensor tensor);
 Tensor tensor_transpose_dims(Tensor tensor, u32 nswap, TensorDimSwap swaps[]);
@@ -85,6 +88,13 @@ Tensor tensor_softmax(Tensor tensor, i32 axis);
 Tensor tensor_softmax_backward(Tensor grad, Tensor softmax, u32 axis);
 Tensor tensor_log_sum_exp_all(Tensor tensor);
 Tensor tensor_log_sum_exp_axis(Tensor tensor, i32 axis);
+Tensor tensor_cross_entropy_from_logits_axis(Tensor logits, Tensor expectation,
+                                             TensorType tensor_type, i32 axis);
+Tensor tensor_cross_entropy_from_logits_axis_backward(Tensor logits,
+                                                      Tensor expectation,
+                                                      Tensor grad,
+                                                      TensorType tensor_type,
+                                                      i32 axis);
 Tensor tensor_exp(Tensor tensor);
 
 Tensor tensor_scalar(f32 value);
@@ -101,5 +111,8 @@ void tensor_to_contiguous_inplace(Tensor tensor);
 void tensor_random(Tensor tensor);
 void tensor_random_bound(Tensor tensor, f32 lower_bound, f32 upper_bound);
 void tensor_xavier(Tensor tensor, f32 fanin, f32 fanout);
+void tensor_kaiming(Tensor tensor, f32 fanin,
+                    f32 __attribute__((unused)) fanout);
+Tensor tensor_positional_encoding(u32 seq, u32 dmodel);
 
 #endif

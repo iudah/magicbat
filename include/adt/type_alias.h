@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <stdint.h>
 
-#define TASSERT(...) assert(__VA_ARGS__)
+#define TASSERT(test) assert(test)
 
 typedef uint8_t u8;
 typedef int8_t i8;

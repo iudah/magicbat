@@ -53,6 +53,7 @@ src/math/tensor_variance.c
 src/math/tensor_mse.c
 src/math/tensor_bmm_bt.c
 src/math/tensor_bmm_at.c
+src/math/tensor_trinary_op.c
 src/ops/tensor_fill.c
 src/ops/tensor_reshape.c
 src/ops/tensor_copy_data.c
@@ -62,6 +63,8 @@ src/ops/tensor_slice.c
 src/ops/tensor_concat.c
 src/ops/tensor_random.c
 src/ops/tensor_to_contiguous.c
+src/ops/tensor_positional_encoding.c
+src/ops/tensor_embedding.c
 src/access/tensor_get.c
 src/access/tensor_set.c
 src/access/tensor_index_out_of_bound.c
@@ -70,7 +73,12 @@ src/layers/rnn/rnn_cell_forward.c
 src/layers/rnn/rnn_cell_kernel.c
 src/layers/rnn/rnn_cell_new.c
 src/layers/rnn/rnn_cell_track.c
+src/layers/transformer/transformer_enc_block_kernel.c
+src/layers/transformer/transformer_enc_block_forward.c
+src/layers/transformer/transformer_enc_block_new.c
+src/layers/transformer/transformer_enc_block_destroy.c
 src/layers/layer_norm/layer_norm.c
+src/layers/residual_conn/residual.c
 src/layers/linear/linear_layer_destroy.c
 src/layers/linear/linear_layer_forward.c
 src/layers/linear/linear_layer_kernel.c
@@ -98,6 +106,9 @@ src/var/var_mha.c
 src/var/var_mse.c
 src/var/var_bmm.c
 src/var/var_softmax.c
+src/var/var_mha_causal.c
+src/var/var_ce.c
+src/var/var_embedding.c
 )
 
 set (HEADERS
@@ -111,6 +122,14 @@ src/math/tensor_binary_op.h
 src/math/tensor_odometer.h
 src/math/tensor_shapes_broadcast.h
 src/math/tensor_reduce.h
+src/math/matmul.h
+src/math/matmul_tile.h
+src/math/matmul_batched_tile.h
+src/math/fused_attention.h
+src/math/fused_attention_backward.h
+src/math/fused_attention_causal.h
+src/math/fused_attention_causal_backward.h
+src/math/tensor_trinary_op.h
 src/access/tensor_increment_index.h
 src/access/tensor_ndim_flat_index.h
 include/tensor.h
@@ -119,9 +138,11 @@ include/adt/optimizers/sgd_prot.h
 include/adt/tensor/tensor_prot.h
 include/adt/type_alias.h
 include/adt/var/var_prot.h
-include/layers/linear_layer.h
+include/layers/residual_conn/residual.h
 include/layers/rnn/rnn_cell.h
+include/layers/linear/linear_layer.h
 include/layers/layer_norm/layer_norm.h
+include/layers/transformer/transformer_enc_layer.h
 include/optimizers/sgd.h
 include/var/var.h
 )
@@ -139,6 +160,9 @@ src/ops
 src/access
 src/layers
 src/layers/rnn
+src/layers/transformer
+src/layers/layer_norm
+src/layers/residual_conn
 src/layers/linear
 src/optimizers
 src/optimizers/sgd
@@ -150,9 +174,11 @@ include/adt/optimizers
 include/adt/tensor
 include/adt/var
 include/layers
+include/layers/residual_conn
 include/layers/rnn
 include/layers/linear
 include/layers/layer_norm
+include/layers/transformer
 include/optimizers
 include/var
 )
@@ -247,3 +273,19 @@ add_executable(test_matmul_other tests/tensor_matmul_other.c)
 target_link_libraries(test_matmul_other PRIVATE ${target})
 target_include_directories(test_matmul_other PRIVATE ${INCLUDE_DIRS})
 target_sources(test_matmul_other PRIVATE ${HEADERS})
+
+add_executable(test_layernorm tests/test_layernorm.c)
+target_link_libraries(test_layernorm PRIVATE ${target})
+target_include_directories(test_layernorm PRIVATE ${INCLUDE_DIRS})
+target_sources(test_layernorm PRIVATE ${HEADERS})
+
+add_executable(test_crossentropy tests/test_crossentropy.c)
+target_link_libraries(test_crossentropy PRIVATE ${target})
+target_include_directories(test_crossentropy PRIVATE ${INCLUDE_DIRS})
+target_sources(test_crossentropy PRIVATE ${HEADERS})
+
+add_executable(train_first_primer tests/train_first_primer.c)
+target_link_libraries(train_first_primer PRIVATE ${target})
+target_include_directories(train_first_primer PRIVATE ${INCLUDE_DIRS})
+target_sources(train_first_primer PRIVATE ${HEADERS})
+

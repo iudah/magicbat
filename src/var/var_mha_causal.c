@@ -1,5 +1,5 @@
-#include "fused_attention.h"
-#include "fused_attention_backward.h"
+#include "fused_attention_causal.h"
+#include "fused_attention_causal_backward.h"
 #include "matmul_tile.h"
 #include "tensor.h"
 #include "tensor_memory.h"
@@ -23,11 +23,11 @@ static void destroy_ctx(struct mha_ctx *ctx) {
   tfree(ctx->maxs);
 }
 
-Tensor tensor_fused_attention(const u32 *shape, const f32 *q_mat,
-                              const f32 *k_mat, const f32 *v_mat, f32 sqrt_d,
-                              f32 *maxs, f32 *sums);
+Tensor tensor_fused_attention_causal(const u32 *shape, const f32 *q_mat,
+                                     const f32 *k_mat, const f32 *v_mat,
+                                     f32 sqrt_d, f32 *maxs, f32 *sums);
 
-void multihead_attention_backward_fn(Var self);
+void multihead_attention_causal_backward_fn(Var self);
 
 static inline void dim_swap(u32 nswaps, const u32 *swaps, u32 *shape,
                             u32 *stride, bool *is_contiguous) {
@@ -62,8 +62,8 @@ static inline void dim_swap(u32 nswaps, const u32 *swaps, u32 *shape,
   *is_contiguous = false;
 }
 
-Tensor var_multihead_attention(Tensor input, Tensor W_qkv, u32 n_head,
-                               u32 head_dim) {
+Tensor var_multihead_attention_causal(Tensor input, Tensor W_qkv, u32 n_head,
+                                      u32 head_dim) {
 
   TASSERT(n_head * head_dim * 3 == W_qkv->shape[1] &&
           "Fused weights (QKV) dim not large enough");
@@ -128,9 +128,9 @@ Tensor var_multihead_attention(Tensor input, Tensor W_qkv, u32 n_head,
   auto sqrt_d = sqrtf((f32)head_dim);
 
   // shape(qkv_t)=[batch * heads * seq, states]
-  auto fused_att =
-      tensor_fused_attention((u32[4]){batch, n_head, seq, head_dim}, q_mat_data,
-                             k_mat_data, v_mat_data, sqrt_d, maxs, sums);
+  auto fused_att = tensor_fused_attention_causal(
+      (u32[4]){batch, n_head, seq, head_dim}, q_mat_data, k_mat_data,
+      v_mat_data, sqrt_d, maxs, sums);
 
   dim_swap(4, (u32[]){0, 2, 1, 3}, fused_att->shape, fused_att->stride,
            &fused_att->is_contiguous);
@@ -155,17 +155,17 @@ Tensor var_multihead_attention(Tensor input, Tensor W_qkv, u32 n_head,
                           .input = flattened};
 
   Tensor res = track(fused_att);
-  var_track_parent(
-      res, input, W_qkv,
-      (VarOp){multihead_attention_backward_fn, (void (*)(mem))destroy_ctx},
-      ctx);
+  var_track_parent(res, input, W_qkv,
+                   (VarOp){multihead_attention_causal_backward_fn,
+                           (void (*)(mem))destroy_ctx},
+                   ctx);
 
   return res;
 }
 
-Tensor tensor_fused_attention(const u32 *shape, const f32 *q_mat,
-                              const f32 *k_mat, const f32 *v_mat, f32 sqrt_d,
-                              f32 *maxs, f32 *sums) {
+Tensor tensor_fused_attention_causal(const u32 *shape, const f32 *q_mat,
+                                     const f32 *k_mat, const f32 *v_mat,
+                                     f32 sqrt_d, f32 *maxs, f32 *sums) {
   Tensor fused_att = tensor_new(4, shape);
   auto batch = shape[0] * shape[1];
   auto row = shape[2];
@@ -176,7 +176,7 @@ Tensor tensor_fused_attention(const u32 *shape, const f32 *q_mat,
   if (row < BLOCK_SIZE || col < BLOCK_SIZE || com < BLOCK_SIZE) {
 
     for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
-      fused_attention_lt_block_size(
+      fused_attention_causal_lt_block_size(
           row, col, com, &q_mat[batch_index * batch_stride],
           &k_mat[batch_index * batch_stride],
           &v_mat[batch_index * batch_stride],
@@ -186,7 +186,7 @@ Tensor tensor_fused_attention(const u32 *shape, const f32 *q_mat,
   } else if (batch < BLOCK_SIZE) {
 
     for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
-      fused_attention_gt_block_size_unbatched(
+      fused_attention_causal_gt_block_size_unbatched(
           row, col, com, &q_mat[batch_index * batch_stride],
           &k_mat[batch_index * batch_stride],
           &v_mat[batch_index * batch_stride],
@@ -195,9 +195,9 @@ Tensor tensor_fused_attention(const u32 *shape, const f32 *q_mat,
     }
 
   } else {
-    fused_attention_gt_block_size(batch, row, col, com, q_mat, k_mat, v_mat,
-                                  fused_att->data->data, 1 / sqrt_d, maxs,
-                                  sums);
+    fused_attention_causal_gt_block_size(batch, row, col, com, q_mat, k_mat,
+                                         v_mat, fused_att->data->data,
+                                         1 / sqrt_d, maxs, sums);
   }
 
   return fused_att;
@@ -215,13 +215,11 @@ static inline void compute_row_sum(const u32 *restrict shape,
   }
 }
 
-void tensor_fused_attention_backward(const u32 *shape, const f32 *q_mat,
-                                     const f32 *k_mat, const f32 *v_mat,
-                                     const f32 *r_grad_mat, f32 *q_grad_mat,
-                                     f32 *k_grad_mat, f32 *v_grad_mat,
-                                     f32 sqrt_d, const f32 *maxs,
-                                     const f32 *sums, const f32 *row_sum);
-void multihead_attention_backward_fn(Var self) {
+void tensor_fused_attention_causal_backward(
+    const u32 *shape, const f32 *q_mat, const f32 *k_mat, const f32 *v_mat,
+    const f32 *r_grad_mat, f32 *q_grad_mat, f32 *k_grad_mat, f32 *v_grad_mat,
+    f32 sqrt_d, const f32 *maxs, const f32 *sums, const f32 *row_sum);
+void multihead_attention_causal_backward_fn(Var self) {
   if (self->base.is_tensor_type || !self->base.requires_grad)
     return;
 
@@ -285,7 +283,7 @@ void multihead_attention_backward_fn(Var self) {
   f32 *v_grad_mat_data = qkv_grad->data->data + (data_len * 2);
 
   // shape(qkv_t)=[3, batch, heads, seq, states]
-  tensor_fused_attention_backward(
+  tensor_fused_attention_causal_backward(
       self->base.shape, q_mat_data, k_mat_data, v_mat_data,
       self->grad->data->data, q_grad_mat_data, k_grad_mat_data, v_grad_mat_data,
       sqrt_d, maxs, sums, row_sum_do_o);
@@ -333,7 +331,7 @@ void multihead_attention_backward_fn(Var self) {
     }
     // auto a_T = tensor_transpose((Tensor)parent_a);
     auto grad_wrt_b = tensor_matmul_wrt_b(flattened, qkv_grad);
-    // tensor_multihead_attention(a_T, self->grad);
+    // tensor_multihead_attention_causal(a_T, self->grad);
     auto db_red = grad_wrt_b;
     // tensor_sum_to_shape(db, parent_b->base.ndims, parent_b->base.shape);
     tensor_add_inplace(parent_b->grad, db_red);
@@ -347,12 +345,10 @@ void multihead_attention_backward_fn(Var self) {
   tfree(row_sum_do_o);
 }
 
-void tensor_fused_attention_backward(const u32 *shape, const f32 *q_mat,
-                                     const f32 *k_mat, const f32 *v_mat,
-                                     const f32 *r_grad_mat, f32 *q_grad_mat,
-                                     f32 *k_grad_mat, f32 *v_grad_mat,
-                                     f32 sqrt_d, const f32 *maxs,
-                                     const f32 *sums, const f32 *row_sum) {
+void tensor_fused_attention_causal_backward(
+    const u32 *shape, const f32 *q_mat, const f32 *k_mat, const f32 *v_mat,
+    const f32 *r_grad_mat, f32 *q_grad_mat, f32 *k_grad_mat, f32 *v_grad_mat,
+    f32 sqrt_d, const f32 *maxs, const f32 *sums, const f32 *row_sum) {
 
   auto batch = shape[0] * shape[1];
   auto row = shape[2];
@@ -363,7 +359,7 @@ void tensor_fused_attention_backward(const u32 *shape, const f32 *q_mat,
   if (row <= BLOCK_SIZE || col <= BLOCK_SIZE || com <= BLOCK_SIZE) {
 
     for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
-      fused_attention_backward_lt_block_size(
+      fused_attention_causal_backward_lt_block_size(
           row, col, com, &q_mat[batch_index * batch_stride],
           &k_mat[batch_index * batch_stride],
           &v_mat[batch_index * batch_stride],
@@ -377,7 +373,7 @@ void tensor_fused_attention_backward(const u32 *shape, const f32 *q_mat,
   } else if (batch < BLOCK_SIZE) {
 
     for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
-      fused_attention_backward_gt_block_size_unbatched(
+      fused_attention_causal_backward_gt_block_size_unbatched(
           row, col, com, &q_mat[batch_index * batch_stride],
           &k_mat[batch_index * batch_stride],
           &v_mat[batch_index * batch_stride],
@@ -390,7 +386,7 @@ void tensor_fused_attention_backward(const u32 *shape, const f32 *q_mat,
     }
 
   } else {
-    fused_attention_backward_gt_block_size(
+    fused_attention_causal_backward_gt_block_size(
         batch, row, col, com, q_mat, k_mat, v_mat, q_grad_mat, k_grad_mat,
         v_grad_mat, r_grad_mat, sqrt_d, maxs, sums, row_sum);
   }
