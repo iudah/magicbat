@@ -54,14 +54,14 @@ Tensor tensor_max_axis(const Tensor t, i32 axis) {
   return res;
 }
 
-float tensor_max_all(const Tensor t) {
-  if (!t)
+float tensor_max_all(const Tensor tensor) {
+  if (!tensor)
     return -NAN;
 
   float max = -INFINITY;
-  u32 nelements = tensor_num_elements(t);
+  u32 nelements = tensor_num_elements(tensor);
   for (u32 i = 0; i < nelements; ++i) {
-    max = fmaxf(max, t->data->data[i]);
+    max = fmaxf(max, tensor->data->data[i]);
   }
 
   return max;

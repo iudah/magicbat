@@ -29,6 +29,9 @@ Tensor var_mse_loss(Tensor pred, Tensor target);
 Tensor var_cross_entropy_one_hot(Tensor logits, Tensor targets, i32 axis);
 Tensor var_cross_entropy_probs(Tensor logits, Tensor targets, i32 axis);
 Tensor var_cross_entropy_indexed(Tensor logits, Tensor targets, i32 axis);
+Tensor var_cross_entropy_loss_one_hot(Tensor logits, Tensor targets, i32 axis);
+Tensor var_cross_entropy_loss_probs(Tensor logits, Tensor targets, i32 axis);
+Tensor var_cross_entropy_loss_indexed(Tensor logits, Tensor targets, i32 axis);
 Tensor var_embedding(Tensor input_tokens, Tensor weight_matrix);
 
 Tensor var_relu(Tensor var);

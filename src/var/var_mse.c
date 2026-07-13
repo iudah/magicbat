@@ -45,9 +45,11 @@ Tensor var_mse_loss(Tensor pred, Tensor target) {
     return nullptr;
 
   auto tmp = tensor_new(2, (u32[]){1, 1});
-  tmp->data->data[0] = tensor_mean_sqr_all(var);
+
   if (!tmp)
     return nullptr;
+
+  tmp->data->data[0] = tensor_mean_sqr_all(var);
 
   if ((pred->is_tensor_type || !pred->requires_grad)
 

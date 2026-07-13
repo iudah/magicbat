@@ -6,7 +6,6 @@
 #include "transformer_enc_layer.h"
 #include "var.h"
 #include <stdio.h>
-#include <string.h>
 
 #define SEQ_SIZE 32
 #define BATCH_SIZE 8
@@ -23,14 +22,12 @@ void fill_input(Tensor input, Tensor target, const i32 *train_data,
   auto max_train_data_length = train_data_length - input->shape[1] - 1;
 
   for (u32 i = 0; i < input->shape[0]; ++i) {
+    u32 random_seq_indx = urand() % max_train_data_length;
     for (u32 j = 0; j < input->shape[1]; ++j) {
-      u32 random_seq_indx = urand() % max_train_data_length;
-      memcpy(&input->data->data[i * input->shape[1]],
-             &train_data[random_seq_indx * input->shape[1]],
-             sizeof(f32) * input->shape[1]);
-      memcpy(&target->data->data[i * target->shape[1]],
-             &train_data[(random_seq_indx * target->shape[1]) + 1],
-             sizeof(f32) * target->shape[1]);
+      input->data->data[(i * input->shape[1]) + j] =
+          train_data[random_seq_indx + j];
+      target->data->data[(i * input->shape[1]) + j] =
+          train_data[random_seq_indx + j + 1];
     }
   }
 }
@@ -42,15 +39,17 @@ int main() {
       NHEAD, HEAD_DIM, pre_ln_residual, pre_ln_residual);
 
   auto layer_norm_out = layer_norm_new(D_MODEL);
-  auto lang_model_head = linear_layer_new(D_MODEL, D_MODEL);
+  auto lang_model_head = linear_layer_new(D_MODEL, VOCAB_SIZE);
 
   transformer_enc_layer_track(transformer_0);
   transformer_enc_layer_track(transformer_1);
   layer_norm_track(layer_norm_out);
   linear_layer_track(lang_model_head);
 
+  u32 total_kernels =
+      (2 * N_XFORMER_KERNELS) + N_LAYERNORM_KERNELS + N_LINEAR_KERNELS;
   Tensor kernels[(2 * N_XFORMER_KERNELS) + N_LAYERNORM_KERNELS +
-                 N_LINEAR_KERNELS] = {nullptr};
+                 N_LINEAR_KERNELS + 1] = {nullptr};
 
   transformer_enc_layer_kernels(transformer_0, kernels, N_XFORMER_KERNELS);
   transformer_enc_layer_kernels(transformer_1, &kernels[N_XFORMER_KERNELS],
@@ -62,14 +61,15 @@ int main() {
                        kernels + N_XFORMER_KERNELS + N_XFORMER_KERNELS +
                            N_LAYERNORM_KERNELS,
                        N_LINEAR_KERNELS);
+  Tensor weight_matrix =
+      track_replace_untracked(tensor_new(2, (u32[]){VOCAB_SIZE, D_MODEL}));
+  tensor_random_bound(weight_matrix, 0, 1);
+  kernels[total_kernels - 1] = weight_matrix;
 
-  auto optim =
-      sgd_optimizer_new(kernels, sizeof(kernels) / sizeof(*kernels), LR);
+  auto optim = sgd_optimizer_new(kernels, total_kernels, LR);
 
   Tensor positional_encoder = tensor_positional_encoding(SEQ_SIZE, D_MODEL);
 
-  Tensor weight_matrix =
-      track_replace_untracked(tensor_new(2, (u32[]){VOCAB_SIZE, D_MODEL}));
   Tensor input = tensor_new(2, (u32[]){BATCH_SIZE, SEQ_SIZE});
   Tensor target = tensor_new(2, (u32[]){BATCH_SIZE, SEQ_SIZE});
 
@@ -77,7 +77,6 @@ int main() {
 #define TRAIN_SIZE VOCAB_SIZE * 7 / 10
     fill_input(input, target, (i32 *)train_data, TRAIN_SIZE);
     Tensor x_emb = var_embedding(input, weight_matrix);
-    Tensor y_emb = var_embedding(target, weight_matrix);
 
     auto block_out = transformer_enc_layer_forward(
         transformer_0, var_add(x_emb, positional_encoder));
@@ -86,11 +85,18 @@ int main() {
     auto final_norm = layer_norm_forward(layer_norm_out, model_out);
     auto logits = linear_layer_forward(lang_model_head, final_norm);
 
-    auto loss = var_cross_entropy_probs(logits, y_emb, -1);
+    auto loss = var_cross_entropy_loss_indexed(logits, target, -1);
 
     printf("Epoch %d | Loss: %f\n", epoch, loss->data->data[0]);
 
     var_backward(loss);
     sgd_optimize(optim, nullptr);
+
+    for (u32 k = 0; k < total_kernels; ++k) {
+      if (kernels[k]) {
+        auto grad = var_grad(kernels[k]);
+        tensor_fill(grad, 0.0F);
+      }
+    }
   }
 }

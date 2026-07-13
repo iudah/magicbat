@@ -64,6 +64,7 @@ f32 tensor_max_all(Tensor tensor);
 Tensor tensor_gather_axis(Tensor tensor, Tensor indices, i32 axis);
 Tensor tensor_mean_axis(Tensor tensor, u32 axis);
 Tensor tensor_layer_norm_axis(Tensor tensor, u32 axis, Tensor *variance_holder);
+f32 tensor_mean_all(Tensor tensor);
 Tensor tensor_layer_norm_axis_backward(Tensor gradient, Tensor normal, u32 axis,
                                        Tensor variance);
 Tensor tensor_mean_sqr_axis(Tensor tensor, u32 axis);
