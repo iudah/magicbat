@@ -1,8 +1,6 @@
 #include "../../include/adt/var/var_prot.h"
 #include "../../include/tensor.h"
 #include "../lifecycle/tensor_memory.h"
-#include <asm/signal.h>
-#include <bits/pthread_types.h>
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdint.h>
@@ -168,7 +166,9 @@ skip_backward:
   return ret_val;
 }
 
-bool var_backward(Tensor top) { return var_backward_verbose(top, false, nullptr); }
+bool var_backward(Tensor top) {
+  return var_backward_verbose(top, false, nullptr);
+}
 bool var_backward_with_grad(Tensor top, Tensor grad) {
   return var_backward_verbose(top, false, grad);
 }
