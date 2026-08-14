@@ -270,27 +270,27 @@ target_include_directories(test_mha PRIVATE ${INCLUDE_DIRS})
 target_sources(test_mha PRIVATE ${HEADERS})
 
 add_executable(test_matmul_other tests/tensor_matmul_other.c)
-target_link_libraries(test_matmul_other PRIVATE ${target})
+target_link_libraries(test_matmul_other PRIVATE ${target} m)
 target_include_directories(test_matmul_other PRIVATE ${INCLUDE_DIRS})
 target_sources(test_matmul_other PRIVATE ${HEADERS})
 
 add_executable(test_layernorm tests/test_layernorm.c)
-target_link_libraries(test_layernorm PRIVATE ${target})
+target_link_libraries(test_layernorm PRIVATE ${target} m)
 target_include_directories(test_layernorm PRIVATE ${INCLUDE_DIRS})
 target_sources(test_layernorm PRIVATE ${HEADERS})
 
 add_executable(test_crossentropy tests/test_crossentropy.c)
-target_link_libraries(test_crossentropy PRIVATE ${target})
+target_link_libraries(test_crossentropy PRIVATE ${target} m)
 target_include_directories(test_crossentropy PRIVATE ${INCLUDE_DIRS})
 target_sources(test_crossentropy PRIVATE ${HEADERS})
 
 add_executable(train_first_primer tests/train_first_primer.c)
-target_link_libraries(train_first_primer PRIVATE ${target})
+target_link_libraries(train_first_primer PRIVATE ${target} m)
 target_include_directories(train_first_primer PRIVATE ${INCLUDE_DIRS})
 target_sources(train_first_primer PRIVATE ${HEADERS})
 
 add_executable(train_first_primer_and_infer tests/train_first_primer_and_infer.c)
-target_link_libraries(train_first_primer_and_infer PRIVATE ${target})
+target_link_libraries(train_first_primer_and_infer PRIVATE ${target} m)
 target_include_directories(train_first_primer_and_infer PRIVATE ${INCLUDE_DIRS})
 target_sources(train_first_primer_and_infer PRIVATE ${HEADERS})
 
