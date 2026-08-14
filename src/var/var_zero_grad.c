@@ -1,8 +1,6 @@
 #include "../../include/adt/var/var_prot.h"
 #include "../../include/tensor.h"
 #include "../lifecycle/tensor_memory.h"
-#include <asm/signal.h>
-#include <bits/pthread_types.h>
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdint.h>
