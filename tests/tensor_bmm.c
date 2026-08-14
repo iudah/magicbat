@@ -19,7 +19,7 @@
 
 static void print_tensor_summary(const char *name, Tensor t) {
   if (!t) {
-    printf("%s: NULL\n", name);
+    printf("%s: nullptr\n", name);
     return;
   }
   printf("%s: shape=[", name);
@@ -141,8 +141,8 @@ static void test_autograd_bmm(void) {
   Tensor loss_grad = tensor_scalar(1.0f);
   var_backward_with_grad(out, loss_grad);
 
-  assert(a_raw->grad != NULL);
-  assert(b_raw->grad != NULL);
+  assert(a_raw->grad != nullptr);
+  assert(b_raw->grad != nullptr);
 
   tensor_destroy(a_raw);
   tensor_destroy(b_raw);

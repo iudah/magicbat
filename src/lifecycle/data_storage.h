@@ -9,7 +9,7 @@ static inline data_storage *data_storage_new(u32 nelements) {
 
   data_storage *data = tmalloc(sizeof(*data));
   data->nelements = nelements;
-  data->data = nelements ? tcalloc(nelements, sizeof(f32)) : NULL;
+  data->data = nelements ? tcalloc(nelements, sizeof(f32)) : nullptr;
   data->refcount = 1;
 
   return data;

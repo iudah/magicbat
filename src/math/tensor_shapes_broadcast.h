@@ -26,7 +26,7 @@ static inline bool tensor_shapes_broadcast_from_shape(const u32 t_ndims,
                                                       const u32 *s_shape,
                                                       u32 *outshape) {
 
-  if (t_shape == NULL || s_shape == NULL)
+  if (t_shape == nullptr || s_shape == nullptr)
     return false;
 
   u32 indx_t = t_ndims;

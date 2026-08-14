@@ -14,7 +14,7 @@
 #define HEAD_DIM 8
 #define D_MODEL NHEAD *HEAD_DIM
 #define LR 0.01f
-#define EPOCH 10000
+#define EPOCH 300
 
 u64 urand();
 

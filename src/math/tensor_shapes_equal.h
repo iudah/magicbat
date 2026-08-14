@@ -33,7 +33,7 @@ static inline bool tensor_shapes_equal_from_shape(const u32 t_ndims,
   if (t_ndims == 0)
     return false;
 
-  if (t_shape == NULL || s_shape == NULL)
+  if (t_shape == nullptr || s_shape == nullptr)
     return false;
 
   u32 t_indx = t_ndims;
@@ -59,7 +59,7 @@ static inline bool tensor_shape_is_broadcast(const u32 base_ndims,
   if (base_ndims == 0)
     return false;
 
-  if (base_shape == NULL || broadcast_shape == NULL)
+  if (base_shape == nullptr || broadcast_shape == nullptr)
     return false;
 
   u32 t_indx = base_ndims;

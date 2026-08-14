@@ -15,7 +15,7 @@ static inline void tensor_odometer_reset(u32 ndims, u32 *index) {
 
 static inline bool tensor_odometer_next(u32 *index, u32 ndims,
                                         const u32 *shape) {
-  if (index == NULL)
+  if (index == nullptr)
     return false;
 
   u32 dim = ndims;
