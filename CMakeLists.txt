@@ -289,3 +289,8 @@ target_link_libraries(train_first_primer PRIVATE ${target})
 target_include_directories(train_first_primer PRIVATE ${INCLUDE_DIRS})
 target_sources(train_first_primer PRIVATE ${HEADERS})
 
+add_executable(train_first_primer_and_infer tests/train_first_primer_and_infer.c)
+target_link_libraries(train_first_primer_and_infer PRIVATE ${target})
+target_include_directories(train_first_primer_and_infer PRIVATE ${INCLUDE_DIRS})
+target_sources(train_first_primer_and_infer PRIVATE ${HEADERS})
+
