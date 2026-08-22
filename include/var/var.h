@@ -1,5 +1,9 @@
 #ifndef VAR_H
 #define VAR_H
+
+#define global_inference (var_get_global_inference())
+#define thread_inference (*thread_inference_mode_location())
+
 #include "tensor.h"
 
 typedef struct var_struct *Var;
@@ -10,6 +14,10 @@ bool var_destroy(Tensor var);
 bool var_require_grad(Tensor var);
 bool var_is_tensor(Tensor var);
 Tensor var_grad(Tensor var);
+
+void var_set_global_inference(bool infer);
+bool var_get_global_inference();
+bool *thread_inference_mode_location();
 
 Tensor var_add(Tensor var_a, Tensor var_b);
 Tensor var_sub(Tensor var_a, Tensor var_b);

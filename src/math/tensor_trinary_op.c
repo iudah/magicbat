@@ -27,7 +27,7 @@ tensor_length_one_c_trinary(Tensor tensor_a, Tensor tensor_b, f32 float_c,
 Tensor tensor_trinary_op(const Tensor tensor_a, const Tensor tensor_b,
                          const Tensor tensor_c,
                          float (*operation_callback)(float, float, float)) {
-  TASSERT(tensor_a && tensor_b && operation_callback &&
+  TASSERT(tensor_a && tensor_b && tensor_c && operation_callback &&
           "Null tensor or operator.");
 
   if (!tensor_a || !tensor_b || !tensor_c)
@@ -257,7 +257,7 @@ Tensor tensor_length_one_c_trinary(const Tensor tensor_a, const Tensor tensor_b,
                                    f32 float_c,
                                    float (*operation_callback)(float, float,
                                                                float)) {
-  TASSERT(tensor_a && tensor_b && operation_callback &&
+  TASSERT(tensor_a && tensor_b && tensor_c && operation_callback &&
           "Null tensor or operator.");
 
   if (!tensor_a || !tensor_b)
@@ -382,7 +382,7 @@ Tensor tensor_length_one_b_trinary(const Tensor tensor_a, const Tensor tensor_c,
                                    f32 float_b,
                                    float (*operation_callback)(float, float,
                                                                float)) {
-  TASSERT(tensor_a && tensor_b && operation_callback &&
+  TASSERT(tensor_a && tensor_b && tensor_c && operation_callback &&
           "Null tensor or operator.");
 
   if (!tensor_a || !tensor_c)
@@ -480,7 +480,7 @@ Tensor tensor_length_one_a_trinary(const Tensor tensor_b, const Tensor tensor_c,
                                    f32 float_a,
                                    float (*operation_callback)(float, float,
                                                                float)) {
-  TASSERT(tensor_a && tensor_b && operation_callback &&
+  TASSERT(tensor_a && tensor_b && tensor_c && operation_callback &&
           "Null tensor or operator.");
 
   if (!tensor_b || !tensor_c)

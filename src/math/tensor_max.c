@@ -10,6 +10,8 @@ Tensor tensor_max_axis(const Tensor t, i32 axis) {
 
   if (axis < 0)
     axis += t->ndims;
+  if (axis < 0)
+    return nullptr;
 
   if (axis >= (i32)t->ndims)
     return nullptr;

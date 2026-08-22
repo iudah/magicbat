@@ -2,61 +2,75 @@
 #include "../../include/var/var.h"
 #include "../lifecycle/data_storage.h"
 #include "../lifecycle/tensor_memory.h"
+#include "tensor.h"
+#include "type_alias.h"
 #include <stdint.h>
 
-bool var_destroy(Tensor t) {
-  Var v = (Var)t;
+static void var_destroy_grad(Var variable) {
+  if (variable->grad && variable->base.is_tensor_type) {
+    tensor_destroy(variable->grad);
+  }
+  if (variable->grad && !variable->base.is_tensor_type) {
+    var_destroy(variable->grad);
+  }
+}
 
-  if (!v)
+bool var_destroy(Tensor var) {
+  Var variable = (Var)var;
+
+  if (!variable)
     return false;
 
-  if (v->base.is_tensor_type)
-    return tensor_destroy((Tensor)v);
+  if (variable->base.is_tensor_type)
+    return tensor_destroy((Tensor)variable);
 
-  u32 cap = 32;
+#define capacity (32)
+  u32 cap = capacity;
   u32 idx = 0;
   Var *vars = tmalloc(cap * sizeof(*vars));
   u32 last = 0;
-  vars[last] = v;
+  vars[last] = variable;
   last = 1;
 
   while (idx != last) {
-    v = vars[idx++];
+    variable = vars[idx++];
 
-    if (atomic_fetch_sub(&v->base.refcount, 1) != 1)
+    if (atomic_fetch_sub(&variable->base.refcount, 1) != 1)
       continue;
 
-    data_storage_destroy(v->base.data);
+    data_storage_destroy(variable->base.data);
+    var_destroy_grad(variable);
 
-    if (v->base.is_tensor_type) {
-      tensor_destroy((Tensor)v);
+    if (variable->base.is_tensor_type) {
+      tensor_destroy((Tensor)variable);
       continue;
     }
 
-    if (v->parent[0]) {
-      vars[last++] = (Var)(v->parent[0]);
+    if (variable->parent[0]) {
+      vars[last++] = (Var)(variable->parent[0]);
       if (last == cap) {
         cap <<= 1;
         vars = trealloc(vars, cap * sizeof(*vars));
       }
     }
 
-    if (v->parent[1]) {
-      vars[last++] = (Var)(v->parent[1]);
+    if (variable->parent[1]) {
+      vars[last++] = (Var)(variable->parent[1]);
       if (last == cap) {
         cap <<= 1;
         vars = trealloc(vars, cap * sizeof(*vars));
       }
     }
 
-    if (v->ctx) {
-      if (v->op.destroy_ctx)
-        v->op.destroy_ctx(v->ctx);
+    if (variable->ctx) {
+      if (variable->op.destroy_ctx)
+        variable->op.destroy_ctx(variable->ctx);
       else
-        tfree(v->ctx);
+        tfree(variable->ctx);
     }
 
-    tfree(v);
+    tfree(variable);
   }
+  tfree(vars);
   return true;
 }

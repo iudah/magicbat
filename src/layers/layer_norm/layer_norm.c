@@ -43,6 +43,9 @@ Tensor layer_norm_forward(const LayerNorm layer, const Tensor input) {
   TASSERT(layer && input && "Null layer or input.");
 
   auto norm = var_layer_norm_axis(input, input->ndims - 1);
+  if (!norm)
+    return nullptr;
+
   auto weighted_sum = var_mul(norm, layer->weight);
   if (!weighted_sum)
     return nullptr;
@@ -56,6 +59,10 @@ Tensor layer_norm_forward(const LayerNorm layer, const Tensor input) {
 }
 
 bool layer_norm_deinit(LayerNorm layer) { return linear_layer_deinit(layer); }
+
+bool layer_norm_destroy(LayerNorm layer) {
+  return layer_norm_deinit(layer) && tfree(layer);
+}
 
 Tensor *layer_norm_kernels(LayerNorm layer, Tensor buffer[],
                            u32 buffer_length) {

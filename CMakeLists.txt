@@ -29,6 +29,8 @@ src/info/tensor_num_elements.c
 src/info/tensor_shape.c
 src/lifecycle/tensor_destroy.c
 src/lifecycle/tensor_new.c
+src/lifecycle/tensor_arena.c
+src/lifecycle/tensor_memory.c
 src/math/tensor_add.c
 src/math/tensor_matmul.c
 src/math/tensor_mul.c
@@ -109,6 +111,8 @@ src/var/var_softmax.c
 src/var/var_mha_causal.c
 src/var/var_ce.c
 src/var/var_embedding.c
+src/var/var_inference.c
+mgrind/mgrind.c
 )
 
 set (HEADERS
@@ -117,6 +121,7 @@ pcg/extras/pcg_spinlock.h
 pcg/include/pcg_variants.h
 src/lifecycle/tensor_memory.h
 src/lifecycle/data_storage.h
+src/lifecycle/tensor_arena.h
 src/math/tensor_shapes_equal.h
 src/math/tensor_binary_op.h
 src/math/tensor_odometer.h
@@ -183,20 +188,49 @@ include/optimizers
 include/var
 )
 
-set(target tensor)
-add_library(${target} STATIC ${SOURCES})
-target_sources(${target} PRIVATE ${HEADERS})
+include(ExternalProject)
 
-target_include_directories(tensor PUBLIC include)
-target_include_directories(tensor PRIVATE ${INCLUDE_DIRS})
+ExternalProject_Add(
+    Libbacktrace
+    SOURCE_DIR "${CMAKE_BINARY_DIR}/libbacktrace-src"
+    BINARY_DIR  "${CMAKE_BINARY_DIR}/libbacktrace-build"
+    DOWNLOAD_COMMAND
+        ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/libbacktrace"
+            "${CMAKE_BINARY_DIR}/libbacktrace-src"
+    PATCH_COMMAND chmod 755 <SOURCE_DIR>/configure
+    CONFIGURE_COMMAND
+        <SOURCE_DIR>/configure --prefix=<INSTALL_DIR>
+    BUILD_COMMAND
+        make
+    INSTALL_COMMAND
+        make install
+)
+
+ExternalProject_Get_Property(Libbacktrace INSTALL_DIR)
+list(APPEND INCLUDE_DIRS "${INSTALL_DIR}/include")
+set(BT_INSTALL_DIR ${INSTALL_DIR})
+
+add_library(backtrace STATIC IMPORTED)
+set_target_properties(backtrace PROPERTIES
+  IMPORTED_LOCATION "${BT_INSTALL_DIR}/lib/libbacktrace.a"
+)
 
 if(NOT MSVC)
-    add_compile_options(-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -g)
-    add_link_options(-fsanitize=address -fsanitize=undefined)
+    add_compile_options(-fsanitize=address -fsanitize=undefined -O0 -g -funwind-tables -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -g -rdynamic -funwind-tables)
 else()
     add_compile_options(/fsanitize=address /Zi)
     add_link_options(/INCREMENTAL:NO)
 endif()
+
+set(target tensor)
+add_library(${target} STATIC ${SOURCES})
+target_sources(${target} PRIVATE ${HEADERS})
+target_link_libraries(${target} PUBLIC backtrace)
+
+target_include_directories(tensor PUBLIC include)
+target_include_directories(tensor PRIVATE ${INCLUDE_DIRS})
 
 # Test 
 add_executable(test_basic tests/tensor_basic_test.c)
@@ -205,7 +239,7 @@ target_include_directories(test_basic PRIVATE ${INCLUDE_DIRS})
 target_sources(test_basic PRIVATE ${HEADERS})
 
 add_executable(test_add tests/tensor_add_test.c)
-target_link_libraries(test_add PRIVATE ${target})
+target_link_libraries(test_add PRIVATE ${target} backtrace)
 target_include_directories(test_add PRIVATE ${INCLUDE_DIRS})
 target_sources(test_add PRIVATE ${HEADERS})
 
@@ -293,4 +327,9 @@ add_executable(train_first_primer_and_infer tests/train_first_primer_and_infer.c
 target_link_libraries(train_first_primer_and_infer PRIVATE ${target} m)
 target_include_directories(train_first_primer_and_infer PRIVATE ${INCLUDE_DIRS})
 target_sources(train_first_primer_and_infer PRIVATE ${HEADERS})
+
+add_executable(test_m tests/test_m.c)
+target_link_libraries(test_m PRIVATE ${target})
+target_include_directories(test_m PRIVATE ${INCLUDE_DIRS})
+target_sources(test_m PRIVATE ${HEADERS})
 

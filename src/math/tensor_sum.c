@@ -16,6 +16,8 @@ Tensor tensor_sum_axis(const Tensor tensor, i32 axis) {
 
   if (axis < 0)
     axis += tensor->ndims;
+  if (axis < 0)
+    return nullptr;
 
   if (axis >= (i32)tensor->ndims)
     return nullptr;

@@ -1,6 +1,7 @@
 #include "../../include/adt/var/var_prot.h"
 #include "../../include/var/var.h"
 #include "../lifecycle/tensor_memory.h"
+#include "tensor.h"
 #include <stdatomic.h>
 #include <stdint.h>
 
@@ -24,7 +25,8 @@ Tensor track(Tensor tensor) {
     var->base.shape[i] = tensor->shape[i];
     var->base.stride[i] = tensor->stride[i];
   }
-  var->grad = nullptr;
+
+  var->grad = tensor_new(var->base.ndims, var->base.shape);
   var->parent[0] = var->parent[1] = nullptr;
 
   return (Tensor)var;

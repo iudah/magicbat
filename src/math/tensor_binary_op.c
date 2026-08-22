@@ -90,15 +90,10 @@ Tensor tensor_broadcast_binary(Tensor tensor_a, Tensor tensor_b, u32 o_ndims,
     return nullptr;
   }
 
-  u32 *index = tensor_odometer_new(o_ndims);
-  if (index == nullptr) {
-    tensor_destroy(res);
-    res = nullptr;
-    return nullptr;
-  }
+  u32 index[MAX_DIMS] = {0};
 
-  u32 t_nindx[MAX_DIMS];
-  u32 s_nindx[MAX_DIMS];
+  u32 t_nindx[MAX_DIMS] = {0};
+  u32 s_nindx[MAX_DIMS] = {0};
   u32 flat = 0;
 
   do {
@@ -119,7 +114,6 @@ Tensor tensor_broadcast_binary(Tensor tensor_a, Tensor tensor_b, u32 o_ndims,
     ++flat;
 
   } while (tensor_odometer_next(index, o_ndims, o_shape));
-  tensor_odometer_destroy(index);
   return res;
 }
 
@@ -138,10 +132,12 @@ Tensor tensor_binary_op(const Tensor tensor_a, const Tensor tensor_b, f32 alpha,
                                     operation_callback);
 
   if (tensor_num_elements(tensor_a) == 1)
-    tensor_length_one_a_binary(tensor_a, tensor_b, alpha, operation_callback);
+    return tensor_length_one_a_binary(tensor_a, tensor_b, alpha,
+                                      operation_callback);
 
   if (tensor_num_elements(tensor_b) == 1)
-    tensor_length_one_b_binary(tensor_a, tensor_b, alpha, operation_callback);
+    return tensor_length_one_b_binary(tensor_a, tensor_b, alpha,
+                                      operation_callback);
 
   u32 o_ndims =
       tensor_a->ndims > tensor_b->ndims ? tensor_a->ndims : tensor_b->ndims;

@@ -4,6 +4,8 @@
 #include "tensor.h"
 #include "tensor_prot.h"
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 static inline void contiguous_lt_bs_unbatched(bool broadcast_a,
                                               bool broadcast_b, u32 batch,
@@ -100,6 +102,9 @@ Tensor tensor_bmm(const Tensor tensor_a, const Tensor tensor_b) {
     bmatmul_gt_block_size(batch, row, col, com, tensor_a->data->data,
                           tensor_b->data->data, product->data->data);
     break;
+  default:
+    fprintf(stderr, "Unknown BMM combination.\n");
+    abort();
   }
 
   return product;

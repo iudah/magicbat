@@ -1,18 +1,19 @@
 #include "tensor.h"
 #include "tensor_odometer.h"
 #include "tensor_prot.h"
+#include "type_alias.h"
 #include <string.h>
 #include <strings.h>
 
 void concat_non_contiguous(Tensor concat, u32 axis, Tensor *tensors,
-                           const u32 *bounds) {
+                           const u32 *bounds, const u32 n_tensor) {
   u32 pivot_index = 0;
   u32 pivot = 0;
   u32 pivot_tensor = 0;
 
   auto ndims = concat->ndims;
   auto data = concat->data->data;
-  u32 *index = tensor_odometer_new(ndims);
+  u32 index[MAX_DIMS] = {0};
   // for (u32 i = 0; i < concat->data->nelements; ++i) {
   /*if (axis == 0 && tensors[pivot_tensor]->is_contiguous) {
     auto nelements = tensors[pivot_tensor]->data->nelements;
@@ -23,7 +24,7 @@ void concat_non_contiguous(Tensor concat, u32 axis, Tensor *tensors,
   // tensor_odometer_reset(ndims, index);
   do {
     pivot = index[axis];
-    for (pivot_tensor = 0; pivot_tensor < ndims; ++pivot_tensor) {
+    for (pivot_tensor = 0; pivot_tensor < n_tensor; ++pivot_tensor) {
       if (pivot < bounds[pivot_tensor]) {
         pivot_index = pivot - (pivot_tensor > 0 ? bounds[pivot_tensor - 1] : 0);
         break;
@@ -40,7 +41,6 @@ void concat_non_contiguous(Tensor concat, u32 axis, Tensor *tensors,
   } while (tensor_odometer_next(index, ndims, concat->shape));
   // }
   //}
-  tensor_odometer_destroy(index);
 }
 
 Tensor tensor_concat(u32 n_tensor, Tensor *tensors, u32 axis) {
@@ -79,11 +79,11 @@ Tensor tensor_concat(u32 n_tensor, Tensor *tensors, u32 axis) {
   if (axis == 0 && all_contiguous) {
     auto data = concat->data->data;
     for (u32 i = 0; i < n_tensor; ++i) {
-      memcpy(data, tensors[i]->data->data,
+      memcpy(data + tensors[i]->data->nelements, tensors[i]->data->data,
              tensors[i]->data->nelements * sizeof(f32));
     }
   } else {
-    concat_non_contiguous(concat, axis, tensors, bounds);
+    concat_non_contiguous(concat, axis, tensors, bounds, n_tensor);
   }
 
   return concat;

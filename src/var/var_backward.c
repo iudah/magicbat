@@ -20,9 +20,11 @@ typedef struct {
   u32 count;
 } sort_stack;
 
-bool list_append(sorted_list *list, Var v) {
+#define CAPACITY (32)
+
+bool list_append(sorted_list *list, Var var) {
   if (!list->list) {
-    list->cap = 32;
+    list->cap = CAPACITY;
     list->list = tmalloc(list->cap * sizeof(*list->list));
   }
   if (list->count == list->cap) {
@@ -36,14 +38,14 @@ bool list_append(sorted_list *list, Var v) {
   if (!list->list)
     return false;
 
-  list->list[list->count] = v;
+  list->list[list->count] = var;
   ++list->count;
   return true;
 }
 
-static inline bool stack_push(sort_stack *stack, stack_item it) {
+static inline bool stack_push(sort_stack *stack, stack_item item) {
   if (!stack->stack) {
-    stack->cap = 32;
+    stack->cap = CAPACITY;
     stack->stack = tmalloc(stack->cap * sizeof(*stack->stack));
   }
   if (stack->count == stack->cap) {
@@ -57,7 +59,7 @@ static inline bool stack_push(sort_stack *stack, stack_item it) {
   if (!stack->stack)
     return false;
 
-  stack->stack[stack->count] = it;
+  stack->stack[stack->count] = item;
   ++stack->count;
 
   return true;
@@ -65,7 +67,7 @@ static inline bool stack_push(sort_stack *stack, stack_item it) {
 
 static inline stack_item stack_pop(sort_stack *stack) {
   if (!stack->count)
-    return (stack_item){0, 0};
+    return (stack_item){nullptr, 0};
   return stack->stack[--stack->count];
 }
 
@@ -76,15 +78,15 @@ static inline bool stack_is_empty(sort_stack *stack) {
 _Atomic static u64 global_mark = 0;
 
 static inline sorted_list topological_sort(Var top) {
-  sorted_list list = {0};
-  sort_stack stack = {0};
+  sorted_list list = {nullptr, 0, 0};
+  sort_stack stack = {nullptr, 0, 0};
 
   u64 current_mark = atomic_fetch_add(&global_mark, 1) + 1;
 
   if (!stack_push(&stack, (stack_item){top, ENTRY})) {
     tfree(stack.stack);
     tfree(list.list);
-    return (sorted_list){0};
+    return (sorted_list){nullptr, 0, 0};
   }
 
   while (!stack_is_empty(&stack)) {
@@ -94,26 +96,28 @@ static inline sorted_list topological_sort(Var top) {
     //    break;
     //}
 
-    Var v = item.v;
+    Var variable = item.v;
     if (item.flag == EXIT) {
-      list_append(&list, v);
+      list_append(&list, variable);
+      if (variable->grad)
+        tensor_fill(variable->grad, 0);
       continue;
     }
 
-    if (v->mark == current_mark)
+    if (variable->mark == current_mark)
       continue;
 
-    v->mark = current_mark;
+    variable->mark = current_mark;
 
-    if (item.flag == ENTRY && v->base.requires_grad &&
-        !v->base.is_tensor_type) {
-      stack_push(&stack, (stack_item){v, EXIT});
-      if (v->parent[0] && !v->parent[0]->base.is_tensor_type &&
-          v->parent[0]->base.requires_grad)
-        stack_push(&stack, (stack_item){v->parent[0], ENTRY});
-      if (v->parent[1] && !v->parent[1]->base.is_tensor_type &&
-          v->parent[1]->base.requires_grad)
-        stack_push(&stack, (stack_item){v->parent[1], ENTRY});
+    if (item.flag == ENTRY && variable->base.requires_grad &&
+        !variable->base.is_tensor_type) {
+      stack_push(&stack, (stack_item){variable, EXIT});
+      if (variable->parent[0] && !variable->parent[0]->base.is_tensor_type &&
+          variable->parent[0]->base.requires_grad)
+        stack_push(&stack, (stack_item){variable->parent[0], ENTRY});
+      if (variable->parent[1] && !variable->parent[1]->base.is_tensor_type &&
+          variable->parent[1]->base.requires_grad)
+        stack_push(&stack, (stack_item){variable->parent[1], ENTRY});
     }
   }
 
@@ -124,37 +128,36 @@ static inline sorted_list topological_sort(Var top) {
 
 pthread_mutex_t topo_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-bool var_backward_verbose(Tensor t, bool user_thread_safety_assured,
+bool var_backward_verbose(Tensor top, bool user_thread_safety_assured,
                           Tensor grad) {
-  Var top = (Var)t;
+  Var var = (Var)top;
 
-  Tensor a = (Tensor)top;
-  if (!a || a->is_tensor_type || !a->requires_grad)
+  if (!top || top->is_tensor_type || !top->requires_grad)
     return false;
 
   if (!user_thread_safety_assured)
     pthread_mutex_lock(&topo_mutex);
 
   bool ret_val = true;
-  sorted_list list = topological_sort(top);
+  sorted_list list = topological_sort(var);
   if (!list.list) {
     ret_val = false;
     goto skip_backward;
   }
 
   if (grad)
-    top->grad = grad;
+    var->grad = grad;
   else {
-    if (!top->grad)
-      top->grad = tensor_new(top->base.ndims, top->base.shape);
+    if (!var->grad)
+      var->grad = tensor_new(var->base.ndims, var->base.shape);
 
-    tensor_fill(top->grad, 1.0f);
+    tensor_fill(var->grad, 1.0F);
   }
 
   for (u32 i = list.count; i-- > 0;) {
-    Var v = list.list[i];
-    if (v->op.backward)
-      v->op.backward(v);
+    Var variable = list.list[i];
+    if (variable->op.backward)
+      variable->op.backward(variable);
   }
 
 skip_backward:
@@ -172,7 +175,7 @@ bool var_backward(Tensor top) {
 bool var_backward_with_grad(Tensor top, Tensor grad) {
   return var_backward_verbose(top, false, grad);
 }
-Tensor var_grad(Tensor t) {
-  Var v = (Var)t;
-  return v->grad;
+Tensor var_grad(Tensor var) {
+  Var variable = (Var)var;
+  return variable->grad;
 }

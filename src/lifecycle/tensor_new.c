@@ -24,7 +24,7 @@ Tensor tensor_new(const u32 ndims, const u32 *shape) {
     tmp[i] = shape[i];
   }
 
-  if (lenght == 0) {
+  if (lenght == 0 || lenght >= UINT32_MAX) {
     tfree(tensor);
     return nullptr;
   }
@@ -57,7 +57,7 @@ Tensor tensor_view(const Tensor src) {
   atomic_fetch_add(&tensor->data->refcount, 1);
   tensor->is_tensor_type = true;
   tensor->requires_grad = false;
-  tensor->is_contiguous = false;
+  tensor->is_contiguous = src->is_contiguous;
 
   return tensor;
 }

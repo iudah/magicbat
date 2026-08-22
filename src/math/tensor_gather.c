@@ -53,6 +53,12 @@ Tensor tensor_gather_axis(const Tensor tensor, const Tensor indices, i32 axis) {
           // cache-miss will occur if inner_size > locality (~64B)
           // But avoid ping-ponging res->data
           u32 cls = (u32)i_data[0];
+          if (cls >= axis_size) {
+            cls = axis_size - 1;
+          }
+          if (cls < 0) {
+            cls = 0;
+          }
           u32 a_offset = o_offset + (cls * inner_size);
           r_data[0] = tensor->data->data[a_offset];
         }
@@ -70,6 +76,12 @@ Tensor tensor_gather_axis(const Tensor tensor, const Tensor indices, i32 axis) {
           // cache-miss will occur if inner_size > locality (~64B)
           // But avoid ping-ponging res->data
           u32 cls = (u32)i_data[i];
+          if (cls >= axis_size) {
+            cls = axis_size - 1;
+          }
+          if (cls < 0) {
+            cls = 0;
+          }
           u32 a_offset = o_offset + (cls * inner_size) + i;
           r_data[i] = tensor->data->data[a_offset];
         }

@@ -13,17 +13,9 @@ bool rnn_cell_track(RNNCell layer) {
   if (!layer->cell.bias)
     return false;
 
-  auto weight = track(layer->cell.weight);
-  if (var_is_tensor(layer->cell.weight)) {
-    tensor_destroy(layer->cell.weight);
-    layer->cell.weight = weight;
-  }
+  layer->cell.weight = track_replace_untracked(layer->cell.weight);
 
-  auto bias = track(layer->cell.bias);
-  if (var_is_tensor(layer->cell.bias)) {
-    tensor_destroy(layer->cell.bias);
-    layer->cell.bias = bias;
-  }
+  layer->cell.bias = track_replace_untracked(layer->cell.bias);
 
   layer->hidden_state = track_replace_untracked(layer->hidden_state);
 

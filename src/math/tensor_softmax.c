@@ -124,9 +124,11 @@ Tensor tensor_softmax(const Tensor tensor, i32 axis) {
   if (!tensor)
     return nullptr;
 
-  auto res = tensor_new(tensor->ndims, tensor->shape);
-
   u32 reduce_axis = axis < 0 ? tensor->ndims + axis : axis;
+  if (reduce_axis < 0)
+    return nullptr;
+
+  auto res = tensor_new(tensor->ndims, tensor->shape);
   if (!tensor->is_contiguous) {
     softmax_not_contiguous_axis(
         reduce_axis, tensor->shape, reduce_axis, tensor->shape[reduce_axis],

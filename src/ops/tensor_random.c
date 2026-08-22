@@ -38,7 +38,7 @@ void tensor_random(Tensor tensor) {
   f32 value;
   if (tensor->is_contiguous) {
     for (u32 i = 0; i < tensor->data->nelements; ++i) {
-      random_ratio = urand() / (f32)UINT32_MAX;
+      random_ratio = urand() / (f32)UINT64_MAX;
       tensor->data->data[i] =
           FLT_MIN + (FLT_MAX * random_ratio) - (FLT_MIN * random_ratio);
     }

@@ -2,10 +2,13 @@
 #include "linear_layer.h"
 #include "sgd.h"
 #include "tensor.h"
+#include "tensor_arena.h"
+#include "tensor_memory.h"
 #include "train_first_primer.h"
 #include "transformer_enc_layer.h"
 #include "var.h"
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #define SEQ_SIZE 32
@@ -14,7 +17,10 @@
 #define HEAD_DIM 8
 #define D_MODEL NHEAD *HEAD_DIM
 #define LR 0.01f
-#define EPOCH 300
+#define EPOCH 100
+
+#define kB(x) ((u64)(x * 1024))
+#define MB(x) (kB(kB(x)))
 
 u64 urand();
 
@@ -34,6 +40,12 @@ void fill_input(Tensor input, Tensor target, const i32 *train_data,
 }
 
 int main() {
+  auto setup_arena = tarena_new(MB(4));
+  auto train_arena = tarena_new(MB(4));
+  auto infer_arena = train_arena;
+
+  set_active_arena(setup_arena);
+
   auto transformer_0 = transformer_enc_layer_new(
       NHEAD, HEAD_DIM, pre_ln_residual, pre_ln_residual);
   auto transformer_1 = transformer_enc_layer_new(
@@ -75,6 +87,7 @@ int main() {
   Tensor target = tensor_new(2, (u32[]){BATCH_SIZE, SEQ_SIZE});
 
   // TRAINING PHASE
+  set_active_arena(train_arena);
   for (u32 epoch = 0; epoch < EPOCH; ++epoch) {
 #define TRAIN_SIZE VOCAB_SIZE * 7 / 10
     fill_input(input, target, (i32 *)train_data, TRAIN_SIZE);
@@ -90,7 +103,7 @@ int main() {
     auto loss = var_cross_entropy_loss_indexed(logits, target, -1);
 
 #define EPOCH_CHECKPOINT 50
-    if (epoch % EPOCH_CHECKPOINT == 0)
+    if ((epoch + 1) % EPOCH_CHECKPOINT == 0)
       printf("Epoch %d | Loss: %f\n", epoch, loss->data->data[0]);
 
     var_backward(loss);
@@ -102,6 +115,10 @@ int main() {
         tensor_fill(grad, 0.0F);
       }
     }
+
+    var_destroy(loss);
+
+    tarena_reset(active_arena);
   }
 
   // INFERENCE / TEXT GENERATION PHASE
@@ -124,14 +141,19 @@ int main() {
 // Seed a prompt character into the very last position of the context
 // (e.g., 'A')
 #define SEED_TOKEN 23 // 'A' in your itos_map
-  for (u32 batch = 0; batch < BATCH_SIZE; ++batch) {
-    inf_input->data->data[(batch * SEQ_SIZE) + LAST_TOKEN_POS] =
-        (f32)SEED_TOKEN;
-  }
+  inf_input->data->data[LAST_TOKEN_POS] = (f32)SEED_TOKEN;
 
   printf("Seed Prompt: %c\nGenerated Text: ", itos_map[SEED_TOKEN]);
   fflush(stdout);
 
+  untrack(weight_matrix);
+  transformer_enc_layer_untrack(transformer_0);
+  transformer_enc_layer_untrack(transformer_1);
+  layer_norm_untrack(layer_norm_out);
+  linear_layer_untrack(lang_model_head);
+
+  set_active_arena(infer_arena);
+  tarena_reset(infer_arena);
 #define STEP_SIZE 120
   // Autoregressively generate 120 characters
   for (u32 step = 0; step < STEP_SIZE; ++step) {
@@ -186,10 +208,19 @@ int main() {
     tensor_destroy(b1_out);
     tensor_destroy(f_norm);
     tensor_destroy(logits);
+
+    tarena_reset(infer_arena);
   }
 
   printf("%s", inf_buffer);
   printf("\n\n");
   tensor_destroy(inf_input);
+
+  layer_norm_destroy(layer_norm_out);
+  sgd_optimizer_destroy(optim);
+  linear_layer_destroy(lang_model_head);
+  transformer_enc_layer_destroy(transformer_0);
+  transformer_enc_layer_destroy(transformer_1);
+
   return 0;
 }

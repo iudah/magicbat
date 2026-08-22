@@ -12,17 +12,9 @@ bool linear_layer_track(LinearLayer layer) {
   if (!layer->bias)
     return false;
 
-  auto weight = track(layer->weight);
-  if (var_is_tensor(layer->weight)) {
-    tensor_destroy(layer->weight);
-    layer->weight = weight;
-  }
+  layer->weight = track_replace_untracked(layer->weight);
 
-  auto bias = track(layer->bias);
-  if (var_is_tensor(layer->bias)) {
-    tensor_destroy(layer->bias);
-    layer->bias = bias;
-  }
+  layer->bias = track_replace_untracked(layer->bias);
 
   return true;
 }
