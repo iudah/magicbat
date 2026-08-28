@@ -150,33 +150,107 @@ Tensor tensor_binary_op(const Tensor tensor_a, const Tensor tensor_b, f32 alpha,
   return nullptr;
 }
 
-bool tensor_binary_op_inplace(Tensor restrict tensor_a,
-                              const Tensor restrict tensor_b, f32 alpha,
-                              float (*operation_callback)(float, float,
-                                                          float)) {
+static inline f32 contiguous_get(Tensor tensor, const u32 *const index) {
+  return tensor->data->data[tensor->offset + *index];
+}
+static inline bool contiguous_set(Tensor tensor, const u32 *const index,
+                                  f32 value) {
+  if (tensor->offset + *index >= tensor->data->nelements)
+    return false;
+  tensor->data->data[tensor->offset + *index] = value;
+  return true;
+}
+
+bool tensor_binary_op_inplace(
+    Tensor restrict tensor_a, const Tensor restrict tensor_b, f32 alpha,
+    float (*operation_callback)(float val_a, float val_b, float alpha)) {
   if (!tensor_a || !tensor_b)
     return false;
 
-  if (tensor_shapes_equal(tensor_a, tensor_b)) {
+  auto set_val_a = tensor_a->is_contiguous ? contiguous_set : tensor_set;
+  auto get_val_a = tensor_a->is_contiguous ? contiguous_get : tensor_get;
+  auto get_val_b = tensor_b->is_contiguous ? contiguous_get : tensor_get;
+
+  auto tensor_a_and_b_have_same_shape = tensor_shapes_equal(tensor_a, tensor_b);
+  if (tensor_a_and_b_have_same_shape && tensor_a->is_contiguous &&
+      tensor_b->is_contiguous) {
     Tensor res = tensor_a;
 
     auto nelement = tensor_num_elements(res);
 
     for (u32 i = 0; i < nelement; ++i) {
-      auto val_a = tensor_a->data->data[i];
-      auto val_b = tensor_b->data->data[i];
-      res->data->data[i] = operation_callback(val_a, val_b, alpha);
+      auto val_a = get_val_a(tensor_a, &i);
+      auto val_b = get_val_b(tensor_b, &i);
+      set_val_a(res, &i, operation_callback(val_a, val_b, alpha));
     }
 
     return true;
   }
 
-  if (tensor_shape_is_broadcast(tensor_b->ndims, tensor_b->shape,
-                                tensor_a->ndims, tensor_a->shape)) {
+  if (tensor_a_and_b_have_same_shape && tensor_a->is_contiguous &&
+      !tensor_b->is_contiguous) {
+    Tensor res = tensor_a;
+    u32 odometer[MAX_DIMS] = {0};
+
+    auto nelement = tensor_num_elements(res);
+
+    for (u32 i = 0; i < nelement; ++i) {
+
+      auto val_a = get_val_a(tensor_a, &i);
+      auto val_b = get_val_b(tensor_b, odometer);
+      set_val_a(res, &i, operation_callback(val_a, val_b, alpha));
+
+      tensor_odometer_next(odometer, tensor_a->ndims, tensor_a->shape);
+    }
+
+    return true;
+  }
+
+  if (tensor_a_and_b_have_same_shape && !tensor_a->is_contiguous &&
+      tensor_b->is_contiguous) {
+    Tensor res = tensor_a;
+    u32 odometer[MAX_DIMS] = {0};
+
+    auto nelement = tensor_num_elements(res);
+
+    for (u32 i = 0; i < nelement; ++i) {
+
+      auto val_a = get_val_a(tensor_a, odometer);
+      auto val_b = get_val_b(tensor_b, &i);
+      set_val_a(res, odometer, operation_callback(val_a, val_b, alpha));
+
+      tensor_odometer_next(odometer, tensor_a->ndims, tensor_a->shape);
+    }
+
+    return true;
+  }
+
+  if (tensor_a_and_b_have_same_shape && !tensor_a->is_contiguous &&
+      !tensor_b->is_contiguous) {
+    Tensor res = tensor_a;
+    u32 odometer[MAX_DIMS] = {0};
+
+    auto nelement = tensor_num_elements(res);
+
+    for (u32 i = 0; i < nelement; ++i) {
+
+      auto val_a = get_val_a(tensor_a, odometer);
+      auto val_b = get_val_b(tensor_b, odometer);
+      set_val_a(res, odometer, operation_callback(val_a, val_b, alpha));
+
+      tensor_odometer_next(odometer, tensor_a->ndims, tensor_a->shape);
+    }
+
+    return true;
+  }
+
+  auto tensor_a_and_b_are_broadcasts = tensor_shape_is_broadcast(
+      tensor_b->ndims, tensor_b->shape, tensor_a->ndims, tensor_a->shape);
+  if (tensor_a_and_b_are_broadcasts && tensor_a->is_contiguous) {
 
     Tensor res = tensor_a;
     u32 index[MAX_DIMS] = {0};
-    u32 *odometer = tensor_odometer_new(tensor_a->ndims);
+    u32 odometer[MAX_DIMS] = {0};
     auto nelement = tensor_num_elements(res);
 
     for (u32 i = 0; i < nelement; ++i) {
@@ -184,13 +258,12 @@ bool tensor_binary_op_inplace(Tensor restrict tensor_a,
         index[k] = tensor_b->shape[k] == 1 ? 0 : odometer[j];
       }
 
-      auto val_a = tensor_a->data->data[i];
+      auto val_a = get_val_a(tensor_a, &i);
       auto val_b = tensor_get(tensor_b, index);
-      res->data->data[i] = operation_callback(val_a, val_b, alpha);
+      set_val_a(res, &i, operation_callback(val_a, val_b, alpha));
 
       tensor_odometer_next(odometer, tensor_a->ndims, tensor_a->shape);
     }
-    tensor_odometer_destroy(odometer);
 
     return true;
   }

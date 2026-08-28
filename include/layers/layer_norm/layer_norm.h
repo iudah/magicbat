@@ -20,4 +20,7 @@ Tensor *layer_norm_kernels(LayerNorm layer, Tensor buffer[], u32 buffer_length);
 bool layer_norm_track(LayerNorm layer);
 bool layer_norm_untrack(LayerNorm layer);
 
+bool layer_norm_serialize(LayerNorm layer, FILE *binary);
+LayerNorm layer_norm_deserialize(LayerNorm layer, FILE *binary);
+
 #endif

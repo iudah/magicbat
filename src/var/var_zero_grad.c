@@ -1,29 +1,29 @@
-#include "../../include/adt/var/var_prot.h"
-#include "../../include/tensor.h"
-#include "../lifecycle/tensor_memory.h"
+#include "var_prot.h"
+#include "tensor.h"
+#include "tensor_memory.h"
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdint.h>
 
-bool var_zero_grad(Tensor top_) {
+bool var_zero_grad(Tensor top) {
 
-  Var top = (Var)top_;
+  Var variable = (Var)top;
 
-  Tensor a = (Tensor)top;
-  if (!a || a->is_tensor_type || !a->requires_grad)
+  if (!top || top->is_tensor_type || !top->requires_grad)
     return false;
 
-  u32 cap = 32;
+#define capacity (32)
+  u32 cap = capacity;
   Var *list = tmalloc(cap * sizeof(*list));
   u32 count = 0;
-  mem top_grad = top->grad;
-  top->grad = nullptr;
+  mem top_grad = variable->grad;
+  variable->grad = nullptr;
 
-  list[count++] = top;
+  list[count++] = variable;
   for (u32 i = 0; i < count; ++i) {
-    Var v = list[i];
-    if (v->grad) {
-      tensor_fill(v->grad, 0);
+    Var var = list[i];
+    if (var->grad && !var->parent[0] && !var->parent[1]) {
+      tensor_fill(var->grad, 0);
     }
 
     if (cap - count < 2) {
@@ -36,15 +36,15 @@ bool var_zero_grad(Tensor top_) {
       list = tmp;
       cap = new_cap;
     }
-    if (v->parent[0] && !v->parent[0]->base.is_tensor_type &&
-        v->parent[0]->base.requires_grad)
-      list[count++] = v->parent[0];
-    if (v->parent[1] && !v->parent[1]->base.is_tensor_type &&
-        v->parent[1]->base.requires_grad)
-      list[count++] = v->parent[1];
+    if (var->parent[0] && !var->parent[0]->base.is_tensor_type &&
+        var->parent[0]->base.requires_grad)
+      list[count++] = var->parent[0];
+    if (var->parent[1] && !var->parent[1]->base.is_tensor_type &&
+        var->parent[1]->base.requires_grad)
+      list[count++] = var->parent[1];
   }
 
-  top->grad = top_grad;
+  variable->grad = top_grad;
 
   tfree(list);
   return true;

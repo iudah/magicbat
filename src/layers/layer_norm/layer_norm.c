@@ -71,3 +71,10 @@ Tensor *layer_norm_kernels(LayerNorm layer, Tensor buffer[],
 
 bool layer_norm_track(LayerNorm layer) { return linear_layer_track(layer); }
 bool layer_norm_untrack(LayerNorm layer) { return linear_layer_untrack(layer); }
+
+bool layer_norm_serialize(LayerNorm layer, FILE *binary) {
+  return linear_layer_serialize(layer, binary);
+}
+LayerNorm layer_norm_deserialize(LayerNorm layer, FILE *binary) {
+  return linear_layer_deserialize(layer, binary);
+}

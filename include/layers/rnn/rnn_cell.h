@@ -17,4 +17,7 @@ Tensor rnn_cell_bias(RNNCell layer);
 bool rnn_cell_track(RNNCell layer);
 bool rnn_cell_untrack(RNNCell layer);
 
+bool rnn_cell_serialize(RNNCell layer, FILE *binary);
+RNNCell rnn_cell_deserialize(RNNCell layer, FILE *binary);
+
 #endif

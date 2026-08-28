@@ -1,5 +1,5 @@
-#include "../../include/adt/var/var_prot.h"
-#include "../../include/tensor.h"
+#include "var_prot.h"
+#include "tensor.h"
 #include <stdatomic.h>
 #include <stdint.h>
 

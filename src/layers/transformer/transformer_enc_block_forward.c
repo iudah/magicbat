@@ -4,11 +4,13 @@
 #include "transformer_enc_layer.h"
 #include "var.h"
 
-Tensor mha_forward(TransformerEncoderLayer layer, Tensor pos_enc_input) {
+Tensor mha_forward(void *mha_layer, Tensor pos_enc_input) {
+  TransformerEncoderLayer layer = mha_layer;
   return var_multihead_attention_causal(pos_enc_input, layer->w_qkv,
                                         layer->n_head, layer->head_dim);
 }
-Tensor ffn_forward(TransformerEncoderLayer layer, Tensor input) {
+Tensor ffn_forward(void *ffn_layer, Tensor input) {
+  TransformerEncoderLayer layer = ffn_layer;
   return linear_layer_forward(
       &layer->ffn_1, var_relu(linear_layer_forward(&layer->ffn_0, input)));
 }

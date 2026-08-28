@@ -1,6 +1,6 @@
-#include "../../include/adt/var/var_prot.h"
-#include "../../include/tensor.h"
-#include "../lifecycle/tensor_memory.h"
+#include "var_prot.h"
+#include "tensor.h"
+#include "tensor_memory.h"
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdint.h>
@@ -99,8 +99,6 @@ static inline sorted_list topological_sort(Var top) {
     Var variable = item.v;
     if (item.flag == EXIT) {
       list_append(&list, variable);
-      if (variable->grad)
-        tensor_fill(variable->grad, 0);
       continue;
     }
 

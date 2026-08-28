@@ -1,5 +1,5 @@
-#include "../include/adt/tensor/tensor_prot.h"
-#include "../include/tensor.h"
+#include "tensor.h"
+#include "tensor_prot.h"
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -10,21 +10,21 @@
 #define MAX_DIMS 5
 
 /* Helper: compare two tensors element‑wise */
-static bool tensors_equal(Tensor a, Tensor b) {
-  if (!a || !b)
+static bool tensors_equal(Tensor tensor_a, Tensor tensor_b) {
+  if (!tensor_a || !tensor_b)
     return false;
-  if (a->ndims != b->ndims)
+  if (tensor_a->ndims != tensor_b->ndims)
     return false;
-  if (a->data->nelements != b->data->nelements)
+  if (tensor_a->data->nelements != tensor_b->data->nelements)
     return false;
-  for (u32 i = 0; i < a->ndims; ++i) {
-    if (a->shape[i] != b->shape[i])
+  for (u32 i = 0; i < tensor_a->ndims; ++i) {
+    if (tensor_a->shape[i] != tensor_b->shape[i])
       return false;
   }
-  for (u32 i = 0; i < a->data->nelements; ++i) {
-    if (fabsf(a->data->data[i] - b->data->data[i]) > EPS) {
-      printf("Mismatch at index %u: %f vs %f\n", i, a->data->data[i],
-             b->data->data[i]);
+  for (u32 i = 0; i < tensor_a->data->nelements; ++i) {
+    if (fabsf(tensor_a->data->data[i] - tensor_b->data->data[i]) > EPS) {
+      printf("Mismatch at index %u: %f vs %f\n", i, tensor_a->data->data[i],
+             tensor_b->data->data[i]);
       return false;
     }
   }
@@ -32,18 +32,18 @@ static bool tensors_equal(Tensor a, Tensor b) {
 }
 
 /* Helper: fill a 2D tensor with values from a flat array */
-static void fill_2d(Tensor t, const float *vals) {
+static void fill_2d(Tensor tensor, const float *vals) {
   assert(t->ndims == 2);
-  memcpy(t->data->data, vals, t->data->nelements * sizeof(float));
+  memcpy(tensor->data->data, vals, tensor->data->nelements * sizeof(float));
 }
 
 /* Helper: create a 2D tensor and fill with given values */
 static Tensor make_tensor_2d(u32 rows, u32 cols, const float *vals) {
-  Tensor t = tensor_new(2, (u32[]){rows, cols});
+  Tensor tensor = tensor_new(2, (u32[]){rows, cols});
   if (vals) {
-    fill_2d(t, vals);
+    fill_2d(tensor, vals);
   }
-  return t;
+  return tensor;
 }
 
 /* Manual computation of dA = grad * B^T (both 2D) */

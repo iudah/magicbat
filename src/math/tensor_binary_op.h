@@ -15,4 +15,5 @@ bool tensor_binary_op_inplace(
 bool tensor_binary_op_scalar_inplace(Tensor restrict tensor_a, f32 scalar,
                                      float (*operation_callback)(float val_a,
                                                                  float val_b));
+
 #endif

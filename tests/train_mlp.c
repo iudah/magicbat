@@ -69,7 +69,7 @@ int main(void) {
     // Layer 1 backprop (through ReLU)
     Tensor grad_h1_act =
         tensor_matmul(grad_logits, tensor_transpose(kernels[2]));
-    Tensor grad_h1 = tensor_relu_backward(h1, grad_h1_act);
+    Tensor grad_h1 = tensor_relu_backward(h1, h1_act, grad_h1_act);
 
     Tensor grad_w1 = tensor_matmul(tensor_transpose(x), grad_h1);
     Tensor grad_b1 = tensor_sum_axis(grad_h1, 0);

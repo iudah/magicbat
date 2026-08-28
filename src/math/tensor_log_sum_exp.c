@@ -1,4 +1,4 @@
-#include "../../include/tensor.h"
+#include "tensor.h"
 #include <stdint.h>
 
 Tensor tensor_log_sum_exp_axis(const Tensor t, i32 axis) {

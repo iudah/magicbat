@@ -1,33 +1,42 @@
-#include "../../include/adt/tensor/tensor_prot.h"
-#include "../../include/tensor.h"
+#include "tensor_prot.h"
+#include "tensor.h"
+#include "tensor_binary_op.h"
 #include <math.h>
 #include <stdint.h>
 
-Tensor tensor_relu(const Tensor t) {
-  TASSERT(t && "Null tensor");
-  if (!t)
+static inline float relu_fn(float UNUSED_ARG val_a, float val_b,
+                            float UNUSED_ARG scalar) {
+  return fmaxf(val_b, 0);
+}
+Tensor tensor_relu(const Tensor tensor) {
+  TASSERT(tensor && "Null tensor");
+  if (!tensor)
     return nullptr;
 
-  Tensor res = tensor_new(tensor_ndims(t), tensor_shape(t));
+  Tensor res = tensor_new(tensor_ndims(tensor), tensor_shape(tensor));
   if (res == nullptr)
     return nullptr;
 
   auto nelement = tensor_num_elements(res);
 
-  for (u32 i = 0; i < nelement; ++i) {
-    auto a = t->data->data[i];
-    res->data->data[i] = fmaxf(a, 0);
-  }
+  if (tensor->is_contiguous) {
+    for (u32 i = 0; i < nelement; ++i) {
+      auto value = tensor->data->data[i];
+      res->data->data[i] = fmaxf(value, 0);
+    }
+  } else
+    tensor_binary_op_inplace(res, tensor, 0, relu_fn);
 
   return res;
 }
 
 #define EPS (1e-8)
-Tensor tensor_relu_backward(const Tensor t, const Tensor grad) {
-  if (!t)
+Tensor tensor_relu_backward(const Tensor tensor, const Tensor relu,
+                            const Tensor grad) {
+  if (!tensor)
     return nullptr;
 
-  Tensor res = tensor_new(tensor_ndims(t), tensor_shape(t));
+  Tensor res = tensor_new(tensor_ndims(relu), tensor_shape(relu));
   if (res == nullptr)
     return nullptr;
 
@@ -35,12 +44,13 @@ Tensor tensor_relu_backward(const Tensor t, const Tensor grad) {
 
   if (grad) {
     for (u32 i = 0; i < nelement; ++i) {
-      res->data->data[i] = t->data->data[i] > EPS ? grad->data->data[i] : 0.0f;
+      res->data->data[i] =
+          relu->data->data[i] > EPS ? grad->data->data[i] : 0.0F;
     }
   } else {
     for (u32 i = 0; i < nelement; ++i) {
-      auto a = t->data->data[i];
-      res->data->data[i] = a > EPS ? 1.0f : 0.0f;
+      auto value = relu->data->data[i];
+      res->data->data[i] = value > EPS ? 1.0F : 0.0F;
     }
   }
 

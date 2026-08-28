@@ -1,6 +1,6 @@
-#include "../../include/adt/var/var_prot.h"
-#include "../../include/var/var.h"
-#include "../lifecycle/tensor_memory.h"
+#include "var_prot.h"
+#include "var.h"
+#include "tensor_memory.h"
 #include "tensor.h"
 #include <stdatomic.h>
 #include <stdint.h>

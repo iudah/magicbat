@@ -1,4 +1,5 @@
 #include "layer_norm.h"
+#include "layer_serialize.h"
 #include "linear_layer.h"
 #include "sgd.h"
 #include "tensor.h"
@@ -10,6 +11,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define SEQ_SIZE 32
 #define BATCH_SIZE 8
@@ -17,7 +19,7 @@
 #define HEAD_DIM 8
 #define D_MODEL NHEAD *HEAD_DIM
 #define LR 0.01f
-#define EPOCH 100
+#define EPOCH 400
 
 #define kB(x) ((u64)(x * 1024))
 #define MB(x) (kB(kB(x)))
@@ -46,13 +48,21 @@ int main() {
 
   set_active_arena(setup_arena);
 
-  auto transformer_0 = transformer_enc_layer_new(
-      NHEAD, HEAD_DIM, pre_ln_residual, pre_ln_residual);
-  auto transformer_1 = transformer_enc_layer_new(
-      NHEAD, HEAD_DIM, pre_ln_residual, pre_ln_residual);
+  auto bin = layer_load_bin(getenv("HOME"), ".magicbat.first_primer");
 
-  auto layer_norm_out = layer_norm_new(D_MODEL);
-  auto lang_model_head = linear_layer_new(D_MODEL, VOCAB_SIZE);
+  auto transformer_0 =
+      bin != nullptr ? layer_deserialize(bin)
+                     : transformer_enc_layer_new(
+                           NHEAD, HEAD_DIM, pre_ln_residual, pre_ln_residual);
+  auto transformer_1 =
+      bin != nullptr ? layer_deserialize(bin)
+                     : transformer_enc_layer_new(
+                           NHEAD, HEAD_DIM, pre_ln_residual, pre_ln_residual);
+
+  auto layer_norm_out =
+      bin != nullptr ? layer_deserialize(bin) : layer_norm_new(D_MODEL);
+  auto lang_model_head = bin != nullptr ? layer_deserialize(bin)
+                                        : linear_layer_new(D_MODEL, VOCAB_SIZE);
 
   transformer_enc_layer_track(transformer_0);
   transformer_enc_layer_track(transformer_1);
@@ -74,14 +84,21 @@ int main() {
                        kernels + N_XFORMER_KERNELS + N_XFORMER_KERNELS +
                            N_LAYERNORM_KERNELS,
                        N_LINEAR_KERNELS);
-  Tensor weight_matrix =
-      track_replace_untracked(tensor_new(2, (u32[]){VOCAB_SIZE, D_MODEL}));
-  tensor_random_bound(weight_matrix, 0, 1);
+  Tensor weight_matrix = track_replace_untracked(
+      bin != nullptr ? tensor_deserialize(bin)
+                     : tensor_new(2, (u32[]){VOCAB_SIZE, D_MODEL}));
+  if (bin == nullptr)
+    tensor_random_bound(weight_matrix, 0, 1);
   kernels[total_kernels - 1] = weight_matrix;
 
   auto optim = sgd_optimizer_new(kernels, total_kernels, LR);
 
-  Tensor positional_encoder = tensor_positional_encoding(SEQ_SIZE, D_MODEL);
+  Tensor positional_encoder =
+      bin != nullptr ? tensor_deserialize(bin)
+                     : tensor_positional_encoding(SEQ_SIZE, D_MODEL);
+
+  if (bin)
+    fclose(bin);
 
   Tensor input = tensor_new(2, (u32[]){BATCH_SIZE, SEQ_SIZE});
   Tensor target = tensor_new(2, (u32[]){BATCH_SIZE, SEQ_SIZE});
@@ -103,7 +120,8 @@ int main() {
     auto loss = var_cross_entropy_loss_indexed(logits, target, -1);
 
 #define EPOCH_CHECKPOINT 50
-    if ((epoch + 1) % EPOCH_CHECKPOINT == 0 || epoch == 0)
+    if ((epoch + 1) % EPOCH_CHECKPOINT == 0 || epoch == (EPOCH - 1) ||
+        epoch == 0)
       printf("Epoch %d | Loss: %f\n", epoch + 1, loss->data->data[0]);
 
     var_backward(loss);
@@ -120,6 +138,15 @@ int main() {
 
     tarena_reset(active_arena);
   }
+  bin = layer_new_bin(getenv("HOME"), ".magicbat.first_primer", 1);
+  layer_serialize(TRANSFORMER_ENC_SERIALIZER, transformer_0, bin);
+  layer_serialize(TRANSFORMER_ENC_SERIALIZER, transformer_0, bin);
+  layer_serialize(LAYERNORM_SERIALIZER, layer_norm_out, bin);
+  layer_serialize(LINEAR_SERIALIZER, lang_model_head, bin);
+  tensor_serialize(weight_matrix, bin);
+  tensor_serialize(positional_encoder, bin);
+  if (bin)
+    fclose(bin);
 
   // INFERENCE / TEXT GENERATION PHASE
   printf("\n"
@@ -127,6 +154,7 @@ int main() {
          "          Model Inference Generation         \n"
          "=============================================\n");
 
+  set_active_arena(setup_arena);
 #define INF_LIMIT (256)
   char inf_buffer[INF_LIMIT];
   u32 inf_limit = 0;

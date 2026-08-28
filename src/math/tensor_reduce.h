@@ -50,19 +50,46 @@ static inline Tensor tensor_reduce_axis(const Tensor tensor, i32 axis,
     inner_size *= tensor->shape[i];
   }
 
-  for (u32 o_indx = 0; o_indx < outer_size; ++o_indx) {
-    u32 o_offset = o_indx * axis_size * inner_size;
-    u32 r_offset = o_indx * inner_size;
-    float *r_data = &res->data->data[r_offset];
-    for (u32 i = 0; i < inner_size; ++i) {
-      float accumulator = initial_value;
-      for (u32 a_indx = 0; a_indx < axis_size;) {
-        u32 a_offset = o_offset + (a_indx * inner_size);
-        // cache-miss read if inner_size > locality
-        accumulator = reduce(accumulator, tensor->data->data[a_offset + i],
-                             alpha, ++a_indx == axis_size);
+  if (!tensor->is_contiguous) {
+    u32 index[MAX_DIMS] = {0};
+
+    for (u32 o_indx = 0; o_indx < outer_size; ++o_indx) {
+      // u32 o_offset = o_indx * axis_size * inner_size;
+      u32 r_offset = o_indx * inner_size;
+
+      tensor_odometer_next(index, axis, tensor->shape);
+
+      float *r_data = &res->data->data[r_offset];
+      for (u32 i = 0; i < inner_size; ++i) {
+        float accumulator = initial_value;
+        memset(index + axis + 1, 0, (tensor->ndims - axis) * sizeof(u32));
+        for (u32 a_indx = 0; a_indx < axis_size; ++a_indx) {
+          tensor_odometer_next(index + axis + 1, tensor->ndims - axis - 1,
+                               tensor->shape + axis + 1);
+          // u32 a_offset = o_offset + (a_indx * inner_size);
+          // cache-miss read if inner_size > locality
+          accumulator = reduce(accumulator, tensor_get(tensor, index), alpha,
+                               ++a_indx == axis_size);
+        }
+        r_data[i] = accumulator;
       }
-      r_data[i] = accumulator;
+    }
+  } else {
+    for (u32 o_indx = 0; o_indx < outer_size; ++o_indx) {
+      u32 o_offset = o_indx * axis_size * inner_size;
+      u32 r_offset = o_indx * inner_size;
+      float *r_data = &res->data->data[r_offset];
+      for (u32 i = 0; i < inner_size; ++i) {
+        float accumulator = initial_value;
+        for (u32 a_indx = 0; a_indx < axis_size;) {
+          u32 a_offset = o_offset + (a_indx * inner_size);
+          // cache-miss read if inner_size > locality
+          accumulator = reduce(
+              accumulator, tensor->data->data[tensor->offset + a_offset + i],
+              alpha, ++a_indx == axis_size);
+        }
+        r_data[i] = accumulator;
+      }
     }
   }
   return res;
@@ -97,10 +124,7 @@ static inline Tensor tensor_reduce_to_shape(Tensor tensor, u32 ndims,
   }
 
   u32 o_ndims = tensor->ndims > ndims ? tensor->ndims : ndims;
-  u32 *t_stride = tmalloc(o_ndims * 4 * sizeof(u32));
-  u32 *s_stride = t_stride + o_ndims;
-  u32 *o_stride = s_stride + o_ndims;
-  u32 *o_shape = o_stride + o_ndims;
+  u32 o_shape[MAX_DIMS] = {0};
 
   if (tensor_shapes_broadcast_from_shape(tensor->ndims, tensor->shape, ndims,
                                          shape, o_shape) &&
@@ -118,12 +142,7 @@ static inline Tensor tensor_reduce_to_shape(Tensor tensor, u32 ndims,
       tensor_fill(res, initial_value);
 #undef EPS
 
-    u32 *index = tensor_odometer_new(o_ndims);
-    if (index == nullptr) {
-      tensor_destroy(res);
-      res = nullptr;
-      return nullptr;
-    }
+    u32 index[MAX_DIMS] = {0};
 
     u32 res_nindx[MAX_DIMS];
     u32 flat = 0;
@@ -135,17 +154,15 @@ static inline Tensor tensor_reduce_to_shape(Tensor tensor, u32 ndims,
 
       auto res_val = tensor_get(res, res_nindx);
 
-      res_val = reduce(res_val, tensor->data->data[flat], alpha, false);
+      res_val = reduce(res_val, tensor->data->data[tensor->offset + flat],
+                       alpha, false);
       tensor_set(res, res_nindx, res_val);
 
       ++flat;
 
     } while (tensor_odometer_next(index, o_ndims, o_shape));
-    tensor_odometer_destroy(index);
-    tfree(t_stride);
     return res;
   }
-  tfree(t_stride);
   return nullptr;
 }
 #endif

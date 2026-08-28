@@ -1,4 +1,4 @@
-#include "../../include/tensor.h"
+#include "tensor.h"
 #include "tensor_binary_op.h"
 #include <stdint.h>
 

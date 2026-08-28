@@ -1,8 +1,12 @@
 #include "tensor.h"
 #include "tensor_prot.h"
+#include <stdlib.h>
 #include <string.h>
 
 Tensor tensor_embedding(Tensor input_tokens, Tensor weight_matrix) {
+
+  if (!input_tokens->is_contiguous && !weight_matrix->is_contiguous)
+    abort();
 
   auto batch = input_tokens->shape[0];
   auto seq = input_tokens->shape[1];
@@ -23,6 +27,8 @@ Tensor tensor_embedding(Tensor input_tokens, Tensor weight_matrix) {
 
 Tensor tensor_embedding_backward(Tensor input_tokens, Tensor weight_matrix,
                                  Tensor grad) {
+  if (!input_tokens->is_contiguous && !weight_matrix->is_contiguous)
+    abort();
 
   auto batch = input_tokens->shape[0];
   auto seq = input_tokens->shape[1];

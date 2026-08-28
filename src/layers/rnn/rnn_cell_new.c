@@ -1,7 +1,6 @@
-
-#include "../../../include/adt/layers/layers_prot.h"
-#include "../../../include/layers/rnn/rnn_cell.h"
-#include "../../lifecycle/tensor_memory.h"
+#include "layers_prot.h"
+#include "rnn_cell.h"
+#include "tensor_memory.h"
 #include <stdint.h>
 
 RNNCell rnn_cell_new(u32 in_features, u32 batch_size, u32 hidden_features,

@@ -1,7 +1,7 @@
-#include "../../../include/adt/layers/layers_prot.h"
-#include "../../../include/layers/rnn/rnn_cell.h"
-#include "../../../include/var/var.h"
-#include "../../lifecycle/tensor_memory.h"
+#include "layers_prot.h"
+#include "rnn_cell.h"
+#include "var.h"
+#include "tensor_memory.h"
 
 bool rnn_cell_destroy(RNNCell layer) {
   if (!layer)

@@ -1,6 +1,6 @@
-#include "../../include/adt/tensor/tensor_prot.h"
-#include "../../include/tensor.h"
-#include "../lifecycle/tensor_memory.h"
+#include "tensor_prot.h"
+#include "tensor.h"
+#include "tensor_memory.h"
 #include "tensor_odometer.h"
 #include "tensor_shapes_broadcast.h"
 #include "tensor_shapes_equal.h"
@@ -44,18 +44,43 @@ Tensor tensor_sum_axis(const Tensor tensor, i32 axis) {
     inner_size *= tensor->shape[i];
   }
 
-  for (u32 o_indx = 0; o_indx < outer_size; ++o_indx) {
-    u32 o_offset = o_indx * axis_size * inner_size;
-    u32 r_offset = o_indx * inner_size;
-    float *r_data = &res->data->data[r_offset];
-    for (u32 i = 0; i < inner_size; ++i) {
-      float sum = 0;
-      for (u32 a_indx = 0; a_indx < axis_size; ++a_indx) {
-        u32 a_offset = o_offset + (a_indx * inner_size);
-        // cache-miss read if inner_size > locality
-        sum += tensor->data->data[a_offset + i];
+  if (!tensor->is_contiguous) {
+    u32 index[MAX_DIMS] = {0};
+
+    for (u32 o_indx = 0; o_indx < outer_size; ++o_indx) {
+      // u32 o_offset = o_indx * axis_size * inner_size;
+      u32 r_offset = o_indx * inner_size;
+
+      tensor_odometer_next(index, axis, tensor->shape);
+
+      float *r_data = &res->data->data[r_offset];
+      for (u32 i = 0; i < inner_size; ++i) {
+        float sum = 0;
+        memset(index + axis + 1, 0, (tensor->ndims - axis) * sizeof(u32));
+        for (u32 a_indx = 0; a_indx < axis_size; ++a_indx) {
+          tensor_odometer_next(index + axis + 1, tensor->ndims - axis - 1,
+                               tensor->shape + axis + 1);
+          // u32 a_offset = o_offset + (a_indx * inner_size);
+          // cache-miss read if inner_size > locality
+          sum += tensor_get(tensor, index);
+        }
+        r_data[i] = sum;
       }
-      r_data[i] = sum;
+    }
+  } else {
+    for (u32 o_indx = 0; o_indx < outer_size; ++o_indx) {
+      u32 o_offset = o_indx * axis_size * inner_size;
+      u32 r_offset = o_indx * inner_size;
+      float *r_data = &res->data->data[r_offset];
+      for (u32 i = 0; i < inner_size; ++i) {
+        float sum = 0;
+        for (u32 a_indx = 0; a_indx < axis_size; ++a_indx) {
+          u32 a_offset = o_offset + (a_indx * inner_size);
+          // cache-miss read if inner_size > locality
+          sum += tensor->data->data[tensor->offset + a_offset + i];
+        }
+        r_data[i] = sum;
+      }
     }
   }
   return res;
@@ -111,7 +136,8 @@ Tensor tensor_sum_to_shape(Tensor tensor, u32 ndims, u32 *shape) {
         t_indx += tensor->stride[k] * index[i];
       }
 
-      res->data->data[s_indx] += tensor->data->data[t_indx];
+      res->data->data[res->offset + s_indx] +=
+          tensor->data->data[tensor->offset + t_indx];
     } while (tensor_odometer_next(index, o_ndims, o_shape));
     return res;
   }

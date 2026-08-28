@@ -4,6 +4,7 @@
 #include "residual_conn/residual.h"
 #include "tensor.h"
 #include "type_alias.h"
+#include <stdio.h>
 
 #define N_XFORMER_KERNELS 9
 
@@ -22,5 +23,10 @@ Tensor *transformer_enc_layer_kernels(TransformerEncoderLayer layer,
 
 bool transformer_enc_layer_track(TransformerEncoderLayer layer);
 bool transformer_enc_layer_untrack(TransformerEncoderLayer layer);
+
+bool transformer_enc_layer_serialize(TransformerEncoderLayer layer,
+                                     FILE *binary);
+TransformerEncoderLayer
+transformer_enc_layer_deserialize(TransformerEncoderLayer layer, FILE *binary);
 
 #endif

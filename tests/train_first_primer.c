@@ -87,7 +87,7 @@ int main() {
 
     auto loss = var_cross_entropy_loss_indexed(logits, target, -1);
 
-    printf("Epoch %d | Loss: %f\n", epoch, loss->data->data[0]);
+    printf("Epoch %d | Loss: %f\n", epoch + 1, loss->data->data[0]);
 
     var_backward(loss);
     sgd_optimize(optim, nullptr);

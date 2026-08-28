@@ -4,6 +4,7 @@
 #include "tensor_prot.h"
 #include "type_alias.h"
 #include <stdbool.h>
+#include <stdio.h>
 
 #define UNUSED_ARG __attribute__((unused))
 
@@ -34,6 +35,8 @@ const u32 *tensor_shape(Tensor tensor);
 
 Tensor tensor_new(u32 ndims, const u32 *shape);
 bool tensor_destroy(Tensor tensor);
+bool tensor_serialize(Tensor tensor, FILE *binary);
+Tensor tensor_deserialize(FILE *binary);
 
 Tensor tensor_add(Tensor tensor_a, Tensor tensor_b);
 bool tensor_add_inplace(Tensor tensor_a, Tensor tensor_b);
@@ -78,7 +81,7 @@ Tensor tensor_embedding_backward(Tensor input_tokens, Tensor weight_matrix,
 Tensor tensor_transpose(Tensor tensor);
 Tensor tensor_transpose_dims(Tensor tensor, u32 nswap, TensorDimSwap swaps[]);
 Tensor tensor_relu(Tensor tensor);
-Tensor tensor_relu_backward(Tensor tensor, Tensor grad);
+Tensor tensor_relu_backward(Tensor tensor, Tensor relu, Tensor grad);
 Tensor tensor_tanh(Tensor tensor);
 Tensor tensor_tanh_backward(Tensor tensor, Tensor grad);
 Tensor tensor_negate(Tensor tensor);

@@ -13,7 +13,7 @@ void relu_backward_fn(Var self) {
     if (!parent->grad) {
       parent->grad = tensor_zero(parent->base.ndims, parent->base.shape);
     }
-    auto tmp = tensor_relu_backward((Tensor)parent, self->grad);
+    auto tmp = tensor_relu_backward((Tensor)parent, &self->base, self->grad);
     auto tmp_red =
         tensor_sum_to_shape(tmp, parent->base.ndims, parent->base.shape);
     tensor_add_inplace(parent->grad, tmp_red);

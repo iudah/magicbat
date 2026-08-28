@@ -74,13 +74,14 @@ Tensor tensor_concat(u32 n_tensor, Tensor *tensors, u32 axis) {
     }
   }
 
+  u32 offset = 0;
   auto concat = tensor_new(ndims, shape);
-
   if (axis == 0 && all_contiguous) {
     auto data = concat->data->data;
     for (u32 i = 0; i < n_tensor; ++i) {
-      memcpy(data + tensors[i]->data->nelements, tensors[i]->data->data,
+      memcpy(data + offset, tensors[i]->data->data,
              tensors[i]->data->nelements * sizeof(f32));
+      offset += tensors[i]->data->nelements;
     }
   } else {
     concat_non_contiguous(concat, axis, tensors, bounds, n_tensor);

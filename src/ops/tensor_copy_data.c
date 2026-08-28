@@ -1,5 +1,5 @@
-#include "../../include/adt/tensor/tensor_prot.h"
-#include "../../include/tensor.h"
+#include "tensor_prot.h"
+#include "tensor.h"
 #include "tensor_odometer.h"
 #include <string.h>
 

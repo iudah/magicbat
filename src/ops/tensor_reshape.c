@@ -1,6 +1,6 @@
-#include "../../include/adt/tensor/tensor_prot.h"
-#include "../../include/tensor.h"
+#include "tensor.h"
 #include "tensor_odometer.h"
+#include "tensor_prot.h"
 
 Tensor tensor_reshape(const Tensor tensor, u32 ndims, const u32 *shape) {
   if (!tensor)

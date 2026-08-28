@@ -1,7 +1,7 @@
 
-#include "../../../include/adt/layers/layers_prot.h"
-#include "../../../include/layers/rnn/rnn_cell.h"
-#include "../../../include/var/var.h"
+#include "layers_prot.h"
+#include "rnn_cell.h"
+#include "var.h"
 
 bool rnn_cell_track(RNNCell layer) {
   TASSERT(layer && "Null layer.");

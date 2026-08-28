@@ -8,7 +8,7 @@
 #include <math.h>
 #include <stdint.h>
 
-#define RAND_SEED
+// #define RAND_SEED
 #define BIT_SIZE 32
 
 u64 urand() {
@@ -45,7 +45,7 @@ void tensor_random(Tensor tensor) {
   } else {
     u32 *index = tensor_odometer_new(tensor->ndims);
     do {
-      random_ratio = urand() / (f32)UINT32_MAX;
+      random_ratio = urand() / (f32)UINT64_MAX;
       value = FLT_MIN + (FLT_MAX * random_ratio) - (FLT_MIN * random_ratio);
       tensor_set(tensor, index, value);
     } while (tensor_odometer_next(index, tensor->ndims, tensor->shape));

@@ -1,6 +1,6 @@
-#include "../../../include/adt/optimizers/sgd_prot.h"
-#include "../../../include/optimizers/sgd.h"
-#include "../../lifecycle/tensor_memory.h"
+#include "sgd_prot.h"
+#include "sgd.h"
+#include "tensor_memory.h"
 #include <stdint.h>
 #include <string.h>
 

@@ -1,38 +1,41 @@
-#include "../../include/adt/var/var_prot.h"
-#include "../../include/tensor.h"
+#include "var_prot.h"
+#include "tensor.h"
 #include <stdatomic.h>
 #include <stdint.h>
 
-void div_backward_fn(Var self_) {
-  Var self = (Var)self_;
+void div_backward_fn(Var self) {
 
   if (self->base.is_tensor_type || !self->base.requires_grad)
     return;
 
-  Var a = self->parent[0];
-  Var b = self->parent[1];
+  Var parent_a = self->parent[0];
+  Var parent_b = self->parent[1];
 
-  if (a && !a->base.is_tensor_type && a->base.requires_grad) {
-    if (!a->grad) {
-      a->grad = tensor_zero(a->base.ndims, a->base.shape);
+  if (parent_a && !parent_a->base.is_tensor_type &&
+      parent_a->base.requires_grad) {
+    if (!parent_a->grad) {
+      parent_a->grad = tensor_zero(parent_a->base.ndims, parent_a->base.shape);
     }
-    auto tmp = tensor_div(self->grad, (Tensor)b);
-    auto tmp_red = tensor_sum_to_shape(tmp, a->base.ndims, a->base.shape);
-    tensor_add_inplace(a->grad, tmp_red);
+    auto tmp = tensor_div(self->grad, (Tensor)parent_b);
+    auto tmp_red =
+        tensor_sum_to_shape(tmp, parent_a->base.ndims, parent_a->base.shape);
+    tensor_add_inplace(parent_a->grad, tmp_red);
     var_destroy(tmp_red);
     var_destroy(tmp);
   }
-  if (b && !b->base.is_tensor_type && b->base.requires_grad) {
-    if (!b->grad) {
-      b->grad = tensor_zero(b->base.ndims, b->base.shape);
+  if (parent_b && !parent_b->base.is_tensor_type &&
+      parent_b->base.requires_grad) {
+    if (!parent_b->grad) {
+      parent_b->grad = tensor_zero(parent_b->base.ndims, parent_b->base.shape);
     }
-    auto tmp = tensor_mul((Tensor)a, self->grad);
-    auto db = tensor_divisor_backward((Tensor)b, tmp);
-    auto db_red = tensor_sum_to_shape(db, b->base.ndims, b->base.shape);
-    tensor_add_inplace(b->grad, db_red);
+    auto tmp = tensor_mul((Tensor)parent_a, self->grad);
+    auto grad_wrt_b = tensor_divisor_backward((Tensor)parent_b, tmp);
+    auto db_red = tensor_sum_to_shape(grad_wrt_b, parent_b->base.ndims,
+                                      parent_b->base.shape);
+    tensor_sub_inplace(parent_b->grad, db_red);
     var_destroy(db_red);
     var_destroy(tmp);
-    var_destroy(db);
+    var_destroy(grad_wrt_b);
   }
 }
 

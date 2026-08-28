@@ -43,6 +43,8 @@ static inline mem trealloc(mem ptr, u64 size) {
   }
 #else
   mem new_ptr = tmalloc(size);
+  // Hack to get a previous size. Too large is irrelevant since we are not
+  // zeroing the additional memory
   u64 old_size =
       new_ptr > ptr ? (u8 *)new_ptr - (u8 *)ptr : (u8 *)ptr - (u8 *)new_ptr;
 

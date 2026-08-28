@@ -31,6 +31,7 @@ src/lifecycle/tensor_destroy.c
 src/lifecycle/tensor_new.c
 src/lifecycle/tensor_arena.c
 src/lifecycle/tensor_memory.c
+src/lifecycle/tensor_serialize.c
 src/math/tensor_add.c
 src/math/tensor_matmul.c
 src/math/tensor_mul.c
@@ -75,17 +76,21 @@ src/layers/rnn/rnn_cell_forward.c
 src/layers/rnn/rnn_cell_kernel.c
 src/layers/rnn/rnn_cell_new.c
 src/layers/rnn/rnn_cell_track.c
+src/layers/rnn/rnn_cell_serialize.c
 src/layers/transformer/transformer_enc_block_kernel.c
 src/layers/transformer/transformer_enc_block_forward.c
 src/layers/transformer/transformer_enc_block_new.c
 src/layers/transformer/transformer_enc_block_destroy.c
+src/layers/transformer/transformer_enc_block_serialize.c
 src/layers/layer_norm/layer_norm.c
 src/layers/residual_conn/residual.c
+src/layers/bin/layer_serialize.c
 src/layers/linear/linear_layer_destroy.c
 src/layers/linear/linear_layer_forward.c
 src/layers/linear/linear_layer_kernel.c
 src/layers/linear/linear_layer_new.c
 src/layers/linear/linear_layer_track.c
+src/layers/linear/linear_layer_serialize.c
 src/optimizers/sgd/sgd_destroy.c
 src/optimizers/sgd/sgd_new.c
 src/optimizers/sgd/sgd_optimize.c
@@ -148,6 +153,7 @@ include/layers/rnn/rnn_cell.h
 include/layers/linear/linear_layer.h
 include/layers/layer_norm/layer_norm.h
 include/layers/transformer/transformer_enc_layer.h
+include/layers/bin/layer_serialize.h
 include/optimizers/sgd.h
 include/var/var.h
 )
@@ -168,6 +174,7 @@ src/layers/rnn
 src/layers/transformer
 src/layers/layer_norm
 src/layers/residual_conn
+src/layers/bin
 src/layers/linear
 src/optimizers
 src/optimizers/sgd
@@ -184,6 +191,7 @@ include/layers/rnn
 include/layers/linear
 include/layers/layer_norm
 include/layers/transformer
+include/layers/bin
 include/optimizers
 include/var
 )
@@ -328,8 +336,8 @@ target_link_libraries(train_first_primer_and_infer PRIVATE ${target} m)
 target_include_directories(train_first_primer_and_infer PRIVATE ${INCLUDE_DIRS})
 target_sources(train_first_primer_and_infer PRIVATE ${HEADERS})
 
-add_executable(test_m tests/test_m.c)
-target_link_libraries(test_m PRIVATE ${target})
-target_include_directories(test_m PRIVATE ${INCLUDE_DIRS})
-target_sources(test_m PRIVATE ${HEADERS})
+add_executable(test_save_load tests/save_load_first_primer.c)
+target_link_libraries(test_save_load PRIVATE ${target})
+target_include_directories(test_save_load PRIVATE ${INCLUDE_DIRS})
+target_sources(test_save_load PRIVATE ${HEADERS})
 

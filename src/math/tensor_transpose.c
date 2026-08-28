@@ -1,5 +1,5 @@
-#include "../../include/adt/tensor/tensor_prot.h"
-#include "../../include/tensor.h"
+#include "tensor_prot.h"
+#include "tensor.h"
 #include <stdint.h>
 
 Tensor tensor_transpose(const Tensor tensor) {
@@ -44,6 +44,8 @@ Tensor tensor_transpose_dims(const Tensor tensor, u32 nswap,
     view->stride[swaps[i].dest] = tensor->stride[swaps[i].src];
     view->stride[swaps[i].src] = tensor->stride[swaps[i].dest];
   }
+
+  view->is_contiguous = false;
 
   return view;
 }

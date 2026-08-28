@@ -3,11 +3,11 @@
 
 #include "tensor.h"
 #include "type_alias.h"
+#include <stdio.h>
 
 #define N_LINEAR_KERNELS 2
 
 typedef struct linear_layer *LinearLayer;
-
 
 LinearLayer linear_layer_new(u32 in_feature, u32 out_feature);
 bool linear_layer_destroy(LinearLayer layer);
@@ -20,5 +20,8 @@ Tensor *linear_layer_kernels(LinearLayer layer, Tensor buffer[],
 
 bool linear_layer_track(LinearLayer layer);
 bool linear_layer_untrack(LinearLayer layer);
+
+LinearLayer linear_layer_deserialize(LinearLayer layer, FILE *binary);
+bool linear_layer_serialize(LinearLayer layer, FILE *binary);
 
 #endif
