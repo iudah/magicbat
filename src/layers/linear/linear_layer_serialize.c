@@ -2,16 +2,17 @@
 #include "linear_layer.h"
 #include <stdio.h>
 
-LinearLayer linear_layer_deserialize(LinearLayer layer, FILE *binary) {
+LinearLayer linear_layer_read(LinearLayer layer, FILE *binary) {
 
-  layer->weight = tensor_deserialize(binary);
-  layer->bias = tensor_deserialize(binary);
+  layer->weight = tensor_read(binary);
+  layer->bias   = tensor_read(binary);
+  LAYER_SET_VT(layer, linear);
 
   return layer;
 }
 
-bool linear_layer_serialize(LinearLayer layer, FILE *binary) {
+bool linear_layer_write(LinearLayer layer, FILE *binary) {
 
-  return tensor_serialize(layer->weight, binary) &&
-         tensor_serialize(layer->bias, binary);
+  return tensor_write(layer->weight, binary) &&
+         tensor_write(layer->bias, binary);
 }

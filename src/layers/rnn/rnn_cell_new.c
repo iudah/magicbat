@@ -5,8 +5,8 @@
 
 RNNCell rnn_cell_new(u32 in_features, u32 batch_size, u32 hidden_features,
                      u32 out_features) {
-  RNNCell layer = nullptr;
-  Tensor hidden_state = tensor_new(2, (u32[]){batch_size, hidden_features});
+  RNNCell layer        = nullptr;
+  Tensor  hidden_state = tensor_new(2, (u32[]){batch_size, hidden_features});
   if (hidden_state == nullptr)
     return nullptr;
 
@@ -21,7 +21,7 @@ RNNCell rnn_cell_new(u32 in_features, u32 batch_size, u32 hidden_features,
   }
 
   //  RNNCell layer = nullptr;
-  layer = tmalloc(sizeof(*layer));
+  layer = tcalloc(1, sizeof(*layer));
   if (layer == nullptr) {
     tensor_destroy(bias);
   free_weight:
@@ -30,11 +30,12 @@ RNNCell rnn_cell_new(u32 in_features, u32 batch_size, u32 hidden_features,
     tensor_destroy(hidden_state);
   } else {
     layer->hidden_state = hidden_state;
-    layer->cell.weight = weight;
-    layer->cell.bias = bias;
+    layer->cell.weight  = weight;
+    layer->cell.bias    = bias;
 
     tensor_xavier(layer->cell.weight, in_features, out_features);
   }
+  LAYER_SET_VT(layer, rnn_cell);
 
   return layer;
 }

@@ -32,7 +32,7 @@ Tensor tensor_gather_axis(const Tensor tensor, const Tensor indices, i32 axis) {
 
   u32 outer_size = 1;
   u32 inner_size = 1;
-  u32 axis_size = tensor->shape[axis];
+  u32 axis_size  = tensor->shape[axis];
 
   for (u32 i = 0; (i32)i < axis; ++i) {
     outer_size *= tensor->shape[i];
@@ -43,10 +43,10 @@ Tensor tensor_gather_axis(const Tensor tensor, const Tensor indices, i32 axis) {
 
   if (inner_size == 1)
     for (u32 o_index = 0; o_index < outer_size; ++o_index) {
-      u32 o_offset = o_index * axis_size * inner_size;
-      u32 r_offset = o_index * inner_size;
-      float *r_data = &res->data->data[r_offset];
-      float *i_data = &indices->data->data[r_offset];
+      u32    o_offset = o_index * axis_size * inner_size;
+      u32    r_offset = o_index * inner_size;
+      float *r_data   = &res->data->data[r_offset];
+      float *i_data   = &indices->data->data[r_offset];
       // for (u32 a = 0; a < axis_size; ++a)
       {
         {
@@ -60,16 +60,16 @@ Tensor tensor_gather_axis(const Tensor tensor, const Tensor indices, i32 axis) {
             cls = 0;
           }
           u32 a_offset = o_offset + (cls * inner_size);
-          r_data[0] = tensor->data->data[a_offset];
+          r_data[0]    = tensor->data->data[a_offset + tensor->offset];
         }
       }
     }
   else
     for (u32 o_index = 0; o_index < outer_size; ++o_index) {
-      u32 o_offset = o_index * axis_size * inner_size;
-      u32 r_offset = o_index * inner_size;
-      float *r_data = &res->data->data[r_offset];
-      float *i_data = &indices->data->data[r_offset];
+      u32    o_offset = o_index * axis_size * inner_size;
+      u32    r_offset = o_index * inner_size;
+      float *r_data   = &res->data->data[r_offset];
+      float *i_data   = &indices->data->data[r_offset];
       // for (u32 a = 0; a < axis_size; ++a)
       {
         for (u32 i = 0; i < inner_size; ++i) {
@@ -83,7 +83,8 @@ Tensor tensor_gather_axis(const Tensor tensor, const Tensor indices, i32 axis) {
             cls = 0;
           }
           u32 a_offset = o_offset + (cls * inner_size) + i;
-          r_data[i] = tensor->data->data[a_offset];
+          r_data[i + res->offset] =
+              tensor->data->data[a_offset + tensor->offset];
         }
       }
     }

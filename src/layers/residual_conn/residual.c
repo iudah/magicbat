@@ -1,15 +1,14 @@
 #include "layer_norm.h"
 #include "var.h"
 
-Tensor pre_ln_residual(LayerNorm layernorm, Tensor input, void *sublayer,
-                       Tensor(sublayer_forward)(void *sublayer, Tensor input)) {
+Tensor pre_ln_residual(LayerNorm layernorm, Tensor input, mem sublayer,
+                       Tensor(sublayer_forward)(mem sublayer, Tensor input)) {
   return var_add(
-      input, layer_norm_forward(layernorm, sublayer_forward(sublayer, input)));
+      input, sublayer_forward(sublayer, layer_norm_forward(layernorm, input)));
 }
 
-Tensor post_ln_residual(LayerNorm layernorm, Tensor input, void *sublayer,
-                        Tensor(sublayer_forward)(void *sublayer,
-                                                 Tensor input)) {
+Tensor post_ln_residual(LayerNorm layernorm, Tensor input, mem sublayer,
+                        Tensor(sublayer_forward)(mem sublayer, Tensor input)) {
   return layer_norm_forward(layernorm,
                             var_add(input, sublayer_forward(sublayer, input)));
 }

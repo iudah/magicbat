@@ -16,7 +16,7 @@ bool transformer_enc_layer_track(TransformerEncoderLayer layer) {
   linear_layer_track(&layer->ffn_1);
   layer_norm_track(&layer->layernorm_0);
   layer_norm_track(&layer->layernorm_1);
-  layer->w_qkv = track_replace_untracked(layer->w_qkv);
+  layer->w_qkv = to_var(layer->w_qkv);
 
   return true;
 }
@@ -38,20 +38,22 @@ bool transformer_enc_layer_untrack(TransformerEncoderLayer layer) {
   return true;
 }
 
-Tensor *transformer_enc_layer_kernels(TransformerEncoderLayer layer,
-                                      Tensor buffer[], u32 buffer_length) {
-  if (!buffer)
-    return nullptr;
-  if (buffer_length < N_XFORMER_KERNELS)
-    return nullptr;
+u32 transformer_enc_layer_kernels(TransformerEncoderLayer layer,
+                                  Tensor buffer[], u32 buffer_length) {
+  if (!buffer || buffer_length < 1)
+    return 0;
 
   buffer[0] = layer->w_qkv;
-  linear_layer_kernels(&layer->ffn_0, &buffer[1], N_LINEAR_KERNELS);
-  linear_layer_kernels(&layer->ffn_1, &buffer[3], N_LINEAR_KERNELS);
-#define INDX5 5
-#define INDX7 7
-  layer_norm_kernels(&layer->layernorm_0, &buffer[INDX5], N_LAYERNORM_KERNELS);
-  layer_norm_kernels(&layer->layernorm_1, &buffer[INDX7], N_LAYERNORM_KERNELS);
+  if (buffer_length == 1)
+    return 1;
 
-  return buffer;
+  auto len = linear_layer_kernels(&layer->ffn_0, buffer + 1, buffer_length - 1);
+  len += linear_layer_kernels(&layer->ffn_1, buffer + 1 + len,
+                              buffer_length - 1 - len);
+  len += layer_norm_kernels(&layer->layernorm_0, buffer + 1 + len,
+                            buffer_length - 1 - len);
+  len += layer_norm_kernels(&layer->layernorm_1, buffer + 1 + len,
+                            buffer_length - 1 - len);
+
+  return N_XFORMER_KERNELS;
 }

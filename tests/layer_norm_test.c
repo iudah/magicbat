@@ -1,21 +1,20 @@
-#include "test_layernorm.h"
+#include "layer_norm_test_data.h"
 #include "tensor.h"
 #include "var.h"
 #include <math.h>
 #include <stdio.h>
 
 #define BATCH_SIZE 2
-#define SEQ_LEN 8
-#define NHEADS 2
-#define HEAD_DIM 8
-#define D_MODEL HEAD_DIM *NHEADS
+#define SEQ_LEN    8
+#define NHEADS     2
+#define HEAD_DIM   8
+#define D_MODEL    HEAD_DIM *NHEADS
 
 int main() {
 
   // Use IDENTICAL starting values as the discrete test
-  auto input = track_replace_untracked(
-      tensor_new(3, (u32[]){BATCH_SIZE, SEQ_LEN, D_MODEL}));
-  auto grad = tensor_new(3, (u32[]){BATCH_SIZE, SEQ_LEN, D_MODEL});
+  auto input = to_var(tensor_new(3, (u32[]){BATCH_SIZE, SEQ_LEN, D_MODEL}));
+  auto grad  = tensor_new(3, (u32[]){BATCH_SIZE, SEQ_LEN, D_MODEL});
 
   for (u32 i = 0; i < input->data->nelements; ++i) {
     input->data->data[i] = X[i];

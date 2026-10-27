@@ -3,7 +3,7 @@
 #include "tensor_prot.h"
 #include <stdio.h>
 
-bool tensor_serialize(Tensor tensor, FILE *binary) {
+bool tensor_write(Tensor tensor, FILE *binary) {
   if (tensor == nullptr) {
     return false;
   }
@@ -12,19 +12,19 @@ bool tensor_serialize(Tensor tensor, FILE *binary) {
   fwrite(tensor->shape, sizeof(tensor->shape), 1, binary);
   if (tensor->is_contiguous) {
     fwrite(tensor->stride, sizeof(tensor->stride), 1, binary);
-    data_storage_serialize(tensor->data, binary);
+    data_storage_write(tensor->data, binary);
   } else {
     auto tmp = tensor_to_contiguous(tensor);
     fwrite(tmp->stride, sizeof(tmp->stride), 1, binary);
-    data_storage_serialize(tmp->data, binary);
+    data_storage_write(tmp->data, binary);
     tensor_destroy(tmp);
   }
 
   return true;
 }
 
-Tensor tensor_deserialize(FILE *binary) {
-  Tensor tensor = tmalloc(sizeof(*tensor));
+Tensor tensor_read(FILE *binary) {
+  Tensor tensor = tcalloc(1, sizeof(*tensor));
   if (tensor == nullptr) {
     return nullptr;
   }
@@ -32,12 +32,14 @@ Tensor tensor_deserialize(FILE *binary) {
   fread(&tensor->ndims, sizeof(tensor->ndims), 1, binary);
   fread(tensor->shape, sizeof(tensor->shape), 1, binary);
   fread(tensor->stride, sizeof(tensor->stride), 1, binary);
-  tensor->data = data_storage_deserialize(binary);
-  tensor->requires_grad = false;
-  tensor->refcount = 1;
+  tensor->data           = data_storage_read(binary);
+  tensor->requires_grad  = false;
+  tensor->refcount       = 1;
   tensor->is_tensor_type = true;
-  tensor->is_contiguous = true;
-  tensor->offset = 0;
+  tensor->is_contiguous  = true;
+  tensor->offset         = 0;
+
+  TASSERT(tensor->data && tensor->data->data);
 
   return tensor;
 }

@@ -6,8 +6,9 @@
 typedef struct sgd_optimizer *SgdOptimizer;
 
 SgdOptimizer sgd_optimizer_new(Tensor *parameters, u32 n_parameters,
-                               f32 learn_rate);
-bool sgd_optimizer_destroy(SgdOptimizer optimizer);
-bool sgd_optimize(SgdOptimizer optimizer, Tensor *grads);
+                               f32 learn_rate, f32 grad_clip,
+                               f32 global_norm_max);
+bool         sgd_optimizer_destroy(SgdOptimizer optimizer);
+bool         sgd_optimize(SgdOptimizer optimizer, Tensor *grads);
 
 #endif

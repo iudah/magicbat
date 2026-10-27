@@ -8,7 +8,7 @@ tensor_shapes_broadcast_from_shape(u32 t_ndims, const u32 *t_shape, u32 s_ndims,
 
 static inline bool tensor_shapes_broadcast(const Tensor tensor_a,
                                            const Tensor tensor_b,
-                                           u32 *outshape) {
+                                           u32         *outshape) {
 
   auto t_ndims = tensor_ndims(tensor_a);
   auto s_ndims = tensor_ndims(tensor_b);
@@ -20,11 +20,11 @@ static inline bool tensor_shapes_broadcast(const Tensor tensor_a,
                                             outshape);
 }
 
-static inline bool tensor_shapes_broadcast_from_shape(const u32 t_ndims,
+static inline bool tensor_shapes_broadcast_from_shape(const u32  t_ndims,
                                                       const u32 *t_shape,
-                                                      const u32 s_ndims,
+                                                      const u32  s_ndims,
                                                       const u32 *s_shape,
-                                                      u32 *outshape) {
+                                                      u32       *outshape) {
 
   if (t_shape == nullptr || s_shape == nullptr)
     return false;

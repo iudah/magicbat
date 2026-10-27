@@ -1,4 +1,4 @@
-#include "train_first_primer.h"
+#include "first_primer_data.h"
 #include "layer_norm.h"
 #include "linear_layer.h"
 #include "sgd.h"
@@ -7,15 +7,15 @@
 #include "var.h"
 #include <stdio.h>
 
-#define SEQ_SIZE 32
+#define SEQ_SIZE   32
 #define BATCH_SIZE 8
-#define NHEAD 2
-#define HEAD_DIM 8
-#define D_MODEL NHEAD *HEAD_DIM
-#define LR 0.01f
-#define EPOCH 100
-
-u64 urand();
+#define NHEAD      2
+#define HEAD_DIM   8
+#define D_MODEL    NHEAD *HEAD_DIM
+#define LR         0.01f
+#define EPOCH      100
+#define GRAD_THR   1.0f
+#define VAL_CLAMP  5.0f
 
 void fill_input(Tensor input, Tensor target, const i32 *train_data,
                 u32 train_data_length) {
@@ -38,7 +38,7 @@ int main() {
   auto transformer_1 = transformer_enc_layer_new(
       NHEAD, HEAD_DIM, pre_ln_residual, pre_ln_residual);
 
-  auto layer_norm_out = layer_norm_new(D_MODEL);
+  auto layer_norm_out  = layer_norm_new(D_MODEL);
   auto lang_model_head = linear_layer_new(D_MODEL, VOCAB_SIZE);
 
   transformer_enc_layer_track(transformer_0);
@@ -61,16 +61,16 @@ int main() {
                        kernels + N_XFORMER_KERNELS + N_XFORMER_KERNELS +
                            N_LAYERNORM_KERNELS,
                        N_LINEAR_KERNELS);
-  Tensor weight_matrix =
-      track_replace_untracked(tensor_new(2, (u32[]){VOCAB_SIZE, D_MODEL}));
+  Tensor weight_matrix = to_var(tensor_new(2, (u32[]){VOCAB_SIZE, D_MODEL}));
   tensor_random_bound(weight_matrix, 0, 1);
   kernels[total_kernels - 1] = weight_matrix;
 
-  auto optim = sgd_optimizer_new(kernels, total_kernels, LR);
+  auto optim =
+      sgd_optimizer_new(kernels, total_kernels, LR, GRAD_THR, VAL_CLAMP);
 
   Tensor positional_encoder = tensor_positional_encoding(SEQ_SIZE, D_MODEL);
 
-  Tensor input = tensor_new(2, (u32[]){BATCH_SIZE, SEQ_SIZE});
+  Tensor input  = tensor_new(2, (u32[]){BATCH_SIZE, SEQ_SIZE});
   Tensor target = tensor_new(2, (u32[]){BATCH_SIZE, SEQ_SIZE});
 
   for (u32 epoch = 0; epoch < EPOCH; ++epoch) {
@@ -83,7 +83,7 @@ int main() {
     auto model_out = transformer_enc_layer_forward(transformer_1, block_out);
 
     auto final_norm = layer_norm_forward(layer_norm_out, model_out);
-    auto logits = linear_layer_forward(lang_model_head, final_norm);
+    auto logits     = linear_layer_forward(lang_model_head, final_norm);
 
     auto loss = var_cross_entropy_loss_indexed(logits, target, -1);
 

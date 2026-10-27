@@ -3,10 +3,18 @@
 
 #include "../../tensor.h"
 
-struct sgd_optimizer {
+struct optimizer_base {
   Tensor *parameters;
-  float learn_rate;
+  f32 max_norm;
+  f32 clip_threshold;
   u32 n_parameters;
+};
+
+typedef struct optimizer_base *Optimizer;
+
+struct sgd_optimizer {
+  struct optimizer_base base;
+  float learn_rate;
 };
 
 #endif

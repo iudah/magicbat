@@ -13,11 +13,11 @@ bool rnn_cell_track(RNNCell layer) {
   if (!layer->cell.bias)
     return false;
 
-  layer->cell.weight = track_replace_untracked(layer->cell.weight);
+  layer->cell.weight = to_var(layer->cell.weight);
 
-  layer->cell.bias = track_replace_untracked(layer->cell.bias);
+  layer->cell.bias = to_var(layer->cell.bias);
 
-  layer->hidden_state = track_replace_untracked(layer->hidden_state);
+  layer->hidden_state = to_var(layer->hidden_state);
 
   return true;
 }

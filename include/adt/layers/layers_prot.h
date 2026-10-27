@@ -1,11 +1,13 @@
 #ifndef LAYER_PROT_H
 #define LAYER_PROT_H
 
+#include "layer_base.h"
 #include "tensor.h"
 
 struct linear_layer {
-  Tensor weight;
-  Tensor bias;
+  LayerBase base;
+  Tensor    weight;
+  Tensor    bias;
 };
 
 struct layer_norm {
@@ -18,20 +20,27 @@ struct rnn_cell {
   Tensor hidden_state;
 };
 
-typedef Tensor (*SublayerForward)(void *sublayer, Tensor input);
+typedef Tensor (*SublayerForward)(mem sublayer, Tensor input);
 
 struct transfomer_enc_layer {
-  Tensor (*residual_conn_0)(struct linear_layer *layernorm, Tensor input,
-                            void *sublayer, SublayerForward sublayer_forward);
-  Tensor (*residual_conn_1)(struct linear_layer *layernorm, Tensor input,
-                            void *sublayer, SublayerForward sublayer_forward);
+  LayerBase base;
+  Tensor    (*residual_conn_0)(struct linear_layer *layernorm, Tensor input,
+                            mem sublayer, SublayerForward sublayer_forward);
+  Tensor    (*residual_conn_1)(struct linear_layer *layernorm, Tensor input,
+                            mem sublayer, SublayerForward sublayer_forward);
   struct linear_layer ffn_0;
   struct linear_layer ffn_1;
   struct linear_layer layernorm_0;
   struct linear_layer layernorm_1;
-  Tensor w_qkv;
-  u32 n_head;
-  u32 head_dim;
+  Tensor              w_qkv;
+  u32                 n_head;
+  u32                 head_dim;
+};
+
+struct dropout_layer {
+  LayerBase base;
+  f32       rate;
+  bool      tracking;
 };
 
 #endif

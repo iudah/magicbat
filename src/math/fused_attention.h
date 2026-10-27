@@ -67,7 +67,7 @@ fused_attention_gt_block_size(u32 b_len, u32 m_len, u32 n_len, u32 k_len,
           f32 sum_val = sum_data[(b_inner * m_len) + m_inner];
           MATMUL_LOOP(k) {
 
-            r_data[((b_inner * m_len) + m_inner * k_len) + k_indx] /= sum_val;
+            r_data[((b_inner * m_len + m_inner) * k_len) + k_indx] /= sum_val;
           }
         }
       }

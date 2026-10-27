@@ -12,7 +12,7 @@ typedef struct tensor_struct *Tensor;
 typedef enum {
   TENSOR_CE_INDEXED = 1 << 1,
   TENSOR_CE_ONE_HOT = 1 << 2,
-  TENSOR_CE_PROBS = 1 << 3
+  TENSOR_CE_PROBS   = 1 << 3
 } TensorType;
 
 typedef struct {
@@ -26,24 +26,24 @@ typedef struct {
   u32 src;
 } TensorDimSwap;
 
-f32 tensor_get(Tensor tensor_a, const u32 *index);
-bool tensor_index_out_of_bound(Tensor tensor_a, const u32 *index);
-u32 tensor_ndims(Tensor tensor);
-u32 tensor_num_elements(Tensor tensor);
-bool tensor_set(Tensor tensor_a, const u32 *index, f32 value);
+f32        tensor_get(Tensor tensor, const u32 *index);
+bool       tensor_index_out_of_bound(Tensor tensor_a, const u32 *index);
+u32        tensor_ndims(Tensor tensor);
+u32        tensor_num_elements(Tensor tensor);
+bool       tensor_set(Tensor tensor_a, const u32 *index, f32 value);
 const u32 *tensor_shape(Tensor tensor);
 
 Tensor tensor_new(u32 ndims, const u32 *shape);
-bool tensor_destroy(Tensor tensor);
-bool tensor_serialize(Tensor tensor, FILE *binary);
-Tensor tensor_deserialize(FILE *binary);
+bool   tensor_destroy(Tensor tensor);
+bool   tensor_write(Tensor tensor, FILE *binary);
+Tensor tensor_read(FILE *binary);
 
 Tensor tensor_add(Tensor tensor_a, Tensor tensor_b);
-bool tensor_add_inplace(Tensor tensor_a, Tensor tensor_b);
-bool tensor_add_scalar_inplace(Tensor tensor_a, f32 f_value);
+bool   tensor_add_inplace(Tensor tensor_a, Tensor tensor_b);
+bool   tensor_add_scalar_inplace(Tensor tensor_a, f32 f_value);
 Tensor tensor_scaled_add(Tensor tensor_a, f32 alpha, Tensor tensor_b);
 Tensor tensor_sub(Tensor tensor_a, Tensor tensor_b);
-bool tensor_sub_inplace(Tensor tensor_a, Tensor tensor_b);
+bool   tensor_sub_inplace(Tensor tensor_a, Tensor tensor_b);
 Tensor tensor_mul(Tensor tensor_a, Tensor tensor_b);
 Tensor tensor_scale(Tensor tensor, f32 scalar);
 Tensor tensor_div(Tensor tensor_a, Tensor tensor_b);
@@ -60,20 +60,22 @@ Tensor tensor_bmm_transpose_b(Tensor tensor_a, Tensor tensor_b);
 Tensor tensor_bmm_transpose_b_wrt_a(Tensor tensor_grad, Tensor tensor_b);
 Tensor tensor_bmm_transpose_b_wrt_b(Tensor tensor_a, Tensor tensor_grad);
 Tensor tensor_sum_axis(Tensor tensor, i32 axis);
-f32 tensor_sum_all(Tensor tensor);
+f32    tensor_sum(Tensor tensor);
+f32    tensor_total_norm_sqr(Tensor tensor);
+void   tensor_clamp_inplace(Tensor restrict tensor, f32 low, f32 high);
 Tensor tensor_sum_to_shape(Tensor tensor, u32 ndims, u32 *shape);
 Tensor tensor_max_axis(Tensor tensor, i32 axis);
-f32 tensor_max_all(Tensor tensor);
+f32    tensor_max(Tensor tensor);
 Tensor tensor_gather_axis(Tensor tensor, Tensor indices, i32 axis);
 Tensor tensor_mean_axis(Tensor tensor, u32 axis);
 Tensor tensor_layer_norm_axis(Tensor tensor, u32 axis, Tensor *variance_holder);
-f32 tensor_mean_all(Tensor tensor);
+f32    tensor_mean(Tensor tensor);
 Tensor tensor_layer_norm_axis_backward(Tensor gradient, Tensor normal, u32 axis,
                                        Tensor variance);
 Tensor tensor_mean_sqr_axis(Tensor tensor, u32 axis);
 Tensor tensor_mean_sqr_axis_backward(Tensor gradient, Tensor tensor, u32 axis);
-f32 tensor_mean_sqr_all(Tensor tensor);
-Tensor tensor_mean_sqr_all_backward(f32 gradient, Tensor tensor);
+f32    tensor_mean_sqr(Tensor tensor);
+Tensor tensor_mean_sqr_backward(f32 gradient, Tensor tensor);
 Tensor tensor_embedding(Tensor input_tokens, Tensor weight_matrix);
 Tensor tensor_embedding_backward(Tensor input_tokens, Tensor weight_matrix,
                                  Tensor grad);
@@ -85,38 +87,41 @@ Tensor tensor_relu_backward(Tensor tensor, Tensor relu, Tensor grad);
 Tensor tensor_tanh(Tensor tensor);
 Tensor tensor_tanh_backward(Tensor tensor, Tensor grad);
 Tensor tensor_negate(Tensor tensor);
-void tensor_negate_inplace(Tensor restrict tensor);
+void   tensor_negate_inplace(Tensor restrict tensor);
 Tensor tensor_log(Tensor tensor);
-Tensor tensor_softmax_all(Tensor tensor);
-Tensor tensor_softmax(Tensor tensor, i32 axis);
-Tensor tensor_softmax_backward(Tensor grad, Tensor softmax, u32 axis);
-Tensor tensor_log_sum_exp_all(Tensor tensor);
+Tensor tensor_softmax(Tensor tensor);
+Tensor tensor_softmax_axis(Tensor tensor, i32 axis);
+Tensor tensor_softmax_axis_backward(Tensor grad, Tensor softmax, u32 axis);
+Tensor tensor_log_sum_exp(Tensor tensor);
 Tensor tensor_log_sum_exp_axis(Tensor tensor, i32 axis);
 Tensor tensor_cross_entropy_from_logits_axis(Tensor logits, Tensor expectation,
                                              TensorType tensor_type, i32 axis);
-Tensor tensor_cross_entropy_from_logits_axis_backward(Tensor logits,
-                                                      Tensor expectation,
-                                                      Tensor grad,
+Tensor tensor_cross_entropy_from_logits_axis_backward(Tensor     logits,
+                                                      Tensor     expectation,
+                                                      Tensor     grad,
                                                       TensorType tensor_type,
-                                                      i32 axis);
+                                                      i32        axis);
 Tensor tensor_exp(Tensor tensor);
+Tensor tensor_dropout(Tensor tensor, u8 **mask_ptr, f32 rate);
+Tensor tensor_dropout_backward(const u8 *mask, f32 rate, Tensor grad);
 
 Tensor tensor_scalar(f32 value);
 Tensor tensor_view(Tensor src);
-bool tensor_fill(Tensor tensor, f32 value);
-bool tensor_masked_fill(Tensor tensor, Tensor mask, f32 value);
+bool   tensor_fill(Tensor tensor, f32 value);
+bool   tensor_masked_fill(Tensor tensor, Tensor mask, f32 value);
 Tensor tensor_zero(u32 ndims, const u32 *shape);
 Tensor tensor_reshape(Tensor tensor, u32 ndims, const u32 *shape);
-bool tensor_copy_data(Tensor dst, Tensor src);
+bool   tensor_copy_data(Tensor dst, Tensor src);
 Tensor tensor_concat(u32 n_tensor, Tensor *tensor, u32 axis);
 Tensor tensor_slice(Tensor tensor, TensorSlice slices[MAX_DIMS]);
 Tensor tensor_to_contiguous(Tensor tensor);
-void tensor_to_contiguous_inplace(Tensor tensor);
-void tensor_random(Tensor tensor);
-void tensor_random_bound(Tensor tensor, f32 lower_bound, f32 upper_bound);
-void tensor_xavier(Tensor tensor, f32 fanin, f32 fanout);
-void tensor_kaiming(Tensor tensor, f32 fanin,
-                    f32 __attribute__((unused)) fanout);
+void   tensor_to_contiguous_inplace(Tensor tensor);
+void   tensor_random(Tensor tensor);
+void   tensor_random_bound(Tensor tensor, f32 lower_bound, f32 upper_bound);
+void   tensor_xavier(Tensor tensor, f32 fanin, f32 fanout);
+void   tensor_kaiming(Tensor tensor, f32 fanin,
+                      f32 __attribute__((unused)) fanout);
 Tensor tensor_positional_encoding(u32 seq, u32 dmodel);
 
+u64 urand();
 #endif

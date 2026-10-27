@@ -50,8 +50,8 @@ Tensor var_cross_entropy_one_hot(Tensor logits, Tensor targets, i32 axis) {
     return tmp;
 
   i32 *axis_ptr = tmalloc(sizeof(*axis_ptr));
-  *axis_ptr = axis;
-  Tensor res = track(tmp);
+  *axis_ptr     = axis;
+  Tensor res    = track(tmp);
   var_track_parent(res, logits, targets,
                    (VarOp){cross_entropy_oh_backward_fn, nullptr}, axis_ptr);
 
@@ -103,8 +103,8 @@ Tensor var_cross_entropy_probs(Tensor logits, Tensor targets, i32 axis) {
     return tmp;
 
   i32 *axis_ptr = tmalloc(sizeof(*axis_ptr));
-  *axis_ptr = axis;
-  Tensor res = track(tmp);
+  *axis_ptr     = axis;
+  Tensor res    = track(tmp);
   var_track_parent(res, logits, targets,
                    (VarOp){cross_entropy_pr_backward_fn, nullptr}, axis_ptr);
 
@@ -158,8 +158,8 @@ Tensor var_cross_entropy_indexed(Tensor logits, Tensor targets, i32 axis) {
     return tmp;
 
   i32 *axis_ptr = tmalloc(sizeof(*axis_ptr));
-  *axis_ptr = axis;
-  Tensor res = track(tmp);
+  *axis_ptr     = axis;
+  Tensor res    = track(tmp);
   var_track_parent(res, logits, targets,
                    (VarOp){cross_entropy_idx_backward_fn, nullptr}, axis_ptr);
 
@@ -212,7 +212,7 @@ Tensor var_cross_entropy_loss_one_hot(Tensor logits, Tensor targets, i32 axis) {
 
   Tensor cross_ent = tensor_cross_entropy_from_logits_axis(
       logits, targets, TENSOR_CE_ONE_HOT, axis);
-  auto loss = tensor_mean_all(cross_ent);
+  auto loss = tensor_mean(cross_ent);
 
   auto tmp = tensor_new(2, (u32[]){1, 1});
   if (!tmp)
@@ -225,8 +225,8 @@ Tensor var_cross_entropy_loss_one_hot(Tensor logits, Tensor targets, i32 axis) {
     return tmp;
 
   struct ce_loss *ctx = tmalloc(sizeof(*ctx));
-  ctx->axis = axis;
-  ctx->mean_divider = cross_ent->data->nelements;
+  ctx->axis           = axis;
+  ctx->mean_divider   = cross_ent->data->nelements;
 
   Tensor res = track(tmp);
   var_track_parent(res, logits, targets,
@@ -276,7 +276,7 @@ Tensor var_cross_entropy_loss_probs(Tensor logits, Tensor targets, i32 axis) {
 
   Tensor cross_ent = tensor_cross_entropy_from_logits_axis(
       logits, targets, TENSOR_CE_PROBS, axis);
-  auto loss = tensor_mean_all(cross_ent);
+  auto loss = tensor_mean(cross_ent);
 
   auto tmp = tensor_new(2, (u32[]){1, 1});
   if (!tmp)
@@ -289,8 +289,8 @@ Tensor var_cross_entropy_loss_probs(Tensor logits, Tensor targets, i32 axis) {
     return tmp;
 
   struct ce_loss *ctx = tmalloc(sizeof(*ctx));
-  ctx->axis = axis;
-  ctx->mean_divider = cross_ent->data->nelements;
+  ctx->axis           = axis;
+  ctx->mean_divider   = cross_ent->data->nelements;
 
   Tensor res = track(tmp);
   var_track_parent(res, logits, targets,
@@ -342,7 +342,7 @@ Tensor var_cross_entropy_loss_indexed(Tensor logits, Tensor targets, i32 axis) {
 
   Tensor cross_ent = tensor_cross_entropy_from_logits_axis(
       logits, targets, TENSOR_CE_INDEXED, axis);
-  auto loss = tensor_mean_all(cross_ent);
+  auto loss = tensor_mean(cross_ent);
 
   auto tmp = tensor_new(2, (u32[]){1, 1});
   if (!tmp)
@@ -355,8 +355,8 @@ Tensor var_cross_entropy_loss_indexed(Tensor logits, Tensor targets, i32 axis) {
     return tmp;
 
   struct ce_loss *ctx = tmalloc(sizeof(*ctx));
-  ctx->axis = axis;
-  ctx->mean_divider = cross_ent->data->nelements;
+  ctx->axis           = axis;
+  ctx->mean_divider   = cross_ent->data->nelements;
 
   Tensor res = track(tmp);
   var_track_parent(res, logits, targets,

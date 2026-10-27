@@ -15,7 +15,7 @@ static inline float divide(float deviation, float variance,
   return deviation / sqrtf(variance);
 }
 
-Tensor tensor_layer_norm_devation_variance_axis(Tensor deviation, u32 axis) {
+Tensor tensor_layer_norm_deviation_variance_axis(Tensor deviation, u32 axis) {
   return tensor_reduce_axis(deviation, axis, 0, deviation->shape[axis],
                             layer_norm_var);
 }

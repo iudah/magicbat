@@ -1,9 +1,9 @@
-#include "tensor_prot.h"
 #include "tensor.h"
+#include "tensor_prot.h"
 #include <stdint.h>
 
 Tensor tensor_transpose(const Tensor tensor) {
-  TASSERT(t && "Null tensor.");
+  TASSERT(tensor && "Null tensor.");
 
   if (!tensor)
     return nullptr;
@@ -31,7 +31,9 @@ Tensor tensor_transpose(const Tensor tensor) {
  */
 
   return tensor_transpose_dims(tensor, 1,
-                               (TensorDimSwap[]){{.src = 0, .dest = 1}});
+                               (TensorDimSwap[]){
+                                   {.src = 0, .dest = 1}
+  });
 }
 
 Tensor tensor_transpose_dims(const Tensor tensor, u32 nswap,
@@ -39,10 +41,10 @@ Tensor tensor_transpose_dims(const Tensor tensor, u32 nswap,
   auto view = tensor_view(tensor);
   for (u32 i = 0; i < nswap; ++i) {
     view->shape[swaps[i].dest] = tensor->shape[swaps[i].src];
-    view->shape[swaps[i].src] = tensor->shape[swaps[i].dest];
+    view->shape[swaps[i].src]  = tensor->shape[swaps[i].dest];
 
     view->stride[swaps[i].dest] = tensor->stride[swaps[i].src];
-    view->stride[swaps[i].src] = tensor->stride[swaps[i].dest];
+    view->stride[swaps[i].src]  = tensor->stride[swaps[i].dest];
   }
 
   view->is_contiguous = false;

@@ -1,7 +1,7 @@
-#include "tensor_prot.h"
 #include "tensor.h"
 #include "tensor_memory.h"
 #include "tensor_odometer.h"
+#include "tensor_prot.h"
 #include <math.h>
 #include <stdint.h>
 
@@ -30,7 +30,7 @@ Tensor tensor_max_axis(const Tensor tensor, i32 axis) {
 
   u32 outer_size = 1;
   u32 inner_size = 1;
-  u32 axis_size = tensor->shape[axis];
+  u32 axis_size  = tensor->shape[axis];
 
   for (u32 i = 0; (i32)i < axis; ++i) {
     outer_size *= tensor->shape[i];
@@ -64,9 +64,9 @@ Tensor tensor_max_axis(const Tensor tensor, i32 axis) {
     }
   } else {
     for (u32 outer_indx = 0; outer_indx < outer_size; ++outer_indx) {
-      u32 o_offset = outer_indx * axis_size * inner_size;
-      u32 r_offset = outer_indx * inner_size;
-      float *r_data = &res->data->data[r_offset];
+      u32    o_offset = outer_indx * axis_size * inner_size;
+      u32    r_offset = outer_indx * inner_size;
+      float *r_data   = &res->data->data[r_offset];
       for (u32 i = 0; i < inner_size; ++i) {
         float max = -INFINITY;
         for (u32 axis_indx = 0; axis_indx < axis_size; ++axis_indx) {
@@ -82,14 +82,14 @@ Tensor tensor_max_axis(const Tensor tensor, i32 axis) {
   return res;
 }
 
-float tensor_max_all(const Tensor tensor) {
+float tensor_max(const Tensor tensor) {
   if (!tensor)
     return -NAN;
 
-  float max = -INFINITY;
-  u32 nelements = tensor_num_elements(tensor);
+  float max       = -INFINITY;
+  u32   nelements = tensor_num_elements(tensor);
   for (u32 i = 0; i < nelements; ++i) {
-    max = fmaxf(max, tensor->data->data[i]);
+    max = fmaxf(max, tensor->data->data[tensor->offset + i]);
   }
 
   return max;

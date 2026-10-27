@@ -20,8 +20,8 @@ Tensor tensor_exp(const Tensor tensor) {
 
   if (tensor->is_contiguous) {
     for (u32 i = 0; i < nelement; ++i) {
-      auto val = tensor->data->data[i];
-      res->data->data[i] = expf(val);
+      auto val                         = tensor->data->data[i + tensor->offset];
+      res->data->data[i + res->offset] = expf(val);
     }
   } else
     tensor_binary_op_inplace(res, tensor, 0, exp_fn);

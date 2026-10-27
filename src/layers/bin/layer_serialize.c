@@ -1,4 +1,5 @@
-#include "layer_serialize.h"
+#include "dropout/dropout_layer.h"
+#include "layer_bin.h"
 #include "layer_norm.h"
 #include "layers_prot.h"
 #include "linear_layer.h"
@@ -12,27 +13,44 @@
 #define FILE_MEME 0x3A61C8A7
 #define META_SIZE (16)
 
-FILE *layer_new_bin(char *path, char *bin_name, u32 version) {
+BinStream *layers_bin_create(const char *path, const char *bin_name,
+                             u32 version) {
 #define path_len (2048)
   char bin_path[path_len] = {0};
   snprintf(bin_path, path_len, "%s/%s.mbat", path, bin_name);
+  BinStream *bins = tcalloc(1, sizeof(*bins));
+  if (!bins)
+    return nullptr;
+
   FILE *bin = fopen(bin_path, "w+b");
 
-  if (!bin)
+  if (!bin) {
+    tfree(bins);
     return nullptr;
+  }
+
+  bins->fp = bin;
 
   u32 meta[META_SIZE] = {[0] = FILE_MEME, [1] = version, [META_SIZE - 1] = 0};
   fwrite(meta, sizeof(*meta), sizeof(meta) / sizeof(*meta), bin);
-  return bin;
+  return bins;
 }
 
-FILE *layer_load_bin(char *path, char *bin_name) {
+BinStream *layers_bin_open(const char *path, const char *bin_name) {
   char bin_path[path_len] = {0};
   snprintf(bin_path, path_len, "%s/%s.mbat", path, bin_name);
+  BinStream *bins = tcalloc(1, sizeof(*bins));
+  if (!bins)
+    return nullptr;
+
   FILE *bin = fopen(bin_path, "rb");
 
-  if (!bin)
+  if (!bin) {
+    tfree(bins);
     return nullptr;
+  }
+
+  bins->fp = bin;
 
   u32 meta[META_SIZE] = {0};
   fread(meta, sizeof(*meta), sizeof(meta) / sizeof(*meta), bin);
@@ -42,40 +60,48 @@ FILE *layer_load_bin(char *path, char *bin_name) {
     return nullptr;
   }
 
-  return bin;
+  return bins;
 }
 
-bool layer_serialize(LayerSerializerId serializer, mem layer, FILE *binary) {
+bool layers_bin_close(BinStream *bstream) {
+  if (!bstream || !bstream->fp)
+    return false;
+  return fclose(bstream->fp) == 0;
+}
+bool layer_write(LayerSerializerId serializer, mem layer, FILE *binary) {
   fwrite(&serializer, sizeof(serializer), 1, binary);
   switch (serializer) {
   case LINEAR_SERIALIZER:
-    return linear_layer_serialize(layer, binary);
+    return linear_layer_write(layer, binary);
   case LAYERNORM_SERIALIZER:
-    return layer_norm_serialize(layer, binary);
+    return layer_norm_write(layer, binary);
   case TRANSFORMER_ENC_SERIALIZER:
-    return transformer_enc_layer_serialize(layer, binary);
+    return transformer_enc_layer_write(layer, binary);
   case RNNCELL_SERIALIZER:
-    return rnn_cell_serialize(layer, binary);
+    return rnn_cell_write(layer, binary);
+  case DROPOUT_SERIALIZER:
+    return dropout_layer_write(layer, binary);
   default:
     fprintf(stderr, "Unknown serializer id: %llu", serializer);
     return false;
   }
 }
 
-mem layer_deserialize(FILE *binary) {
+mem layer_read(FILE *binary) {
   enum serializer_enum serializer_id = 0;
   fread(&serializer_id, sizeof(serializer_id), 1, binary);
   switch (serializer_id) {
   case LINEAR_SERIALIZER:
-    return linear_layer_deserialize(tmalloc(sizeof(struct linear_layer)),
-                                    binary);
+    return linear_layer_read(tcalloc(1, sizeof(struct linear_layer)), binary);
   case LAYERNORM_SERIALIZER:
-    return layer_norm_deserialize(tmalloc(sizeof(struct layer_norm)), binary);
+    return layer_norm_read(tcalloc(1, sizeof(struct layer_norm)), binary);
   case TRANSFORMER_ENC_SERIALIZER:
-    return transformer_enc_layer_deserialize(
-        tmalloc(sizeof(struct transfomer_enc_layer)), binary);
+    return transformer_enc_layer_read(
+        tcalloc(1, sizeof(struct transfomer_enc_layer)), binary);
   case RNNCELL_SERIALIZER:
-    return rnn_cell_deserialize(tmalloc(sizeof(struct rnn_cell)), binary);
+    return rnn_cell_read(tcalloc(1, sizeof(struct rnn_cell)), binary);
+  case DROPOUT_SERIALIZER:
+    return dropout_layer_read(tcalloc(1, sizeof(struct dropout_layer)), binary);
   default:
     fprintf(stderr, "Unknown serializer id: %llu", serializer_id);
     return nullptr;

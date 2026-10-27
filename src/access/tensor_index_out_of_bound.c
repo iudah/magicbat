@@ -1,8 +1,8 @@
-#include "tensor_prot.h"
 #include "tensor.h"
+#include "tensor_prot.h"
 
 bool tensor_index_out_of_bound(const Tensor tensor, const u32 *index) {
-  TASSERT(t && index && "Null tensor or index.");
+  TASSERT(tensor && index && "Null tensor or index.");
 
   if (tensor == nullptr || index == nullptr)
     return false;

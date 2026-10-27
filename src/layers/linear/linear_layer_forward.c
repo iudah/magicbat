@@ -11,7 +11,7 @@ Tensor linear_layer_forward(const LinearLayer layer, const Tensor input) {
 
   auto xw_b = var_add(weighted_sum, layer->bias);
 
-  if (!var_require_grad(xw_b))
+  if (!var_requires_grad(xw_b))
     var_destroy(weighted_sum);
 
   return xw_b;

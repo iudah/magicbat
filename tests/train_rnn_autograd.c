@@ -7,14 +7,16 @@
 #include <math.h>
 #include <stdio.h>
 
-#define SEQ_LEN 50
-#define EPOCHS 10
-#define LR 0.01f
+#define SEQ_LEN   50
+#define EPOCHS    10
+#define GRAD_THR  1.0f
+#define VAL_CLAMP 5.0f
+#define LR        0.01f
 
-#define ALPHA 0.2f
+#define ALPHA          0.2f
 #define HIDDEN_FEATURE 16
-#define RNN_FEATURE 16
-#define CHECKPOINT 50
+#define RNN_FEATURE    16
+#define CHECKPOINT     50
 
 int main() {
   // 1. Generate Data (Sine Wave)
@@ -25,7 +27,7 @@ int main() {
 
   // 2. Initialize Architecture
   // RNN: in_features=1, batch=1, hidden=16, out=16
-  RNNCell rnn = rnn_cell_new(1, 1, HIDDEN_FEATURE, RNN_FEATURE);
+  RNNCell     rnn  = rnn_cell_new(1, 1, HIDDEN_FEATURE, RNN_FEATURE);
   LinearLayer proj = linear_layer_new(RNN_FEATURE, 1);
 
   f32 rnn_w[] = {
@@ -88,11 +90,11 @@ int main() {
                  -0.22123015, 0.04459384,  -0.1487535,  -0.01619205,
                  -0.00119537, 0.13320339,  -0.01833886, 0.08554783,
                  0.23866606,  -0.10985404, -0.18978873, 0.2453697};
-  f32 ll_w[] = {0.19754761,  -0.06212181, -0.12588847, -0.14880869,
-                -0.14969695, -0.20253205, 0.08047888,  0.12206304,
-                -0.05988231, 0.07485434,  -0.18517804, 0.06303057,
-                -0.02379316, -0.12688255, 0.22718042,  0.18483934};
-  f32 ll_b[] = {0.21410999};
+  f32 ll_w[]  = {0.19754761,  -0.06212181, -0.12588847, -0.14880869,
+                 -0.14969695, -0.20253205, 0.08047888,  0.12206304,
+                 -0.05988231, 0.07485434,  -0.18517804, 0.06303057,
+                 -0.02379316, -0.12688255, 0.22718042,  0.18483934};
+  f32 ll_b[]  = {0.21410999};
 
   for (u32 i = 0; i < rnn->cell.weight->data->nelements; ++i) {
     rnn->cell.weight->data->data[i] = rnn_w[i];
@@ -111,16 +113,16 @@ int main() {
   linear_layer_track(proj);
 
   // 3. Initialize Optimizer
-  Tensor params[] = {rnn->cell.weight, rnn->cell.bias, proj->weight,
-                     proj->bias};
-  SgdOptimizer optim = sgd_optimizer_new(params, 4, LR);
+  Tensor       params[] = {rnn->cell.weight, rnn->cell.bias, proj->weight,
+                           proj->bias};
+  SgdOptimizer optim    = sgd_optimizer_new(params, 4, LR, GRAD_THR, VAL_CLAMP);
 
   // 4. Training Loop
   for (u32 epoch = 0; epoch < EPOCHS; ++epoch) {
 
     // CRITICAL: Sever the BPTT graph from the previous epoch
-    Tensor init_h = tensor_zero(2, (u32[]){1, HIDDEN_FEATURE});
-    rnn->hidden_state = track_replace_untracked(init_h);
+    Tensor init_h     = tensor_zero(2, (u32[]){1, HIDDEN_FEATURE});
+    rnn->hidden_state = to_var(init_h);
 
     // Initialize sequence loss accumulator
     Tensor total_loss = track(tensor_scalar(0.0f));
@@ -135,14 +137,14 @@ int main() {
 
       // Forward Pass
       Tensor pre_act = rnn_cell_forward(rnn, x_t);
-      Tensor y_pred = linear_layer_forward(proj, rnn->hidden_state);
+      Tensor y_pred  = linear_layer_forward(proj, rnn->hidden_state);
 
       // if(epoch==0 ){
 
       //}
 
       // Compute MSE Step Loss: (y_pred - y_true)^2
-      Tensor diff = var_sub(y_pred, y_true);
+      Tensor diff   = var_sub(y_pred, y_true);
       Tensor sq_err = var_mul(diff, diff);
 
       // Accumulate total loss for the sequence

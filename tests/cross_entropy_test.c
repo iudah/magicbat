@@ -1,4 +1,4 @@
-#include "test_crossentropy.h"
+#include "cross_entropy_test_data.h"
 #include "tensor.h"
 #include "var.h"
 #include <math.h>
@@ -35,7 +35,7 @@ int main() {
   // ---------------------------------------------------------
   // 1. ONE-HOT PATH
   // ---------------------------------------------------------
-  auto logits_oh = track_replace_untracked(tensor_new(2, shape2d));
+  auto logits_oh = to_var(tensor_new(2, shape2d));
   memcpy(logits_oh->data->data, logits_np,
          BATCH_SIZE * VOCAB_SIZE * sizeof(f32));
 
@@ -52,7 +52,7 @@ int main() {
   // ---------------------------------------------------------
   // 2. PROBS PATH
   // ---------------------------------------------------------
-  auto logits_pr = track_replace_untracked(tensor_new(2, shape2d));
+  auto logits_pr = to_var(tensor_new(2, shape2d));
   memcpy(logits_pr->data->data, logits_np,
          BATCH_SIZE * VOCAB_SIZE * sizeof(f32));
 
@@ -69,7 +69,7 @@ int main() {
   // ---------------------------------------------------------
   // 3. INDEXED PATH
   // ---------------------------------------------------------
-  auto logits_idx = track_replace_untracked(tensor_new(2, shape2d));
+  auto logits_idx = to_var(tensor_new(2, shape2d));
   memcpy(logits_idx->data->data, logits_np,
          BATCH_SIZE * VOCAB_SIZE * sizeof(f32));
 

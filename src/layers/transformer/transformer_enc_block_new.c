@@ -10,7 +10,7 @@ TransformerEncoderLayer
 transformer_enc_layer_new(u32 n_head, u32 head_dim,
                           ResidualStrat residual_strat_0,
                           ResidualStrat residual_strat_1) {
-  auto dmodel = n_head * head_dim;
+  auto dmodel   = n_head * head_dim;
   auto dmodelff = 4 * dmodel;
 
   TASSERT(dmodel < BLOCK_SIZE ||
@@ -21,7 +21,7 @@ transformer_enc_layer_new(u32 n_head, u32 head_dim,
   if (!((dmodel < BLOCK_SIZE || ((dmodel & (BLOCK_SIZE - 1)) == 0))))
     return nullptr;
 
-  TransformerEncoderLayer layer = tmalloc(sizeof(*layer));
+  TransformerEncoderLayer layer = tcalloc(1, sizeof(*layer));
   layer_norm_init(&layer->layernorm_0, dmodel);
   layer_norm_init(&layer->layernorm_1, dmodel);
   linear_layer_init(&layer->ffn_0, dmodel, dmodelff);
@@ -30,11 +30,12 @@ transformer_enc_layer_new(u32 n_head, u32 head_dim,
 
   layer->residual_conn_0 = residual_strat_0;
   layer->residual_conn_1 = residual_strat_1;
-  layer->w_qkv = tensor_new(2, (u32[MAX_DIMS]){dmodel, 3 * dmodel});
-  layer->head_dim = head_dim;
-  layer->n_head = n_head;
+  layer->w_qkv           = tensor_new(2, (u32[MAX_DIMS]){dmodel, 3 * dmodel});
+  layer->head_dim        = head_dim;
+  layer->n_head          = n_head;
 
   tensor_xavier(layer->w_qkv, dmodel, dmodel);
+  LAYER_SET_VT(layer, transformer_enc);
 
   return layer;
 }

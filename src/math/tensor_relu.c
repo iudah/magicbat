@@ -1,6 +1,6 @@
-#include "tensor_prot.h"
 #include "tensor.h"
 #include "tensor_binary_op.h"
+#include "tensor_prot.h"
 #include <math.h>
 #include <stdint.h>
 
@@ -21,8 +21,8 @@ Tensor tensor_relu(const Tensor tensor) {
 
   if (tensor->is_contiguous) {
     for (u32 i = 0; i < nelement; ++i) {
-      auto value = tensor->data->data[i];
-      res->data->data[i] = fmaxf(value, 0);
+      auto value                       = tensor->data->data[i + tensor->offset];
+      res->data->data[i + res->offset] = fmaxf(value, 0);
     }
   } else
     tensor_binary_op_inplace(res, tensor, 0, relu_fn);
@@ -44,13 +44,15 @@ Tensor tensor_relu_backward(const Tensor tensor, const Tensor relu,
 
   if (grad) {
     for (u32 i = 0; i < nelement; ++i) {
-      res->data->data[i] =
-          relu->data->data[i] > EPS ? grad->data->data[i] : 0.0F;
+      res->data->data[i + res->offset] =
+          relu->data->data[i + relu->offset] > EPS
+              ? grad->data->data[i + grad->offset]
+              : 0.0F;
     }
   } else {
     for (u32 i = 0; i < nelement; ++i) {
-      auto value = relu->data->data[i];
-      res->data->data[i] = value > EPS ? 1.0F : 0.0F;
+      auto value                       = relu->data->data[relu->offset + i];
+      res->data->data[res->offset + i] = value > EPS ? 1.0F : 0.0F;
     }
   }
 

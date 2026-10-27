@@ -11,11 +11,14 @@ void emb_backward_fn(Var self) {
 
   if (weight_matrix && !weight_matrix->base.is_tensor_type &&
       weight_matrix->base.requires_grad) {
-    if (weight_matrix->grad) {
-      var_destroy(weight_matrix->grad);
+    if (!weight_matrix->grad) {
+      weight_matrix->grad =
+          tensor_zero(weight_matrix->base.ndims, weight_matrix->base.shape);
     }
-    weight_matrix->grad = tensor_embedding_backward(
-        &self->parent[0]->base, &weight_matrix->base, self->grad);
+    auto tmp = tensor_embedding_backward(&self->parent[0]->base,
+                                         &weight_matrix->base, self->grad);
+    tensor_add_inplace(weight_matrix->grad, tmp);
+    tensor_destroy(tmp);
   }
 }
 

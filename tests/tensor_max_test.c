@@ -1,5 +1,5 @@
-#include "tensor_prot.h"
 #include "tensor.h"
+#include "tensor_prot.h"
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -69,15 +69,15 @@ int main(void) {
     tensor_destroy(t);
   }
 
-  /* ---------------- tensor_max_all ---------------- */
+  /* ---------------- tensor_max -------------------- */
   {
-    Tensor t = tensor_new(2, (u32[]){2, 3});
-    float values[] = {1, 5, 2, 9, 3, 7};
+    Tensor t        = tensor_new(2, (u32[]){2, 3});
+    float  values[] = {1, 5, 2, 9, 3, 7};
     for (u32 i = 0; i < 6; ++i) {
       t->data->data[i] = values[i];
     }
 
-    float global_max = tensor_max_all(t);
+    float global_max = tensor_max(t);
     assert(fabsf(global_max - 9.0f) < EPS);
 
     tensor_destroy(t);
@@ -86,9 +86,9 @@ int main(void) {
   /* ---------------- Edge cases ---------------- */
   {
     // Single element
-    Tensor single = tensor_new(1, (u32[]){1});
+    Tensor single         = tensor_new(1, (u32[]){1});
     single->data->data[0] = 42.0f;
-    assert(fabsf(tensor_max_all(single) - 42.0f) < EPS);
+    assert(fabsf(tensor_max(single) - 42.0f) < EPS);
 
     Tensor max_single = tensor_max_axis(single, 0);
     assert(max_single != nullptr);

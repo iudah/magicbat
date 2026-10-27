@@ -1,3 +1,4 @@
+#include "bmm_dispatch.h"
 #include "matmul.h"
 #include "matmul_batched_tile.h"
 #include "matmul_tile.h"
@@ -19,7 +20,7 @@ static inline void bmm_non_contiguous_bc_b_2(Tensor tensor_a, Tensor tensor_b,
                                              Tensor product, u32 batch, u32 row,
                                              u32 col, u32 com,
                                              bool UNUSED_ARG broadcast_a,
-                                             bool broadcast_b);
+                                             bool            broadcast_b);
 static inline void bmm_non_contiguous_bc_a_2(Tensor tensor_a, Tensor tensor_b,
                                              Tensor product, u32 batch, u32 row,
                                              u32 col, u32 com, bool broadcast_a,
@@ -33,75 +34,38 @@ static inline void bmm_non_contiguous_no_bc(Tensor tensor_a, Tensor tensor_b,
                                             u32 col, u32 com,
                                             bool UNUSED_ARG broadcast_a,
                                             bool UNUSED_ARG broadcast_b);
-Tensor tensor_bmatmul_transpose_a(const Tensor tensor_a,
-                                  const Tensor tensor_b) {
+Tensor             tensor_bmatmul_transpose_a(const Tensor tensor_a,
+                                              const Tensor tensor_b) {
   if (bmm_tensors_invalid(tensor_a, tensor_b, true, false))
     return nullptr;
 
-  auto broadcast_a =
+  const bool broadcast_a =
       tensor_a->ndims == 2 || (tensor_a->shape[0] == 1 &&
                                tensor_b->shape[0] != 1 && tensor_b->ndims == 3);
-  auto broadcast_b =
+  const bool broadcast_b =
       tensor_b->ndims == 2 || (tensor_b->shape[0] == 1 &&
                                tensor_a->shape[0] != 1 && tensor_a->ndims == 3);
+  const u32 batch = broadcast_a && broadcast_b
+                                    ? 1
+                                    : (!broadcast_a ? tensor_a : tensor_b)->shape[0];
+  const u32 row   = tensor_a->shape[tensor_a->ndims - 1];
+  const u32 col   = tensor_b->shape[tensor_b->ndims - 1];
+  const u32 com   = tensor_b->shape[tensor_b->ndims - 2];
 
-  u32 batch = broadcast_a && broadcast_b
-                  ? 1
-                  : (!broadcast_a ? tensor_a : tensor_b)->shape[0];
-  u32 row = tensor_a->shape[tensor_a->ndims - 1];
-  u32 col = tensor_b->shape[tensor_b->ndims - 1];
-  u32 com = tensor_b->shape[tensor_b->ndims - 2];
-
-  // guarantees zeros
   Tensor product = tensor_new(3, (u32[]){batch, row, col});
-  if (product == nullptr)
+  if (!product)
     return nullptr;
 
-  auto switch_flag = SWITCH_FLAG;
-
-  switch (switch_flag) {
-  case 1ULL << FULL_DIM_A | 1ULL << FULL_DIM_B | 1ULL << NO_BROADCAST:
-    bmm_non_contiguous_no_bc(tensor_a, tensor_b, product, batch, row, col, com,
-                             broadcast_a, broadcast_b);
-    break;
-  case 1ULL << FULL_DIM_A | 1ULL << FULL_DIM_B:
-    bmm_non_contiguous_bc_3(tensor_a, tensor_b, product, batch, row, col, com,
-                            broadcast_a, broadcast_b);
-    break;
-  case 1ULL << FULL_DIM_B:
-    bmm_non_contiguous_bc_a_2(tensor_a, tensor_b, product, batch, row, col, com,
-                              broadcast_a, broadcast_b);
-    break;
-  case 1ULL << FULL_DIM_A:
-    bmm_non_contiguous_bc_b_2(tensor_a, tensor_b, product, batch, row, col, com,
-                              broadcast_a, broadcast_b);
-    break;
-  case 1ULL << CONTIGUOUS_DUO | 1ULL << NO_BROADCAST | 1ULL << FULL_DIM_A |
-      1ULL << FULL_DIM_B:
-  case 1ULL << CONTIGUOUS_DUO | 1ULL << FULL_DIM_A | 1ULL << FULL_DIM_B:
-  case 1ULL << CONTIGUOUS_DUO | 1ULL << FULL_DIM_B:
-  case 1ULL << CONTIGUOUS_DUO | 1ULL << FULL_DIM_A:
-  case 1ULL << CONTIGUOUS_DUO:
-    contiguous_lt_bs_unbatched(broadcast_a, broadcast_b, batch, row, col, com,
-                               tensor_a, tensor_b, product);
-    break;
-  case 1ULL << CONTIGUOUS_DUO | 1ULL << NO_BROADCAST | 1ULL << FULL_DIM_A |
-      1ULL << FULL_DIM_B | 1ULL << ALL_CAN_TILE:
-  case 1ULL << CONTIGUOUS_DUO | 1ULL << FULL_DIM_A | 1ULL << FULL_DIM_B |
-      1ULL << ALL_CAN_TILE:
-  case 1ULL << CONTIGUOUS_DUO | 1ULL << FULL_DIM_B | 1ULL << ALL_CAN_TILE:
-  case 1ULL << CONTIGUOUS_DUO | 1ULL << FULL_DIM_A | 1ULL << ALL_CAN_TILE:
-  case 1ULL << CONTIGUOUS_DUO | 1ULL << ALL_CAN_TILE:
-    contiguous_gt_bs_unbatched(broadcast_a, broadcast_b, batch, row, col, com,
-                               tensor_a, tensor_b, product);
-    break;
-  case 1ULL << CONTIGUOUS_DUO | 1ULL << NO_BROADCAST | 1ULL << FULL_DIM_A |
-      1ULL << FULL_DIM_B | 1ULL << ALL_CAN_TILE | 1ULL << BATCH_CAN_TILE:
-    bmatmul_transpose_a_gt_block_size(
-        batch, row, col, com, tensor_a->data->data, tensor_b->data->data,
-        product->data->data);
-    break;
-  }
+  if (tensor_a->is_contiguous && tensor_b->is_contiguous)
+    bmm_dispatch_contiguous(
+        bmatmul_transpose_a_gt_block_size, contiguous_lt_bs_unbatched,
+        contiguous_gt_bs_unbatched, broadcast_a, broadcast_b, batch, row, col,
+        com, tensor_a, tensor_b, product);
+  else
+    bmm_dispatch_non_contiguous(
+        bmm_non_contiguous_no_bc, bmm_non_contiguous_bc_3,
+        bmm_non_contiguous_bc_a_2, bmm_non_contiguous_bc_b_2, broadcast_a,
+        broadcast_b, batch, row, col, com, tensor_a, tensor_b, product);
 
   return product;
 }
@@ -242,7 +206,7 @@ static inline void bmm_non_contiguous_bc_b_2(Tensor tensor_a, Tensor tensor_b,
                                              Tensor product, u32 batch, u32 row,
                                              u32 col, u32 com,
                                              bool UNUSED_ARG broadcast_a,
-                                             bool broadcast_b) {
+                                             bool            broadcast_b) {
   for (u32 batch_index = 0; batch_index < batch; ++batch_index) {
     for (u32 j = 0; j < com; ++j) {
       for (u32 i = 0; i < row; ++i) {

@@ -11,22 +11,24 @@
 typedef struct transfomer_enc_layer *TransformerEncoderLayer;
 
 TransformerEncoderLayer
-transformer_enc_layer_new(u32 n_head, u32 head_dim,
-                          ResidualStrat residual_strat_0,
-                          ResidualStrat residual_strat_1);
-bool transformer_enc_layer_destroy(TransformerEncoderLayer layer);
+       transformer_enc_layer_new(u32 n_head, u32 head_dim,
+                                 ResidualStrat residual_strat_0,
+                                 ResidualStrat residual_strat_1);
+bool   transformer_enc_layer_destroy(TransformerEncoderLayer layer);
 Tensor transformer_enc_layer_forward(TransformerEncoderLayer layer,
-                                     Tensor input);
+                                     Tensor                  input);
 
-Tensor *transformer_enc_layer_kernels(TransformerEncoderLayer layer,
-                                      Tensor buffer[], u32 buffer_length);
+u32 transformer_enc_layer_kernels(TransformerEncoderLayer layer,
+                                  Tensor buffer[], u32 buffer_length);
 
 bool transformer_enc_layer_track(TransformerEncoderLayer layer);
 bool transformer_enc_layer_untrack(TransformerEncoderLayer layer);
 
-bool transformer_enc_layer_serialize(TransformerEncoderLayer layer,
-                                     FILE *binary);
+bool transformer_enc_layer_write(TransformerEncoderLayer layer, FILE *binary);
 TransformerEncoderLayer
-transformer_enc_layer_deserialize(TransformerEncoderLayer layer, FILE *binary);
+transformer_enc_layer_read(TransformerEncoderLayer layer, FILE *binary);
 
+DEFINE_VTABLE(transformer_enc, transformer_enc_layer, TransformerEncoderLayer,
+              "TransformerEncoderLayer", N_XFORMER_KERNELS,
+              TRANSFORMER_ENC_SERIALIZER)
 #endif

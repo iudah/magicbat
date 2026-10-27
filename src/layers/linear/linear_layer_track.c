@@ -12,9 +12,9 @@ bool linear_layer_track(LinearLayer layer) {
   if (!layer->bias)
     return false;
 
-  layer->weight = track_replace_untracked(layer->weight);
+  layer->weight = to_var(layer->weight);
 
-  layer->bias = track_replace_untracked(layer->bias);
+  layer->bias = to_var(layer->bias);
 
   return true;
 }

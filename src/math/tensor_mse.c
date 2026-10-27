@@ -10,7 +10,7 @@ Tensor tensor_mean_sqr_axis(Tensor tensor, u32 axis) {
   return tensor_reduce_axis(tensor, axis, 0, tensor->shape[axis], mean_sqr);
 }
 
-f32 tensor_mean_sqr_all(Tensor tensor) {
+f32 tensor_mean_sqr(Tensor tensor) {
   u32 len = 1;
   for (u32 i = 0; i < tensor->ndims; ++i) {
     len *= tensor->shape[i];
@@ -37,7 +37,7 @@ static inline float d_ms_no_grad_flat(float val, float UNUSED_ARG unused,
                                       float alpha) {
   return val * alpha;
 }
-Tensor tensor_mean_sqr_all_backward(f32 gradient, Tensor tensor) {
+Tensor tensor_mean_sqr_backward(f32 gradient, Tensor tensor) {
   u32 len = 1;
   for (u32 i = 0; i < tensor->ndims; ++i) {
     len *= tensor->shape[i];

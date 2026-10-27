@@ -1,5 +1,5 @@
-#include "tensor_prot.h"
 #include "tensor.h"
+#include "tensor_prot.h"
 #include <stdint.h>
 
 Tensor tensor_negate(const Tensor tensor) {
@@ -13,8 +13,8 @@ Tensor tensor_negate(const Tensor tensor) {
   auto nelement = tensor_num_elements(res);
 
   for (u32 i = 0; i < nelement; ++i) {
-    auto val = tensor->data->data[i];
-    res->data->data[i] = -val;
+    auto val                         = tensor->data->data[i + tensor->offset];
+    res->data->data[res->offset + i] = -val;
   }
 
   return res;
@@ -29,7 +29,7 @@ void tensor_negate_inplace(Tensor restrict tensor) {
   auto nelement = tensor_num_elements(res);
 
   for (u32 i = 0; i < nelement; ++i) {
-    auto val = tensor->data->data[i];
-    res->data->data[i] = -val;
+    auto val                         = tensor->data->data[i + tensor->offset];
+    res->data->data[i + res->offset] = -val;
   }
 }

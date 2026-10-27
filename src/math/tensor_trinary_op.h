@@ -4,8 +4,8 @@
 #include <stdint.h>
 
 Tensor tensor_trinary_op(Tensor restrict tensor_a, Tensor restrict tensor_b,
-                         Tensor restrict tensor_c,
+                         Tensor restrict tensor_c, void *state,
                          float (*operation_callback)(float val_a, float val_b,
-                                                     float alpha));
+                                                     float val_c, void *state));
 
 #endif

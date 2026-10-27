@@ -1,6 +1,7 @@
 #ifndef FUSED_ATTENTION_CAUSAL_H
 #define FUSED_ATTENTION_CAUSAL_H
 
+#include "fused_attention.h"
 #include "matmul.h"
 #include "matmul_tile.h"
 #include <math.h>
@@ -16,9 +17,9 @@ static inline void fused_attention_causal_gt_block_size_fast(
       f32 *max_data = &max[(b_inner * m_len) + m_inner];
       f32 *sum_data = &sum[(b_inner * m_len) + m_inner];
       MATMUL_INNER_LOOP(n) {
-        f32 score = 0;
-        bool mask = n_inner > m_inner;
-        MATMUL_CAUSAL_LOOP(k, mask) {
+        f32  score = 0;
+        bool mask  = n_inner > m_inner;
+        MATMUL_IF_UNMASKED(k, mask) {
           auto m_val = q_data[((b_inner * m_len + m_inner) * k_len) + k_indx];
           score +=
               m_val * k_data[((b_inner * n_len + n_inner) * k_len) + k_indx];
@@ -56,18 +57,36 @@ static inline f32 *fused_attention_causal_gt_block_size(
 
   MATMUL_OUTER_LOOP(b) {
     MATMUL_OUTER_LOOP(m) {
-      MATMUL_OUTER_LOOP(n) {
+      for (u32 n_outer = 0; n_outer < m_outer + BLOCK_SIZE && n_outer < n_main;
+           n_outer += BLOCK_SIZE) {
 
-        fused_attention_causal_gt_block_size_fast(
-            b_outer, m_outer, n_outer, m_len, n_len, k_len, q_data, k_data,
-            v_data, r_data, inv_sqrt_d, max_data, sum_data);
+        if (n_outer + BLOCK_SIZE <= m_outer) {
+          // past tile: non-causal kernel is correct here (mask would be
+          // all-false)
+          fused_attention_gt_block_size_fast(
+              b_outer, m_outer, n_outer, m_len, n_len, k_len, q_data, k_data,
+              v_data, r_data, inv_sqrt_d, max_data, sum_data);
+        } else {
+          // diagonal tile: some cells are masked
+          fused_attention_causal_gt_block_size_fast(
+              b_outer, m_outer, n_outer, m_len, n_len, k_len, q_data, k_data,
+              v_data, r_data, inv_sqrt_d, max_data, sum_data);
+        }
       }
+      /*/ ===
+          MATMUL_OUTER_LOOP(n) {
+
+            fused_attention_causal_gt_block_size_fast(
+                b_outer, m_outer, n_outer, m_len, n_len, k_len, q_data, k_data,
+                v_data, r_data, inv_sqrt_d, max_data, sum_data);
+          }
+          */
       MATMUL_INNER_LOOP(b) {
         MATMUL_INNER_LOOP(m) {
           f32 sum_val = sum_data[(b_inner * m_len) + m_inner];
           MATMUL_LOOP(k) {
 
-            r_data[((b_inner * m_len) + m_inner * k_len) + k_indx] /= sum_val;
+            r_data[((b_inner * m_len + m_inner) * k_len) + k_indx] /= sum_val;
           }
         }
       }
@@ -86,9 +105,9 @@ static inline void fused_attention_causal_gt_block_size_unbatched_fast(
     f32 *max_data = &max[m_inner];
     f32 *sum_data = &sum[m_inner];
     MATMUL_INNER_LOOP(n) {
-      f32 score = 0;
-      bool mask = n_inner > m_inner;
-      MATMUL_CAUSAL_LOOP(k, mask) {
+      f32  score = 0;
+      bool mask  = n_inner > m_inner;
+      MATMUL_IF_UNMASKED(k, mask) {
         auto m_val = q_data[(m_inner * k_len) + k_indx];
         score += m_val * k_data[(n_inner * k_len) + k_indx];
       }
@@ -121,12 +140,30 @@ static inline f32 *fused_attention_causal_gt_block_size_unbatched(
   MAIN_LEN(n);
 
   MATMUL_OUTER_LOOP(m) {
+    for (u32 n_outer = 0; n_outer < m_outer + BLOCK_SIZE && n_outer < n_main;
+         n_outer += BLOCK_SIZE) {
+
+      if (n_outer + BLOCK_SIZE <= m_outer) {
+        // past tile: non-causal kernel is correct here (mask would be
+        // all-false)
+        fused_attention_gt_block_size_unbatched_fast(
+            m_outer, n_outer, k_len, q_data, k_data, v_data, r_data, inv_sqrt_d,
+            max_data, sum_data);
+      } else {
+        // diagonal tile: some cells are masked
+        fused_attention_causal_gt_block_size_unbatched_fast(
+            m_outer, n_outer, k_len, q_data, k_data, v_data, r_data, inv_sqrt_d,
+            max_data, sum_data);
+      }
+    }
+    /*
     MATMUL_OUTER_LOOP(n) {
 
       fused_attention_causal_gt_block_size_unbatched_fast(
           m_outer, n_outer, k_len, q_data, k_data, v_data, r_data, inv_sqrt_d,
           max_data, sum_data);
     }
+    */
     MATMUL_INNER_LOOP(m) {
       f32 sum_val = sum_data[m_inner];
       MATMUL_LOOP(k) { r_data[(m_inner * k_len) + k_indx] /= sum_val; }
@@ -145,9 +182,9 @@ static inline f32 *fused_attention_causal_lt_block_size(
     f32 *max = &max_data[m_indx];
     f32 *sum = &sum_data[m_indx];
     MATMUL_LOOP(n) {
-      f32 score = 0;
-      bool mask = n_indx > m_indx;
-      MATMUL_CAUSAL_LOOP(k, mask) {
+      f32  score = 0;
+      bool mask  = n_indx > m_indx;
+      MATMUL_IF_UNMASKED(k, mask) {
         auto m_val = q_data[(m_indx * k_len) + k_indx];
         score += m_val * k_data[(n_indx * k_len) + k_indx];
       }

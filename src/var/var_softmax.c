@@ -15,8 +15,8 @@ void softmax_backward_fn(Var self) {
     if (!parent->grad) {
       parent->grad = tensor_zero(parent->base.ndims, parent->base.shape);
     }
-    auto tmp =
-        tensor_softmax_backward((Tensor)parent, self->grad, *(u32 *)self->ctx);
+    auto tmp = tensor_softmax_axis_backward((Tensor)parent, self->grad,
+                                            *(u32 *)self->ctx);
     auto tmp_red =
         tensor_sum_to_shape(tmp, parent->base.ndims, parent->base.shape);
     tensor_add_inplace(parent->grad, tmp_red);
@@ -29,7 +29,7 @@ Tensor var_softmax(Tensor var, i32 axis) {
 
   axis = axis < 0 ? var->ndims + axis : axis;
 
-  Tensor tmp = tensor_softmax(var, axis);
+  Tensor tmp = tensor_softmax_axis(var, axis);
   if (!tmp)
     return nullptr;
 
@@ -37,8 +37,8 @@ Tensor var_softmax(Tensor var, i32 axis) {
     return tmp;
 
   Tensor res = track(tmp);
-  u32 *ctx = tmalloc(sizeof(*ctx));
-  *ctx = axis;
+  u32   *ctx = tmalloc(sizeof(*ctx));
+  *ctx       = axis;
   var_track_parent(res, var, nullptr, (VarOp){softmax_backward_fn, nullptr},
                    ctx);
 

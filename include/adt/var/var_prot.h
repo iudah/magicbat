@@ -20,7 +20,7 @@ struct var_struct {
 
 static inline void var_track_parent(Tensor tensor, Tensor parent_a,
                                     Tensor parent_b, VarOp operation,
-                                    void *ctx) {
+                                    mem ctx) {
   Var res = (Var)tensor;
   res->parent[0] = (Var)parent_a;
   res->parent[1] = (Var)parent_b;

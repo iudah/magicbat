@@ -12,8 +12,8 @@ void ms_backward_fn(Var self) {
        !(var_b && !var_b->base.is_tensor_type && var_b->base.requires_grad)))
     return;
 
-  auto dms = self->grad ? self->grad->data->data[0] : 1;
-  auto dsub = tensor_mean_sqr_all_backward(dms, (*(Tensor *)self->ctx));
+  auto dms  = self->grad ? self->grad->data->data[0] : 1;
+  auto dsub = tensor_mean_sqr_backward(dms, (*(Tensor *)self->ctx));
 
   if (var_a && !var_a->base.is_tensor_type && var_a->base.requires_grad) {
     if (!var_a->grad) {
@@ -49,7 +49,7 @@ Tensor var_mse_loss(Tensor pred, Tensor target) {
   if (!tmp)
     return nullptr;
 
-  tmp->data->data[0] = tensor_mean_sqr_all(var);
+  tmp->data->data[0] = tensor_mean_sqr(var);
 
   if ((pred->is_tensor_type || !pred->requires_grad)
 
@@ -59,7 +59,7 @@ Tensor var_mse_loss(Tensor pred, Tensor target) {
   }
 
   Tensor *ctx = tmalloc(sizeof(*ctx));
-  *ctx = var;
+  *ctx        = var;
 
   Tensor res = track(tmp);
   var_track_parent(res, pred, target,

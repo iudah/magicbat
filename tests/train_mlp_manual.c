@@ -5,6 +5,9 @@
 #include <assert.h>
 #include <stdio.h>
 
+#define GRAD_THR  1.0f
+#define VAL_CLAMP 5.0f
+
 int main(void) {
   printf("Simple MLP training example...\n");
 
@@ -33,7 +36,8 @@ int main(void) {
   Tensor kernels[4] = {nullptr};
   linear_layer_kernels(fc1, kernels, 2);
   linear_layer_kernels(fc2, kernels + 2, 2);
-  SgdOptimizer optimizer = sgd_optimizer_new(kernels, 4, 0.1f);
+  SgdOptimizer optimizer =
+      sgd_optimizer_new(kernels, 4, 0.1f, GRAD_THR, VAL_CLAMP);
 
   tensor_fill(kernels[0], 0.025f);
   tensor_fill(kernels[2], 0.035f);
@@ -42,15 +46,15 @@ int main(void) {
 
   for (int epoch = 0; epoch < 100; ++epoch) {
     // Forward pass
-    Tensor h1 = linear_layer_forward(fc1, x);
+    Tensor h1     = linear_layer_forward(fc1, x);
     Tensor h1_act = tensor_relu(h1);
     Tensor logits = linear_layer_forward(fc2, h1_act);
 
     // Loss (MSE for simplicity)
-    Tensor diff = tensor_sub(logits, y);
+    Tensor diff    = tensor_sub(logits, y);
     Tensor loss_sq = tensor_mul(diff, diff);
     Tensor loss =
-        tensor_scalar(tensor_sum_all(loss_sq) / tensor_num_elements(loss_sq));
+        tensor_scalar(tensor_sum(loss_sq) / tensor_num_elements(loss_sq));
 
     printf("Epoch %d, Loss = %.4f\n", epoch, loss->data->data[0]);
 

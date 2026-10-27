@@ -9,6 +9,6 @@ Tensor tensor_mean_axis(Tensor tensor, u32 axis) {
   return tensor_reduce_axis(tensor, axis, 0, tensor->shape[axis], mean);
 }
 
-f32 tensor_mean_all(Tensor tensor) {
+f32 tensor_mean(Tensor tensor) {
   return tensor_reduce_all(tensor, 0, tensor_num_elements(tensor), mean);
 }

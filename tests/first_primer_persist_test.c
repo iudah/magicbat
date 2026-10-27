@@ -1,28 +1,30 @@
+#include "first_primer_data.h"
+#include "layer_bin.h"
 #include "layer_norm.h"
 #include "linear_layer.h"
 #include "sgd.h"
 #include "tensor.h"
 #include "tensor_arena.h"
 #include "tensor_memory.h"
-#include "train_first_primer.h"
 #include "transformer_enc_layer.h"
 #include "var.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-#define SEQ_SIZE 32
+#define SEQ_SIZE   32
 #define BATCH_SIZE 8
-#define NHEAD 2
-#define HEAD_DIM 8
-#define D_MODEL NHEAD *HEAD_DIM
-#define LR 0.01f
-#define EPOCH 100
+#define NHEAD      2
+#define HEAD_DIM   8
+#define D_MODEL    NHEAD *HEAD_DIM
+#define LR         0.01f
+#define EPOCH      400
+#define GRAD_THR   1.0f
+#define VAL_CLAMP  5.0f
 
 #define kB(x) ((u64)(x * 1024))
 #define MB(x) (kB(kB(x)))
-
-u64 urand();
 
 void fill_input(Tensor input, Tensor target, const i32 *train_data,
                 u32 train_data_length) {
@@ -46,13 +48,21 @@ int main() {
 
   set_active_arena(setup_arena);
 
-  auto transformer_0 = transformer_enc_layer_new(
-      NHEAD, HEAD_DIM, pre_ln_residual, pre_ln_residual);
-  auto transformer_1 = transformer_enc_layer_new(
-      NHEAD, HEAD_DIM, pre_ln_residual, pre_ln_residual);
+  auto bin = layers_bin_open(getenv("HOME"), ".magicbat.first_primer");
 
-  auto layer_norm_out = layer_norm_new(D_MODEL);
-  auto lang_model_head = linear_layer_new(D_MODEL, VOCAB_SIZE);
+  auto transformer_0 =
+      bin != nullptr ? layer_read(bin->fp)
+                     : transformer_enc_layer_new(
+                           NHEAD, HEAD_DIM, pre_ln_residual, pre_ln_residual);
+  auto transformer_1 =
+      bin != nullptr ? layer_read(bin->fp)
+                     : transformer_enc_layer_new(
+                           NHEAD, HEAD_DIM, pre_ln_residual, pre_ln_residual);
+
+  auto layer_norm_out =
+      bin != nullptr ? layer_read(bin->fp) : layer_norm_new(D_MODEL);
+  auto lang_model_head = bin != nullptr ? layer_read(bin->fp)
+                                        : linear_layer_new(D_MODEL, VOCAB_SIZE);
 
   transformer_enc_layer_track(transformer_0);
   transformer_enc_layer_track(transformer_1);
@@ -75,21 +85,29 @@ int main() {
                            N_LAYERNORM_KERNELS,
                        N_LINEAR_KERNELS);
   Tensor weight_matrix =
-      track_replace_untracked(tensor_new(2, (u32[]){VOCAB_SIZE, D_MODEL}));
-  tensor_random_bound(weight_matrix, 0, 1);
+      to_var(bin != nullptr ? tensor_read(bin->fp)
+                            : tensor_new(2, (u32[]){VOCAB_SIZE, D_MODEL}));
+  if (bin == nullptr)
+    tensor_random_bound(weight_matrix, 0, 1);
   kernels[total_kernels - 1] = weight_matrix;
 
-  auto optim = sgd_optimizer_new(kernels, total_kernels, LR);
+  auto optim =
+      sgd_optimizer_new(kernels, total_kernels, LR, GRAD_THR, VAL_CLAMP);
 
-  Tensor positional_encoder = tensor_positional_encoding(SEQ_SIZE, D_MODEL);
+  Tensor positional_encoder =
+      bin != nullptr ? tensor_read(bin->fp)
+                     : tensor_positional_encoding(SEQ_SIZE, D_MODEL);
 
-  Tensor input = tensor_new(2, (u32[]){BATCH_SIZE, SEQ_SIZE});
+  if (bin)
+    layers_bin_close(bin);
+
+  Tensor input  = tensor_new(2, (u32[]){BATCH_SIZE, SEQ_SIZE});
   Tensor target = tensor_new(2, (u32[]){BATCH_SIZE, SEQ_SIZE});
 
   // TRAINING PHASE
   set_active_arena(train_arena);
   for (u32 epoch = 0; epoch < EPOCH; ++epoch) {
-#define TRAIN_SIZE VOCAB_SIZE * 7 / 10
+#define TRAIN_SIZE (VOCAB_SIZE * 7 / 10)
     fill_input(input, target, (i32 *)train_data, TRAIN_SIZE);
     Tensor x_emb = var_embedding(input, weight_matrix);
 
@@ -98,12 +116,13 @@ int main() {
     auto model_out = transformer_enc_layer_forward(transformer_1, block_out);
 
     auto final_norm = layer_norm_forward(layer_norm_out, model_out);
-    auto logits = linear_layer_forward(lang_model_head, final_norm);
+    auto logits     = linear_layer_forward(lang_model_head, final_norm);
 
     auto loss = var_cross_entropy_loss_indexed(logits, target, -1);
 
 #define EPOCH_CHECKPOINT 50
-    if ((epoch + 1) % EPOCH_CHECKPOINT == 0 || epoch == 0)
+    if ((epoch + 1) % EPOCH_CHECKPOINT == 0 || epoch == (EPOCH - 1) ||
+        epoch == 0)
       printf("Epoch %d | Loss: %f\n", epoch + 1, loss->data->data[0]);
 
     var_backward(loss);
@@ -120,6 +139,15 @@ int main() {
 
     tarena_reset(active_arena);
   }
+  bin = layers_bin_create(getenv("HOME"), ".magicbat.first_primer", 1);
+  layer_write(TRANSFORMER_ENC_SERIALIZER, transformer_0, bin->fp);
+  layer_write(TRANSFORMER_ENC_SERIALIZER, transformer_0, bin->fp);
+  layer_write(LAYERNORM_SERIALIZER, layer_norm_out, bin->fp);
+  layer_write(LINEAR_SERIALIZER, lang_model_head, bin->fp);
+  tensor_write(weight_matrix, bin->fp);
+  tensor_write(positional_encoder, bin->fp);
+  if (bin)
+    layers_bin_close(bin);
 
   // INFERENCE / TEXT GENERATION PHASE
   printf("\n"
@@ -127,9 +155,10 @@ int main() {
          "          Model Inference Generation         \n"
          "=============================================\n");
 
+  set_active_arena(setup_arena);
 #define INF_LIMIT (256)
   char inf_buffer[INF_LIMIT];
-  u32 inf_limit = 0;
+  u32  inf_limit = 0;
 
   // Tracking input tensor matching batch expectations
   Tensor inf_input = tensor_new(2, (u32[]){1, SEQ_SIZE});
@@ -158,7 +187,7 @@ int main() {
   // Autoregressively generate 120 characters
   for (u32 step = 0; step < STEP_SIZE; ++step) {
     // Forward pass without tracking dependencies for optimization gradients
-    Tensor x_emb = tensor_embedding(inf_input, weight_matrix);
+    Tensor x_emb     = tensor_embedding(inf_input, weight_matrix);
     Tensor pos_input = tensor_add(x_emb, positional_encoder);
 
     Tensor b0_out = transformer_enc_layer_forward(transformer_0, pos_input);
@@ -170,13 +199,13 @@ int main() {
     // Argmax loop over vocabulary dimensions to extract the highest logit
     // prediction
     u32 predicted_token = 0;
-    f32 max_score = -INFINITY;
+    f32 max_score       = -INFINITY;
     for (u32 vocab = 0; vocab < VOCAB_SIZE; ++vocab) {
       f32 score =
           logits->data
               ->data[(((0 * SEQ_SIZE) + LAST_TOKEN_POS) * VOCAB_SIZE) + vocab];
       if (score > max_score) {
-        max_score = score;
+        max_score       = score;
         predicted_token = vocab;
       }
     }
@@ -184,12 +213,12 @@ int main() {
     if (inf_limit >= (INF_LIMIT - 1)) {
       // Print out the decoded text character in real time
       printf("%s", inf_buffer);
-      inf_limit = 0;
+      inf_limit     = 0;
       inf_buffer[0] = 0;
       fflush(stdout);
     } else {
       inf_buffer[inf_limit++] = itos_map[predicted_token];
-      inf_buffer[inf_limit] = 0;
+      inf_buffer[inf_limit]   = 0;
     }
 
     // Roll context window left by 1 element across the batch to make room for

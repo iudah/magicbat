@@ -1,29 +1,30 @@
+#include "mha_test_data.h"
 #include "sgd.h"
 #include "tensor.h"
-#include "test_mha.h"
 #include "type_alias.h"
 #include "var.h"
 #include <stdio.h>
 
 #define BATCH_SIZE 1
-#define SEQ_LEN 32
-#define NHEADS 2
-#define HEAD_DIM 8
-#define D_MODEL HEAD_DIM *NHEADS
-#define LR 0.01
-#define EPOCH 10
+#define SEQ_LEN    32
+#define NHEADS     2
+#define HEAD_DIM   8
+#define D_MODEL    HEAD_DIM *NHEADS
+#define LR         0.01
+#define EPOCH      10
+#define GRAD_THR   1.0f
+#define VAL_CLAMP  5.0f
 
 void test_fused_mha(u32 seq_len) {
-  u32 batch = BATCH_SIZE;
+  u32 batch   = BATCH_SIZE;
   u32 d_model = D_MODEL;
   u32 n_heads = NHEADS;
 
   // Use IDENTICAL starting values as the discrete test
-  auto input = tensor_new(3, (u32[]){batch, seq_len, d_model});
-  auto w_qkv =
-      track_replace_untracked(tensor_new(2, (u32[]){d_model, 3 * d_model}));
-  Tensor target_tensor = tensor_new(3, (u32[]){batch, seq_len, d_model});
-  SgdOptimizer optim = sgd_optimizer_new(&w_qkv, 1, LR);
+  auto         input = tensor_new(3, (u32[]){batch, seq_len, d_model});
+  auto         w_qkv = to_var(tensor_new(2, (u32[]){d_model, 3 * d_model}));
+  Tensor       target_tensor = tensor_new(3, (u32[]){batch, seq_len, d_model});
+  SgdOptimizer optim = sgd_optimizer_new(&w_qkv, 1, LR, GRAD_THR, VAL_CLAMP);
 
   for (u32 i = 0; i < input->data->nelements; ++i) {
     input->data->data[i] = X[i];

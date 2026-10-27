@@ -17,10 +17,10 @@ Tensor rnn_cell_forward(const RNNCell layer, const Tensor input) {
 
   auto xw_b = var_add(weighted_sum, layer->cell.bias);
 
-  if (!var_require_grad(xw_b))
+  if (!var_requires_grad(xw_b))
     var_destroy(weighted_sum);
 
-  auto hidden_state = layer->hidden_state;
+  auto hidden_state   = layer->hidden_state;
   layer->hidden_state = var_tanh(xw_b);
   var_destroy(hidden_state);
 

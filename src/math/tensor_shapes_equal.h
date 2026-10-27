@@ -2,9 +2,9 @@
 #define TENSOR_SHAPES_EQUAL
 #include "../../include/tensor.h"
 
-static inline bool tensor_shapes_equal_from_shape(u32 t_ndims,
+static inline bool tensor_shapes_equal_from_shape(u32        t_ndims,
                                                   const u32 *t_shape,
-                                                  u32 s_ndims,
+                                                  u32        s_ndims,
                                                   const u32 *s_shape);
 
 static inline bool tensor_shapes_equal(const Tensor var_a, const Tensor var_b) {
@@ -23,9 +23,9 @@ static inline bool tensor_shapes_equal(const Tensor var_a, const Tensor var_b) {
   return tensor_shapes_equal_from_shape(t_ndims, t_shape, s_ndims, s_shape);
 }
 
-static inline bool tensor_shapes_equal_from_shape(const u32 t_ndims,
+static inline bool tensor_shapes_equal_from_shape(const u32  t_ndims,
                                                   const u32 *t_shape,
-                                                  const u32 s_ndims,
+                                                  const u32  s_ndims,
                                                   const u32 *s_shape) {
 
   if (t_ndims != s_ndims)
@@ -49,18 +49,18 @@ static inline bool tensor_shapes_equal_from_shape(const u32 t_ndims,
   return true;
 }
 
-static inline bool tensor_shape_is_broadcast(const u32 base_ndims,
+static inline bool tensor_shape_is_broadcast(const u32  base_ndims,
                                              const u32 *base_shape,
-                                             const u32 broadcast_ndims,
+                                             const u32  broadcast_ndims,
                                              const u32 *broadcast_shape) {
-
-  if (base_ndims > broadcast_ndims)
-    return false;
-  if (base_ndims == 0)
-    return false;
-
   if (base_shape == nullptr || broadcast_shape == nullptr)
     return false;
+  if (base_ndims == 0 || broadcast_ndims == 0)
+    return false;
+  if (base_ndims > broadcast_ndims)
+    return false;
+
+  bool strict = base_ndims < broadcast_ndims;
 
   u32 t_indx = base_ndims;
   u32 s_indx = broadcast_ndims;
@@ -68,11 +68,15 @@ static inline bool tensor_shape_is_broadcast(const u32 base_ndims,
     --t_indx;
     --s_indx;
 
-    if (base_shape[t_indx] != broadcast_shape[s_indx] &&
-        base_shape[t_indx] != 1)
-      return false;
+    if (base_shape[t_indx] == broadcast_shape[s_indx])
+      continue;
+    if (base_shape[t_indx] == 1 && broadcast_shape[s_indx] > 1) {
+      strict = true;
+      continue;
+    }
+    return false;
   }
 
-  return true;
+  return strict;
 }
 #endif

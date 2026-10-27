@@ -5,11 +5,11 @@
 
 Tensor tensor_embedding(Tensor input_tokens, Tensor weight_matrix) {
 
-  if (!input_tokens->is_contiguous && !weight_matrix->is_contiguous)
+  if (!input_tokens->is_contiguous || !weight_matrix->is_contiguous)
     abort();
 
-  auto batch = input_tokens->shape[0];
-  auto seq = input_tokens->shape[1];
+  auto batch   = input_tokens->shape[0];
+  auto seq     = input_tokens->shape[1];
   auto d_model = weight_matrix->shape[1];
 
   auto embedding = tensor_new(3, (u32[]){batch, seq, d_model});
@@ -27,11 +27,11 @@ Tensor tensor_embedding(Tensor input_tokens, Tensor weight_matrix) {
 
 Tensor tensor_embedding_backward(Tensor input_tokens, Tensor weight_matrix,
                                  Tensor grad) {
-  if (!input_tokens->is_contiguous && !weight_matrix->is_contiguous)
+  if (!input_tokens->is_contiguous || !weight_matrix->is_contiguous)
     abort();
 
-  auto batch = input_tokens->shape[0];
-  auto seq = input_tokens->shape[1];
+  auto batch   = input_tokens->shape[0];
+  auto seq     = input_tokens->shape[1];
   auto d_model = weight_matrix->shape[1];
 
   auto weight_grad = tensor_new(weight_matrix->ndims, weight_matrix->shape);
@@ -39,8 +39,8 @@ Tensor tensor_embedding_backward(Tensor input_tokens, Tensor weight_matrix,
   for (u32 i = 0; i < batch; ++i) {
     for (u32 j = 0; j < seq; ++j) {
       auto weight_idx = (u32)input_tokens->data->data[(i * seq) + j];
-      auto w_grad = &weight_grad->data->data[weight_idx * d_model];
-      auto e_grad = &grad->data->data[(i * seq + j) * d_model];
+      auto w_grad     = &weight_grad->data->data[weight_idx * d_model];
+      auto e_grad     = &grad->data->data[(i * seq + j) * d_model];
 
       for (u32 k = 0; k < d_model; ++k) {
         w_grad[k] += e_grad[k];

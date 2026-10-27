@@ -7,26 +7,31 @@
 #include "type_alias.h"
 #include <stdint.h>
 
+Tensor tensor_same_shape_trinary(Tensor tensor_a, Tensor tensor_b,
+                                 Tensor tensor_c, mem state,
+                                 float (*operation_callback)(float, float,
+                                                             float, mem));
 Tensor
-tensor_same_shape_trinary(Tensor tensor_a, Tensor tensor_b, Tensor tensor_c,
-                          float (*operation_callback)(float, float, float));
-Tensor tensor_broadcast_trinary(Tensor tensor_a, Tensor tensor_b,
-                                Tensor tensor_c, u32 o_ndims, u32 *o_shape,
-                                float (*operation_callback)(float, float,
-                                                            float));
-Tensor
-tensor_length_one_a_trinary(Tensor tensor_b, Tensor tensor_c, f32 float_a,
-                            float (*operation_callback)(float, float, float));
-Tensor
-tensor_length_one_b_trinary(Tensor tensor_a, Tensor tensor_c, f32 float_b,
-                            float (*operation_callback)(float, float, float));
-Tensor
-tensor_length_one_c_trinary(Tensor tensor_a, Tensor tensor_b, f32 float_c,
-                            float (*operation_callback)(float, float, float));
+tensor_broadcast_trinary(Tensor tensor_a, Tensor tensor_b, Tensor tensor_c,
+                         u32 o_ndims, u32 *o_shape, mem state,
+                         float (*operation_callback)(float, float, float, mem));
+Tensor tensor_length_one_a_trinary(Tensor tensor_b, Tensor tensor_c,
+                                   f32 float_a, mem state,
+                                   float (*operation_callback)(float, float,
+                                                               float, mem));
+Tensor tensor_length_one_b_trinary(Tensor tensor_a, Tensor tensor_c,
+                                   f32 float_b, mem state,
+                                   float (*operation_callback)(float, float,
+                                                               float, mem));
+Tensor tensor_length_one_c_trinary(Tensor tensor_a, Tensor tensor_b,
+                                   f32 float_c, mem state,
+                                   float (*operation_callback)(float, float,
+                                                               float, mem));
 
 Tensor tensor_trinary_op(const Tensor tensor_a, const Tensor tensor_b,
-                         const Tensor tensor_c,
-                         float (*operation_callback)(float, float, float)) {
+                         const Tensor tensor_c, mem state,
+                         float (*operation_callback)(float, float, float,
+                                                     mem)) {
   TASSERT(tensor_a && tensor_b && tensor_c && operation_callback &&
           "Null tensor or operator.");
 
@@ -36,25 +41,23 @@ Tensor tensor_trinary_op(const Tensor tensor_a, const Tensor tensor_b,
   if (tensor_a->is_contiguous && tensor_b->is_contiguous &&
       tensor_c->is_contiguous && tensor_shapes_equal(tensor_a, tensor_b) &&
       tensor_shapes_equal(tensor_a, tensor_c))
-    return tensor_same_shape_trinary(tensor_a, tensor_b, tensor_c,
+    return tensor_same_shape_trinary(tensor_a, tensor_b, tensor_c, state,
                                      operation_callback);
+  if (tensor_num_elements(tensor_a) == 1) {
+    return tensor_length_one_a_trinary(tensor_b, tensor_c,
+                                       tensor_get(tensor_a, (u32[MAX_DIMS]){0}),
+                                       state, operation_callback);
+  }
   if (tensor_num_elements(tensor_b) == 1) {
-    return tensor_length_one_b_trinary(tensor_a, tensor_b,
-                                       tensor_get(tensor_c, (u32[MAX_DIMS]){0}),
-                                       operation_callback);
+    return tensor_length_one_b_trinary(tensor_a, tensor_c,
+                                       tensor_get(tensor_b, (u32[MAX_DIMS]){0}),
+                                       state, operation_callback);
   }
   if (tensor_num_elements(tensor_c) == 1) {
     return tensor_length_one_c_trinary(tensor_a, tensor_b,
                                        tensor_get(tensor_c, (u32[MAX_DIMS]){0}),
-                                       operation_callback);
+                                       state, operation_callback);
   }
-  /*
-    if (tensor_num_elements(tensor_a) == 1)
-      tensor_length_one_a_binary(tensor_a, tensor_b, alpha, operation_callback);
-
-    if (tensor_num_elements(tensor_b) == 1)
-      tensor_length_one_b_binary(tensor_a, tensor_b, alpha, operation_callback);
-  */
   u32 o_ndims =
       tensor_a->ndims > tensor_b->ndims ? tensor_a->ndims : tensor_b->ndims;
   o_ndims = o_ndims > tensor_c->ndims ? o_ndims : tensor_c->ndims;
@@ -67,14 +70,15 @@ Tensor tensor_trinary_op(const Tensor tensor_a, const Tensor tensor_b,
           tensor_a->ndims > tensor_b->ndims ? tensor_a->ndims : tensor_b->ndims,
           t_shape, tensor_c->ndims, tensor_c->shape, o_shape)) {
     return tensor_broadcast_trinary(tensor_a, tensor_b, tensor_c, o_ndims,
-                                    o_shape, operation_callback);
+                                    o_shape, state, operation_callback);
   }
   return nullptr;
 }
 
-Tensor
-tensor_same_shape_trinary(Tensor tensor_a, Tensor tensor_b, Tensor tensor_c,
-                          float (*operation_callback)(float, float, float)) {
+Tensor tensor_same_shape_trinary(Tensor tensor_a, Tensor tensor_b,
+                                 Tensor tensor_c, mem state,
+                                 float (*operation_callback)(float, float,
+                                                             float, mem)) {
   Tensor res = tensor_new(tensor_ndims(tensor_a), tensor_shape(tensor_a));
   if (res == nullptr)
     return nullptr;
@@ -82,18 +86,19 @@ tensor_same_shape_trinary(Tensor tensor_a, Tensor tensor_b, Tensor tensor_c,
   auto nelement = tensor_num_elements(res);
 
   for (u32 i = 0; i < nelement; ++i) {
-    auto val_a = tensor_a->data->data[i];
-    auto val_b = tensor_b->data->data[i];
-    auto val_c = tensor_c->data->data[i];
-    res->data->data[i] = operation_callback(val_a, val_b, val_c);
+    auto val_a         = tensor_a->data->data[i];
+    auto val_b         = tensor_b->data->data[i];
+    auto val_c         = tensor_c->data->data[i];
+    res->data->data[i] = operation_callback(val_a, val_b, val_c, state);
   }
 
   return res;
 }
 Tensor tensor_broadcast_trinary(Tensor tensor_a, Tensor tensor_b,
                                 Tensor tensor_c, u32 o_ndims, u32 *o_shape,
-                                float (*operation_callback)(float, float,
-                                                            float)) {
+                                mem   state,
+                                float (*operation_callback)(float, float, float,
+                                                            mem)) {
 
   Tensor res = tensor_new(o_ndims, o_shape);
   if (res == nullptr) {
@@ -129,7 +134,7 @@ Tensor tensor_broadcast_trinary(Tensor tensor_a, Tensor tensor_b,
     auto s_val = tensor_get(tensor_b, s_nindx);
     auto u_val = tensor_get(tensor_c, u_nindx);
 
-    auto r_val = operation_callback(t_val, s_val, u_val);
+    auto r_val = operation_callback(t_val, s_val, u_val, state);
 
     res->data->data[flat] = r_val;
     ++flat;
@@ -140,8 +145,8 @@ Tensor tensor_broadcast_trinary(Tensor tensor_a, Tensor tensor_b,
 }
 
 Tensor tensor_same_shape_length_one_c_trinary(
-    Tensor tensor_a, Tensor tensor_b, f32 alpha,
-    float (*operation_callback)(float, float, float)) {
+    Tensor tensor_a, Tensor tensor_b, f32 alpha, mem state,
+    float (*operation_callback)(float, float, float, mem)) {
   Tensor res = tensor_new(tensor_ndims(tensor_a), tensor_shape(tensor_a));
   if (res == nullptr)
     return nullptr;
@@ -149,17 +154,17 @@ Tensor tensor_same_shape_length_one_c_trinary(
   auto nelement = tensor_num_elements(res);
 
   for (u32 i = 0; i < nelement; ++i) {
-    auto val_a = tensor_a->data->data[i];
-    auto val_b = tensor_b->data->data[i];
-    res->data->data[i] = operation_callback(val_a, val_b, alpha);
+    auto val_a         = tensor_a->data->data[i];
+    auto val_b         = tensor_b->data->data[i];
+    res->data->data[i] = operation_callback(val_a, val_b, alpha, state);
   }
 
   return res;
 }
 
 Tensor tensor_length_one_a_length_one_c_trinary(
-    f32 val_a, Tensor tensor_b, f32 float_c,
-    float (*operation_callback)(float, float, float)) {
+    f32 val_a, Tensor tensor_b, f32 float_c, mem state,
+    float (*operation_callback)(float, float, float, mem)) {
   Tensor res = tensor_new(tensor_ndims(tensor_b), tensor_shape(tensor_b));
   if (res == nullptr)
     return nullptr;
@@ -168,16 +173,17 @@ Tensor tensor_length_one_a_length_one_c_trinary(
 
   if (tensor_b->is_contiguous) {
     for (u32 i = 0; i < nelement; ++i) {
-      auto val_b = tensor_b->data->data[i];
-      res->data->data[i] = operation_callback(val_a, val_b, float_c);
+      auto val_b         = tensor_b->data->data[i];
+      res->data->data[i] = operation_callback(val_a, val_b, float_c, state);
     }
 
   } else {
     u32 index[MAX_DIMS] = {0};
 
     for (u32 i = 0; i < nelement; ++i) {
-      auto val_b = tensor_get(tensor_b, index);
-      res->data->data[i] = operation_callback(val_a, val_b, float_c);
+      auto val_b         = tensor_get(tensor_b, index);
+      res->data->data[i] = operation_callback(val_a, val_b, float_c, state);
+
       tensor_odometer_next(index, tensor_b->ndims, tensor_b->shape);
     }
   }
@@ -185,8 +191,8 @@ Tensor tensor_length_one_a_length_one_c_trinary(
 }
 
 Tensor tensor_length_one_b_length_one_c_trinary(
-    Tensor tensor_a, f32 val_b, f32 float_c,
-    float (*operation_callback)(float, float, float)) {
+    Tensor tensor_a, f32 val_b, f32 float_c, mem state,
+    float (*operation_callback)(float, float, float, mem)) {
   Tensor res = tensor_new(tensor_ndims(tensor_a), tensor_shape(tensor_a));
   if (res == nullptr)
     return nullptr;
@@ -196,15 +202,15 @@ Tensor tensor_length_one_b_length_one_c_trinary(
   if (tensor_a->is_contiguous) {
 
     for (u32 i = 0; i < nelement; ++i) {
-      auto val_a = tensor_a->data->data[i];
-      res->data->data[i] = operation_callback(val_a, val_b, float_c);
+      auto val_a         = tensor_a->data->data[i];
+      res->data->data[i] = operation_callback(val_a, val_b, float_c, state);
     }
   } else {
     u32 index[MAX_DIMS] = {0};
 
     for (u32 i = 0; i < nelement; ++i) {
-      auto val_a = tensor_get(tensor_a, index);
-      res->data->data[i] = operation_callback(val_a, val_b, float_c);
+      auto val_a         = tensor_get(tensor_a, index);
+      res->data->data[i] = operation_callback(val_a, val_b, float_c, state);
       tensor_odometer_next(index, tensor_a->ndims, tensor_a->shape);
     }
   }
@@ -213,7 +219,7 @@ Tensor tensor_length_one_b_length_one_c_trinary(
 
 Tensor tensor_broadcast_length_one_c_trinary(
     Tensor tensor_a, Tensor tensor_b, u32 o_ndims, u32 *o_shape, f32 float_c,
-    float (*operation_callback)(float, float, float)) {
+    mem state, float (*operation_callback)(float, float, float, mem)) {
 
   Tensor res = tensor_new(o_ndims, o_shape);
   if (res == nullptr) {
@@ -243,7 +249,7 @@ Tensor tensor_broadcast_length_one_c_trinary(
     auto t_val = tensor_get(tensor_a, t_nindx);
     auto s_val = tensor_get(tensor_b, s_nindx);
 
-    auto r_val = operation_callback(t_val, s_val, float_c);
+    auto r_val = operation_callback(t_val, s_val, float_c, state);
 
     res->data->data[flat] = r_val;
     ++flat;
@@ -254,10 +260,10 @@ Tensor tensor_broadcast_length_one_c_trinary(
 }
 
 Tensor tensor_length_one_c_trinary(const Tensor tensor_a, const Tensor tensor_b,
-                                   f32 float_c,
+                                   f32 float_c, mem state,
                                    float (*operation_callback)(float, float,
-                                                               float)) {
-  TASSERT(tensor_a && tensor_b && tensor_c && operation_callback &&
+                                                               float, mem)) {
+  TASSERT(tensor_a && tensor_b && operation_callback &&
           "Null tensor or operator.");
 
   if (!tensor_a || !tensor_b)
@@ -267,16 +273,16 @@ Tensor tensor_length_one_c_trinary(const Tensor tensor_a, const Tensor tensor_b,
 
   if (contiguous_duo && tensor_shapes_equal(tensor_a, tensor_b))
     return tensor_same_shape_length_one_c_trinary(tensor_a, tensor_b, float_c,
-                                                  operation_callback);
+                                                  state, operation_callback);
 
   if (tensor_num_elements(tensor_a) == 1)
-    tensor_length_one_a_length_one_c_trinary(
-        tensor_get(tensor_a, (u32[MAX_DIMS]){0}), tensor_b, float_c,
+    return tensor_length_one_a_length_one_c_trinary(
+        tensor_get(tensor_a, (u32[MAX_DIMS]){0}), tensor_b, float_c, state,
         operation_callback);
 
   if (tensor_num_elements(tensor_b) == 1)
-    tensor_length_one_b_length_one_c_trinary(
-        tensor_a, tensor_get(tensor_b, (u32[MAX_DIMS]){0}), float_c,
+    return tensor_length_one_b_length_one_c_trinary(
+        tensor_a, tensor_get(tensor_b, (u32[MAX_DIMS]){0}), float_c, state,
         operation_callback);
 
   u32 o_ndims =
@@ -284,16 +290,17 @@ Tensor tensor_length_one_c_trinary(const Tensor tensor_a, const Tensor tensor_b,
   u32 o_shape[MAX_DIMS];
 
   if (tensor_shapes_broadcast(tensor_a, tensor_b, o_shape)) {
-    return tensor_broadcast_length_one_c_trinary(
-        tensor_a, tensor_b, o_ndims, o_shape, float_c, operation_callback);
+    return tensor_broadcast_length_one_c_trinary(tensor_a, tensor_b, o_ndims,
+                                                 o_shape, float_c, state,
+                                                 operation_callback);
   }
   return nullptr;
 }
 
 //---
 Tensor tensor_same_shape_length_one_b_trinary(
-    Tensor tensor_a, Tensor tensor_c, f32 float_b,
-    float (*operation_callback)(float, float, float)) {
+    Tensor tensor_a, Tensor tensor_c, f32 float_b, mem state,
+    float (*operation_callback)(float, float, float, mem)) {
   Tensor res = tensor_new(tensor_ndims(tensor_a), tensor_shape(tensor_a));
   if (res == nullptr)
     return nullptr;
@@ -301,17 +308,17 @@ Tensor tensor_same_shape_length_one_b_trinary(
   auto nelement = tensor_num_elements(res);
 
   for (u32 i = 0; i < nelement; ++i) {
-    auto val_a = tensor_a->data->data[i];
-    auto val_c = tensor_c->data->data[i];
-    res->data->data[i] = operation_callback(val_a, float_b, val_c);
+    auto val_a         = tensor_a->data->data[i];
+    auto val_c         = tensor_c->data->data[i];
+    res->data->data[i] = operation_callback(val_a, float_b, val_c, state);
   }
 
   return res;
 }
 
 Tensor tensor_length_one_a_length_one_b_trinary(
-    f32 val_a, Tensor tensor_c, f32 float_b,
-    float (*operation_callback)(float, float, float)) {
+    f32 val_a, Tensor tensor_c, f32 float_b, mem state,
+    float (*operation_callback)(float, float, float, mem)) {
   Tensor res = tensor_new(tensor_ndims(tensor_c), tensor_shape(tensor_c));
   if (res == nullptr)
     return nullptr;
@@ -320,16 +327,16 @@ Tensor tensor_length_one_a_length_one_b_trinary(
 
   if (tensor_c->is_contiguous) {
     for (u32 i = 0; i < nelement; ++i) {
-      auto val_c = tensor_c->data->data[i];
-      res->data->data[i] = operation_callback(val_a, float_b, val_c);
+      auto val_c         = tensor_c->data->data[i];
+      res->data->data[i] = operation_callback(val_a, float_b, val_c, state);
     }
 
   } else {
     u32 index[MAX_DIMS] = {0};
 
     for (u32 i = 0; i < nelement; ++i) {
-      auto val_c = tensor_get(tensor_c, index);
-      res->data->data[i] = operation_callback(val_a, float_b, val_c);
+      auto val_c         = tensor_get(tensor_c, index);
+      res->data->data[i] = operation_callback(val_a, float_b, val_c, state);
       tensor_odometer_next(index, tensor_c->ndims, tensor_c->shape);
     }
   }
@@ -338,7 +345,7 @@ Tensor tensor_length_one_a_length_one_b_trinary(
 
 Tensor tensor_broadcast_length_one_b_trinary(
     Tensor tensor_a, Tensor tensor_c, u32 o_ndims, u32 *o_shape, f32 float_b,
-    float (*operation_callback)(float, float, float)) {
+    mem state, float (*operation_callback)(float, float, float, mem)) {
 
   Tensor res = tensor_new(o_ndims, o_shape);
   if (res == nullptr) {
@@ -368,7 +375,7 @@ Tensor tensor_broadcast_length_one_b_trinary(
     auto t_val = tensor_get(tensor_a, t_nindx);
     auto s_val = tensor_get(tensor_c, s_nindx);
 
-    auto r_val = operation_callback(t_val, float_b, s_val);
+    auto r_val = operation_callback(t_val, float_b, s_val, state);
 
     res->data->data[flat] = r_val;
     ++flat;
@@ -379,10 +386,10 @@ Tensor tensor_broadcast_length_one_b_trinary(
 }
 
 Tensor tensor_length_one_b_trinary(const Tensor tensor_a, const Tensor tensor_c,
-                                   f32 float_b,
+                                   f32 float_b, mem state,
                                    float (*operation_callback)(float, float,
-                                                               float)) {
-  TASSERT(tensor_a && tensor_b && tensor_c && operation_callback &&
+                                                               float, mem)) {
+  TASSERT(tensor_a && tensor_c && operation_callback &&
           "Null tensor or operator.");
 
   if (!tensor_a || !tensor_c)
@@ -392,16 +399,16 @@ Tensor tensor_length_one_b_trinary(const Tensor tensor_a, const Tensor tensor_c,
 
   if (contiguous_duo && tensor_shapes_equal(tensor_a, tensor_c))
     return tensor_same_shape_length_one_b_trinary(tensor_a, tensor_c, float_b,
-                                                  operation_callback);
+                                                  state, operation_callback);
 
   if (tensor_num_elements(tensor_a) == 1)
-    tensor_length_one_a_length_one_b_trinary(
-        tensor_get(tensor_a, (u32[MAX_DIMS]){0}), tensor_c, float_b,
+    return tensor_length_one_a_length_one_b_trinary(
+        tensor_get(tensor_a, (u32[MAX_DIMS]){0}), tensor_c, float_b, state,
         operation_callback);
 
   if (tensor_num_elements(tensor_c) == 1)
-    tensor_length_one_b_length_one_c_trinary(
-        tensor_a, tensor_get(tensor_a, (u32[MAX_DIMS]){0}), float_b,
+    return tensor_length_one_b_length_one_c_trinary(
+        tensor_a, float_b, tensor_get(tensor_c, (u32[MAX_DIMS]){0}), state,
         operation_callback);
 
   u32 o_ndims =
@@ -409,16 +416,17 @@ Tensor tensor_length_one_b_trinary(const Tensor tensor_a, const Tensor tensor_c,
   u32 o_shape[MAX_DIMS];
 
   if (tensor_shapes_broadcast(tensor_a, tensor_c, o_shape)) {
-    return tensor_broadcast_length_one_b_trinary(
-        tensor_a, tensor_c, o_ndims, o_shape, float_b, operation_callback);
+    return tensor_broadcast_length_one_b_trinary(tensor_a, tensor_c, o_ndims,
+                                                 o_shape, float_b, state,
+                                                 operation_callback);
   }
   return nullptr;
 }
 
 //---
 Tensor tensor_same_shape_length_one_a_trinary(
-    Tensor tensor_b, Tensor tensor_c, f32 float_a,
-    float (*operation_callback)(float, float, float)) {
+    Tensor tensor_b, Tensor tensor_c, f32 float_a, mem state,
+    float (*operation_callback)(float, float, float, mem)) {
   Tensor res = tensor_new(tensor_ndims(tensor_b), tensor_shape(tensor_b));
   if (res == nullptr)
     return nullptr;
@@ -426,9 +434,9 @@ Tensor tensor_same_shape_length_one_a_trinary(
   auto nelement = tensor_num_elements(res);
 
   for (u32 i = 0; i < nelement; ++i) {
-    auto val_a = tensor_b->data->data[i];
-    auto val_c = tensor_c->data->data[i];
-    res->data->data[i] = operation_callback(val_a, float_a, val_c);
+    auto val_a         = tensor_b->data->data[i];
+    auto val_c         = tensor_c->data->data[i];
+    res->data->data[i] = operation_callback(val_a, float_a, val_c, state);
   }
 
   return res;
@@ -436,7 +444,7 @@ Tensor tensor_same_shape_length_one_a_trinary(
 
 Tensor tensor_broadcast_length_one_a_trinary(
     Tensor tensor_b, Tensor tensor_c, u32 o_ndims, u32 *o_shape, f32 float_a,
-    float (*operation_callback)(float, float, float)) {
+    mem state, float (*operation_callback)(float, float, float, mem)) {
 
   Tensor res = tensor_new(o_ndims, o_shape);
   if (res == nullptr) {
@@ -466,7 +474,7 @@ Tensor tensor_broadcast_length_one_a_trinary(
     auto t_val = tensor_get(tensor_b, t_nindx);
     auto s_val = tensor_get(tensor_c, s_nindx);
 
-    auto r_val = operation_callback(t_val, float_a, s_val);
+    auto r_val = operation_callback(t_val, float_a, s_val, state);
 
     res->data->data[flat] = r_val;
     ++flat;
@@ -477,10 +485,10 @@ Tensor tensor_broadcast_length_one_a_trinary(
 }
 
 Tensor tensor_length_one_a_trinary(const Tensor tensor_b, const Tensor tensor_c,
-                                   f32 float_a,
+                                   f32 float_a, mem state,
                                    float (*operation_callback)(float, float,
-                                                               float)) {
-  TASSERT(tensor_a && tensor_b && tensor_c && operation_callback &&
+                                                               float, mem)) {
+  TASSERT(tensor_b && tensor_c && operation_callback &&
           "Null tensor or operator.");
 
   if (!tensor_b || !tensor_c)
@@ -490,25 +498,27 @@ Tensor tensor_length_one_a_trinary(const Tensor tensor_b, const Tensor tensor_c,
 
   if (contiguous_duo && tensor_shapes_equal(tensor_b, tensor_c))
     return tensor_same_shape_length_one_a_trinary(tensor_b, tensor_c, float_a,
-                                                  operation_callback);
+                                                  state, operation_callback);
 
   if (tensor_num_elements(tensor_b) == 1)
-    tensor_length_one_a_length_one_b_trinary(
-        float_a, tensor_c, tensor_get(tensor_b, (u32[MAX_DIMS]){0}),
+    return tensor_length_one_a_length_one_b_trinary(
+        float_a, tensor_c, tensor_get(tensor_b, (u32[MAX_DIMS]){0}), state,
         operation_callback);
 
   if (tensor_num_elements(tensor_c) == 1)
-    tensor_length_one_a_length_one_c_trinary(
-        float_a, tensor_b, tensor_get(tensor_b, (u32[MAX_DIMS]){0}),
+    return tensor_length_one_a_length_one_c_trinary(
+        float_a, tensor_b, tensor_get(tensor_c, (u32[MAX_DIMS]){0}), state,
         operation_callback);
 
   u32 o_ndims =
       tensor_b->ndims > tensor_c->ndims ? tensor_b->ndims : tensor_c->ndims;
   u32 o_shape[MAX_DIMS];
 
-  if (tensor_shapes_broadcast(tensor_b, tensor_c, o_shape)) {
-    return tensor_broadcast_length_one_a_trinary(
-        tensor_b, tensor_c, o_ndims, o_shape, float_a, operation_callback);
+  auto tensor = tensor_b;
+  if (tensor_shapes_broadcast(tensor, tensor_c, o_shape)) {
+    return tensor_broadcast_length_one_a_trinary(tensor_b, tensor_c, o_ndims,
+                                                 o_shape, float_a, state,
+                                                 operation_callback);
   }
   return nullptr;
 }

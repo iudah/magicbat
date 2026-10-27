@@ -11,17 +11,17 @@ static void softmax_last_axis(u32 outer, u32 target, const f32 *restrict input,
     f32 sum = 0;
     f32 max = -INFINITY;
     for (u32 j = 0; j < target; ++j) {
-      f32 score = input[(i * target) + j];
-      f32 new_max = fmaxf(max, score);
+      f32 score       = input[(i * target) + j];
+      f32 new_max     = fmaxf(max, score);
       f32 probability = expf(score - new_max);
-      f32 diff = max - new_max;
-      f32 alpha = expf(diff);
-      sum = (sum * alpha) + probability;
-      max = new_max;
+      f32 diff        = max - new_max;
+      f32 alpha       = expf(diff);
+      sum             = (sum * alpha) + probability;
+      max             = new_max;
     }
     for (u32 j = 0; j < target; ++j) {
-      f32 score = input[(i * target) + j];
-      f32 probability = expf(score - max);
+      f32 score                = input[(i * target) + j];
+      f32 probability          = expf(score - max);
       output[(i * target) + j] = probability / sum;
     }
   }
@@ -39,22 +39,22 @@ static void softmax_not_last_axis(u32 outer, u32 target, u32 inner,
     }
     for (u32 j = 0; j < target; ++j) {
       for (u32 k = 0; k < inner; ++k) {
-        f32 score = input[((i * target + j) * inner) + k];
-        f32 max = max_array[k];
-        f32 sum = sum_array[k];
-        f32 new_max = fmaxf(max, score);
+        f32 score       = input[((i * target + j) * inner) + k];
+        f32 max         = max_array[k];
+        f32 sum         = sum_array[k];
+        f32 new_max     = fmaxf(max, score);
         f32 probability = expf(score - new_max);
-        f32 diff = max - new_max;
-        f32 alpha = expf(diff);
-        sum_array[k] = (sum * alpha) + probability;
-        max_array[k] = new_max;
+        f32 diff        = max - new_max;
+        f32 alpha       = expf(diff);
+        sum_array[k]    = (sum * alpha) + probability;
+        max_array[k]    = new_max;
       }
     }
     for (u32 j = 0; j < target; ++j) {
       for (u32 k = 0; k < inner; ++k) {
-        f32 score = input[((i * target + j) * inner) + k];
-        f32 max = max_array[k];
-        f32 sum = sum_array[k];
+        f32 score       = input[((i * target + j) * inner) + k];
+        f32 max         = max_array[k];
+        f32 sum         = sum_array[k];
         f32 probability = expf(score - max);
         output[((i * target + j) * inner) + k] = probability / sum;
       }
@@ -69,8 +69,8 @@ static void softmax_not_contiguous_axis(u32 outer_dim, const u32 *outer,
                                         const Tensor restrict tensor,
                                         f32 *restrict output) {
   const f32 *restrict input = tensor->data->data;
-  u32 index[MAX_DIMS] = {0};
-  u32 inner_len = 1;
+  u32 index[MAX_DIMS]       = {0};
+  u32 inner_len             = 1;
   for (u32 i = 0; i < inner_dim; ++i) {
     inner_len *= inner[i];
   }
@@ -88,15 +88,15 @@ static void softmax_not_contiguous_axis(u32 outer_dim, const u32 *outer,
       u32 inner_flat = 0;
       tensor_odometer_reset(inner_dim, index + axis + 1);
       do {
-        index[axis] = j;
-        auto flat = tensor_ndim_flat_index(tensor, index);
-        f32 score = input[flat];
-        f32 max = max_array[inner_flat];
-        f32 sum = sum_array[inner_flat];
-        f32 new_max = fmaxf(max, score);
-        f32 probability = expf(score - new_max);
-        f32 diff = max - new_max;
-        f32 alpha = expf(diff);
+        index[axis]           = j;
+        auto flat             = tensor_ndim_flat_index(tensor, index);
+        f32  score            = input[flat];
+        f32  max              = max_array[inner_flat];
+        f32  sum              = sum_array[inner_flat];
+        f32  new_max          = fmaxf(max, score);
+        f32  probability      = expf(score - new_max);
+        f32  diff             = max - new_max;
+        f32  alpha            = expf(diff);
         sum_array[inner_flat] = (sum * alpha) + probability;
         max_array[inner_flat] = new_max;
         ++inner_flat;
@@ -106,21 +106,21 @@ static void softmax_not_contiguous_axis(u32 outer_dim, const u32 *outer,
       u32 inner_flat = 0;
       tensor_odometer_reset(inner_dim, index + axis + 1);
       do {
-        index[axis] = j;
-        auto flat = tensor_ndim_flat_index(tensor, index);
-        f32 score = input[flat];
-        f32 max = max_array[inner_flat];
-        f32 sum = sum_array[inner_flat];
-        f32 new_max = fmaxf(max, score);
-        f32 probability = expf(score - new_max);
-        output[flat] = probability / sum;
+        index[axis]      = j;
+        auto flat        = tensor_ndim_flat_index(tensor, index);
+        f32  score       = input[flat];
+        f32  max         = max_array[inner_flat];
+        f32  sum         = sum_array[inner_flat];
+        f32  new_max     = fmaxf(max, score);
+        f32  probability = expf(score - new_max);
+        output[flat]     = probability / sum;
         ++inner_flat;
       } while (tensor_odometer_next(index + axis + 1, inner_dim, inner));
     }
   } while (tensor_odometer_next(index, outer_dim, outer));
 }
 
-Tensor tensor_softmax(const Tensor tensor, i32 axis) {
+Tensor tensor_softmax_axis(const Tensor tensor, i32 axis) {
   if (!tensor)
     return nullptr;
 
@@ -202,11 +202,11 @@ static void dsoftmax_not_last_axis(u32 outer, u32 target, u32 inner,
   }
 }
 
-Tensor tensor_softmax_backward(Tensor grad, Tensor softmax, u32 axis) {
+Tensor tensor_softmax_axis_backward(Tensor grad, Tensor softmax, u32 axis) {
   auto res = tensor_new(softmax->ndims, softmax->shape);
 
   auto reduce_axis = axis;
-  u32 outer = 1;
+  u32  outer       = 1;
   for (u32 i = 0; i < reduce_axis; ++i) {
     outer *= softmax->shape[i];
   }
@@ -239,7 +239,7 @@ Tensor tensor_softmax_all(const Tensor tensor) {
   Tensor max = tensor_new(1, (u32[]){1});
   if (max == nullptr)
     return nullptr;
-  tensor_fill(max, tensor_max_all(tensor));
+  tensor_fill(max, tensor_max(tensor));
 
   Tensor z = tensor_sub(tensor, max);
   if (z == nullptr)

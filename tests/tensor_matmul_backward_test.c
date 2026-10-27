@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define EPS 1e-6
+#define EPS      1e-6
 #define MAX_DIMS 5
 
 /* Helper: compare two tensors element‑wise */
@@ -33,7 +33,7 @@ static bool tensors_equal(Tensor tensor_a, Tensor tensor_b) {
 
 /* Helper: fill a 2D tensor with values from a flat array */
 static void fill_2d(Tensor tensor, const float *vals) {
-  assert(t->ndims == 2);
+  assert(tensor->ndims == 2);
   memcpy(tensor->data->data, vals, tensor->data->nelements * sizeof(float));
 }
 
@@ -48,9 +48,9 @@ static Tensor make_tensor_2d(u32 rows, u32 cols, const float *vals) {
 
 /* Manual computation of dA = grad * B^T (both 2D) */
 static Tensor manual_matmul_wrt_a(Tensor grad, Tensor B) {
-  u32 m = grad->shape[0];
-  u32 n = B->shape[0];    // B is k x n, so B^T is n x k
-  u32 k = grad->shape[1]; // common dimension
+  u32    m      = grad->shape[0];
+  u32    n      = B->shape[0];    // B is k x n, so B^T is n x k
+  u32    k      = grad->shape[1]; // common dimension
   Tensor result = tensor_new(2, (u32[]){m, n});
   for (u32 i = 0; i < m; ++i) {
     for (u32 j = 0; j < n; ++j) {
@@ -68,9 +68,9 @@ static Tensor manual_matmul_wrt_a(Tensor grad, Tensor B) {
 
 /* Manual computation of dB = A^T * grad (both 2D) */
 static Tensor manual_matmul_wrt_b(Tensor A, Tensor grad) {
-  u32 m = A->shape[1]; // A^T has dimensions (k x m)
-  u32 n = grad->shape[1];
-  u32 k = A->shape[0]; // common dimension
+  u32    m      = A->shape[1]; // A^T has dimensions (k x m)
+  u32    n      = grad->shape[1];
+  u32    k      = A->shape[0]; // common dimension
   Tensor result = tensor_new(2, (u32[]){m, n});
   for (u32 i = 0; i < m; ++i) {
     for (u32 j = 0; j < n; ++j) {
@@ -107,7 +107,7 @@ static void test_case(u32 m, u32 k, u32 n, const char *desc) {
 
   // ---- Test tensor_matmul_wrt_a ----
   Tensor dA_candidate = tensor_matmul_wrt_a(G, B);
-  Tensor dA_expected = manual_matmul_wrt_a(G, B);
+  Tensor dA_expected  = manual_matmul_wrt_a(G, B);
   if (!tensors_equal(dA_candidate, dA_expected)) {
     printf("Error: tensor_matmul_wrt_a failed for %s\n", desc);
     tensor_destroy(dA_candidate);
@@ -119,7 +119,7 @@ static void test_case(u32 m, u32 k, u32 n, const char *desc) {
 
   // ---- Test tensor_matmul_wrt_b ----
   Tensor dB_candidate = tensor_matmul_wrt_b(A, G);
-  Tensor dB_expected = manual_matmul_wrt_b(A, G);
+  Tensor dB_expected  = manual_matmul_wrt_b(A, G);
   if (!tensors_equal(dB_candidate, dB_expected)) {
     printf("Error: tensor_matmul_wrt_b failed for %s\n", desc);
     tensor_destroy(dB_candidate);

@@ -5,12 +5,12 @@
 #include "tensor.h"
 
 typedef Tensor (*ResidualStrat)(LayerNorm layernorm, Tensor input,
-                                void *sublayer,
-                                Tensor(sublayer_forward)(void *sublayer,
+                                mem sublayer,
+                                Tensor(sublayer_forward)(mem sublayer,
                                                          Tensor input));
-Tensor pre_ln_residual(LayerNorm layernorm, Tensor input, void *sublayer,
-                       Tensor(sublayer_forward)(void *sublayer, Tensor input));
-Tensor post_ln_residual(LayerNorm layernorm, Tensor input, void *sublayer,
-                        Tensor(sublayer_forward)(void *sublayer, Tensor input));
+Tensor pre_ln_residual(LayerNorm layernorm, Tensor input, mem sublayer,
+                       Tensor(sublayer_forward)(mem sublayer, Tensor input));
+Tensor post_ln_residual(LayerNorm layernorm, Tensor input, mem sublayer,
+                        Tensor(sublayer_forward)(mem sublayer, Tensor input));
 
 #endif

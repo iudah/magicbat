@@ -11,7 +11,7 @@ bool tensor_fill(const Tensor tensor, f32 value) {
   if (tensor == nullptr)
     return false;
 
-  if (!tensor->is_contiguous) {
+  if (tensor->is_contiguous) {
     for (u32 i = 0; i < tensor->data->nelements; i++) {
       tensor->data->data[tensor->offset + i] = value;
     }

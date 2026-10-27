@@ -50,26 +50,26 @@ void concat_backward_fn(Var self) {
 }
 
 Var var_concat_tree(Var parent_a, Var parent_b, struct concat_ctx slices) {
-  Var concat = tcalloc(1, sizeof(*concat));
+  Var concat        = tcalloc(1, sizeof(*concat));
   concat->parent[0] = parent_a;
   concat->parent[1] = parent_b;
 
+  concat->ctx            = tmalloc(sizeof(struct concat_ctx));
   struct concat_ctx *ctx = concat->ctx;
-  concat->ctx = tmalloc(2 * sizeof(*ctx));
 
   if (parent_a) {
     ctx->bound[0].start = slices.bound[0].start;
-    ctx->bound[0].stop = slices.bound[0].stop;
+    ctx->bound[0].stop  = slices.bound[0].stop;
   }
 
   if (parent_b) {
     ctx->bound[1].start = slices.bound[1].start;
-    ctx->bound[1].stop = slices.bound[1].stop;
+    ctx->bound[1].stop  = slices.bound[1].stop;
   }
 
   var_track_parent(&concat->base, &parent_a->base, &parent_b->base,
-                   (VarOp){.backward = concat_backward_fn,
-                           .destroy_ctx = (void (*)(mem))(void *)tfree},
+                   (VarOp){.backward    = concat_backward_fn,
+                           .destroy_ctx = (void (*)(mem))(mem)tfree},
                    ctx);
 
   return concat;
@@ -86,7 +86,7 @@ Tensor var_concat(u32 ntensor, Tensor *tensors, u32 axis) {
   u32 stops[ntensor];
   memcpy(joins, tensors, ntensor * sizeof(Tensor));
   u32 count = ntensor;
-  u32 stop = 0;
+  u32 stop  = 0;
 
   for (u32 i = 0, j = 0; i < ntensor; ++i) {
     auto start = stop;
@@ -97,9 +97,9 @@ Tensor var_concat(u32 ntensor, Tensor *tensors, u32 axis) {
       continue;
     }
 
-    joins[j] = joins[i];
+    joins[j]  = joins[i];
     starts[j] = start;
-    stops[j] = stop;
+    stops[j]  = stop;
     ++j;
   }
 
@@ -111,24 +111,25 @@ Tensor var_concat(u32 ntensor, Tensor *tensors, u32 axis) {
           (struct concat_ctx){
               .bound = {[0] = {.start = starts[i * 2], .stop = stops[i * 2]},
                         [1] = {.start = starts[(i * 2) + 1],
-                               .stop = stops[(i * 2) + 1]}},
-              .axis = axis});
+                               .stop  = stops[(i * 2) + 1]}},
+              .axis  = axis
+      });
       starts[i] = starts[i * 2];
-      stops[i] = stops[i * 2];
+      stops[i]  = stops[i * 2];
     }
   }
 
   struct concat_ctx *ctx = tmalloc(sizeof(*ctx));
 
-  ctx->axis = axis;
+  ctx->axis     = axis;
   ctx->bound[0] = (typeof(*ctx->bound)){.start = starts[0], .stop = stops[0]};
   if (count == 2)
     ctx->bound[1] = (typeof(*ctx->bound)){.start = starts[1], .stop = stops[1]};
 
   auto res = track(concat);
-  var_track_parent(
-      res, (Tensor)(joins[0]), (Tensor)((count == 1) ? nullptr : joins[1]),
-      (VarOp){concat_backward_fn, (void (*)(mem))(void *)tfree}, ctx);
+  var_track_parent(res, (Tensor)(joins[0]),
+                   (Tensor)((count == 1) ? nullptr : joins[1]),
+                   (VarOp){concat_backward_fn, (void (*)(mem))(mem)tfree}, ctx);
 
   return res;
 }

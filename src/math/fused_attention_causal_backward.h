@@ -1,6 +1,7 @@
 #ifndef FUSED_ATTENTION_CAUSAL_BACKWARD_H
 #define FUSED_ATTENTION_CAUSAL_BACKWARD_H
 
+#include "fused_attention_backward.h"
 #include "matmul.h"
 #include "matmul_tile.h"
 #include <math.h>
@@ -18,17 +19,17 @@ static inline void fused_attention_causal_backward_gt_block_size_fast(
       MATMUL_INNER_LOOP(m) {
         const f32 *restrict max_data = &max[(b_inner * m_len) + m_inner];
         const f32 *restrict sum_data = &sum[(b_inner * m_len) + m_inner];
-        f32 score = 0;
-        bool mask = n_inner > m_inner;
-        MATMUL_CAUSAL_LOOP(k, mask) {
+        f32  score                   = 0;
+        bool mask                    = n_inner > m_inner;
+        MATMUL_IF_UNMASKED(k, mask) {
           auto q_val = q_data[((b_inner * m_len + m_inner) * k_len) + k_indx];
           score +=
               q_val * k_data[((b_inner * n_len + n_inner) * k_len) + k_indx];
         }
         // normalize QK_T
-        score = mask ? -INFINITY : score * inv_sqrt_d; // S_{m,n}
-        auto e_score = expf(score - *max_data) / *sum_data;
-        f32 de_score = 0;
+        score         = mask ? -INFINITY : score * inv_sqrt_d; // S_{m,n}
+        auto e_score  = expf(score - *max_data) / *sum_data;
+        f32  de_score = 0;
         MATMUL_LOOP(k) {
           dv_data[((b_inner * n_len + n_inner) * k_len) + k_indx] +=
               e_score * dr_data[((b_inner * m_len + m_inner) * k_len) + k_indx];
@@ -67,6 +68,25 @@ static inline void fused_attention_causal_backward_gt_block_size(
 
   MATMUL_OUTER_LOOP(b) {
     MATMUL_OUTER_LOOP(m) {
+      for (u32 n_outer = 0; n_outer < m_outer + BLOCK_SIZE && n_outer < n_main;
+           n_outer += BLOCK_SIZE) {
+
+        if (n_outer + BLOCK_SIZE <= m_outer) {
+          // past tile: non-causal kernel is correct here (mask would be
+          // all-false)
+          fused_attention_backward_gt_block_size_fast(
+              b_outer, m_outer, n_outer, m_len, n_len, k_len, q_data, k_data,
+              v_data, dq_data, dk_data, dv_data, dr_data, inv_sqrt_d, max_data,
+              sum_data, row_sum);
+        } else {
+          // diagonal tile: some cells are masked
+          fused_attention_causal_backward_gt_block_size_fast(
+              b_outer, m_outer, n_outer, m_len, n_len, k_len, q_data, k_data,
+              v_data, dq_data, dk_data, dv_data, dr_data, inv_sqrt_d, max_data,
+              sum_data, row_sum);
+        }
+      }
+      /*
       MATMUL_OUTER_LOOP(n) {
 
         fused_attention_causal_backward_gt_block_size_fast(
@@ -74,6 +94,7 @@ static inline void fused_attention_causal_backward_gt_block_size(
             v_data, dq_data, dk_data, dv_data, dr_data, inv_sqrt_d, max_data,
             sum_data, row_sum);
       }
+      */
     }
   }
 }
@@ -89,16 +110,16 @@ static inline void fused_attention_causal_backward_gt_block_size_unbatched_fast(
     MATMUL_INNER_LOOP(m) {
       const f32 *restrict max_data = &max[m_inner];
       const f32 *restrict sum_data = &sum[m_inner];
-      f32 score = 0;
-      bool mask = n_inner > m_inner;
-      MATMUL_CAUSAL_LOOP(k, mask) {
+      f32  score                   = 0;
+      bool mask                    = n_inner > m_inner;
+      MATMUL_IF_UNMASKED(k, mask) {
         auto q_val = q_data[(m_inner * k_len) + k_indx];
         score += q_val * k_data[(n_inner * k_len) + k_indx];
       }
       // normalize QK_T
-      score = mask ? -INFINITY : score * inv_sqrt_d; // S_{m,n}
-      auto e_score = expf(score - *max_data) / *sum_data;
-      f32 de_score = 0;
+      score         = mask ? -INFINITY : score * inv_sqrt_d; // S_{m,n}
+      auto e_score  = expf(score - *max_data) / *sum_data;
+      f32  de_score = 0;
       MATMUL_LOOP(k) {
         dv_data[(n_inner * k_len) + k_indx] +=
             e_score * dr_data[(m_inner * k_len) + k_indx];
@@ -132,12 +153,28 @@ static inline void fused_attention_causal_backward_gt_block_size_unbatched(
   MAIN_LEN(n);
 
   MATMUL_OUTER_LOOP(m) {
-    MATMUL_OUTER_LOOP(n) {
+    for (u32 n_outer = 0; n_outer < m_outer + BLOCK_SIZE && n_outer < n_main;
+         n_outer += BLOCK_SIZE) {
 
-      fused_attention_causal_backward_gt_block_size_unbatched_fast(
-          m_outer, n_outer, k_len, q_data, k_data, v_data, dq_data, dk_data,
-          dv_data, dr_data, inv_sqrt_d, max_data, sum_data, row_sum);
+      if (n_outer + BLOCK_SIZE <= m_outer) {
+        // past tile: non-causal kernel is correct here (mask would be
+        // all-false)
+        fused_attention_backward_gt_block_size_unbatched_fast(
+            m_outer, n_outer, k_len, q_data, k_data, v_data, dq_data, dk_data,
+            dv_data, dr_data, inv_sqrt_d, max_data, sum_data, row_sum);
+      } else {
+        // diagonal tile: some cells are masked
+        fused_attention_causal_backward_gt_block_size_unbatched_fast(
+            m_outer, n_outer, k_len, q_data, k_data, v_data, dq_data, dk_data,
+            dv_data, dr_data, inv_sqrt_d, max_data, sum_data, row_sum);
+      }
     }
+    /* MATMUL_OUTER_LOOP(n) {
+
+       fused_attention_causal_backward_gt_block_size_unbatched_fast(
+           m_outer, n_outer, k_len, q_data, k_data, v_data, dq_data, dk_data,
+           dv_data, dr_data, inv_sqrt_d, max_data, sum_data, row_sum);
+     }*/
   }
 }
 
@@ -154,16 +191,16 @@ static inline void fused_attention_causal_backward_lt_block_size(
     MATMUL_LOOP(m) {
       const f32 *restrict max_data = &max[m_indx];
       const f32 *restrict sum_data = &sum[m_indx];
-      f32 score = 0;
-      bool mask = n_indx > m_indx;
-      MATMUL_CAUSAL_LOOP(k, mask) {
+      f32  score                   = 0;
+      bool mask                    = n_indx > m_indx;
+      MATMUL_IF_UNMASKED(k, mask) {
         auto q_val = q_data[(m_indx * k_len) + k_indx];
         score += q_val * k_data[(n_indx * k_len) + k_indx];
       }
       // normalize QK_T
-      score = mask ? -INFINITY : score * inv_sqrt_d; // S_{m,n}
-      auto e_score = expf(score - *max_data) / *sum_data;
-      f32 de_score = 0;
+      score         = mask ? -INFINITY : score * inv_sqrt_d; // S_{m,n}
+      auto e_score  = expf(score - *max_data) / *sum_data;
+      f32  de_score = 0;
       MATMUL_LOOP(k) {
         dv_data[(n_indx * k_len) + k_indx] +=
             e_score * dr_data[(m_indx * k_len) + k_indx];

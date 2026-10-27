@@ -36,13 +36,13 @@
       const f32 *restrict m_data, const f32 *restrict n_data,                  \
       f32 *restrict r_data)
 
-#define MATMUL_M_VAL(type) auto m_val = m_data[(m_##type * k_len) + k_##type];
+#define MATMUL_M_VAL(type)   auto m_val = m_data[(m_##type * k_len) + k_##type];
 #define MATMUL_M_T_VAL(type) auto m_val = m_data[(k_##type * m_len) + m_##type];
-#define MATMUL_N_VAL(type) n_data[(k_##type * n_len) + n_##type]
+#define MATMUL_N_VAL(type)   n_data[(k_##type * n_len) + n_##type]
 #define MATMUL_N_T_VAL(type) n_data[(n_##type * k_len) + k_##type]
 
-#define MATMUL_CAUSAL_LOOP(var_name, mask)                                     \
-  for (u32 var_name##_indx = ((int)(!(mask)) * var_name##_len);                \
+#define MATMUL_IF_UNMASKED(var_name, mask)                                     \
+  for (u32 var_name##_indx = ((int)((mask)) * var_name##_len);                 \
        var_name##_indx < var_name##_len; ++var_name##_indx)
 
 MATMUL_FAST_PIPELINE(matmul_gt_block_size) {
@@ -167,10 +167,10 @@ MATMUL_FRINGE_PIPELINE(matmul_transpose_a_gt_block_size) {
 }
 
 static inline f32 *matmul_transpose_a_gt_block_size(u32 m_len, u32 n_len,
-                                                    u32 k_len,
+                                                    u32        k_len,
                                                     const f32 *m_data,
                                                     const f32 *n_data,
-                                                    f32 *r_data) {
+                                                    f32       *r_data) {
 
   MAIN_LEN(m);
   MAIN_LEN(n);
@@ -236,10 +236,10 @@ MATMUL_FRINGE_PIPELINE(matmul_transpose_b_gt_block_size) {
 }
 
 static inline f32 *matmul_transpose_b_gt_block_size(u32 m_len, u32 n_len,
-                                                    u32 k_len,
+                                                    u32        k_len,
                                                     const f32 *m_data,
                                                     const f32 *n_data,
-                                                    f32 *r_data) {
+                                                    f32       *r_data) {
 
   MAIN_LEN(m);
   MAIN_LEN(n);

@@ -1,17 +1,20 @@
 #ifndef DATA_STORAGE_H
 #define DATA_STORAGE_H
 
-#include "../../include/adt/tensor/tensor_prot.h"
 #include "tensor_memory.h"
+#include "tensor_prot.h"
 #include <stdatomic.h>
 #include <stdio.h>
 
 static inline data_storage *data_storage_new(u32 nelements) {
 
+  if ((u64)nelements * sizeof(f32) > UINT32_MAX)
+    return nullptr;
+
   data_storage *data = tmalloc(sizeof(*data));
-  data->nelements = nelements;
-  data->data = nelements ? tcalloc(nelements, sizeof(f32)) : nullptr;
-  data->refcount = 1;
+  data->nelements    = nelements;
+  data->data         = nelements ? tcalloc(nelements, sizeof(f32)) : nullptr;
+  data->refcount     = 1;
 
   return data;
 }
@@ -29,7 +32,7 @@ static inline bool data_storage_destroy(data_storage *data) {
   return true;
 }
 
-static inline data_storage *data_storage_deserialize(FILE *binary) {
+static inline data_storage *data_storage_read(FILE *binary) {
 
   data_storage *data = tmalloc(sizeof(*data));
   fread(&data->nelements, sizeof(data->nelements), 1, binary);
@@ -42,7 +45,7 @@ static inline data_storage *data_storage_deserialize(FILE *binary) {
   return data;
 }
 
-static inline bool data_storage_serialize(data_storage *data, FILE *binary) {
+static inline bool data_storage_write(data_storage *data, FILE *binary) {
 
   fwrite(&data->nelements, sizeof(data->nelements), 1, binary);
   fwrite(data->data, sizeof(*data->data), data->nelements, binary);

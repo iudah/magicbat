@@ -1,7 +1,7 @@
-#include "tensor_prot.h"
-#include "tensor.h"
 #include "data_storage.h"
+#include "tensor.h"
 #include "tensor_memory.h"
+#include "tensor_prot.h"
 #include <stdint.h>
 
 Tensor tensor_scalar(f32 value) {
@@ -14,14 +14,14 @@ Tensor tensor_scalar(f32 value) {
   tensor->data = data_storage_new(1);
 
   *tensor->data->data = value;
-  tensor->shape[0] = 1;
-  tensor->stride[0] = 0;
+  tensor->shape[0]    = 1;
+  tensor->stride[0]   = 1;
 
-  tensor->refcount = 1;
-  tensor->requires_grad = false;
+  tensor->refcount       = 1;
+  tensor->requires_grad  = false;
   tensor->is_tensor_type = true;
-  tensor->is_contiguous = true;
-  tensor->offset = 0;
+  tensor->is_contiguous  = true;
+  tensor->offset         = 0;
 
   return tensor;
 }

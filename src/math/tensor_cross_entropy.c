@@ -54,20 +54,25 @@ Tensor tensor_ce_backward_indexed(Tensor logits, Tensor expectation,
                                   Tensor grad, i32 axis);
 Tensor tensor_ce_contiguous_backward_indexed(Tensor logits, Tensor expectation,
                                              Tensor grad, i32 axis);
-f32 ce_add_mul(f32 probs, f32 expectation, f32 grad) {
+f32    ce_add_mul(f32 probs, f32 expectation, f32 grad,
+                  mem __attribute__((unused)) state) {
+  return (probs - expectation) * grad;
+}
+static inline f32 ce_add_mul3(f32 probs, f32 expectation, f32 grad) {
   return (probs - expectation) * grad;
 }
 Tensor tensor_ce_add_mul(Tensor probs, Tensor expectation, Tensor grad) {
   if (grad)
-    return tensor_trinary_op(probs, expectation, grad, ce_add_mul);
-  return tensor_binary_op(probs, expectation, 1, ce_add_mul);
+    return tensor_trinary_op(probs, expectation, grad, nullptr, ce_add_mul);
+  return tensor_binary_op(probs, expectation, 1,
+                          (f32 (*)(f32, f32, f32))ce_add_mul3);
 }
 
 Tensor tensor_cross_entropy_from_logits_axis_backward(const Tensor logits,
                                                       const Tensor expectation,
                                                       const Tensor grad,
-                                                      TensorType tensor_type,
-                                                      i32 axis) {
+                                                      TensorType   tensor_type,
+                                                      i32          axis) {
   if (!logits->is_contiguous || !expectation->is_contiguous ||
       !grad->is_contiguous) {
     if (tensor_type != TENSOR_CE_INDEXED)
@@ -82,8 +87,8 @@ Tensor tensor_cross_entropy_from_logits_axis_backward(const Tensor logits,
 
 Tensor tensor_ce_backward(const Tensor logits, const Tensor expectation,
                           const Tensor grad, i32 axis) {
-  auto probs = tensor_softmax(logits, axis);
-  auto res = tensor_ce_add_mul(probs, expectation, grad);
+  auto probs = tensor_softmax_axis(logits, axis);
+  auto res   = tensor_ce_add_mul(probs, expectation, grad);
   tensor_destroy(probs);
   return res;
 }
@@ -104,9 +109,9 @@ static void softmax_not_last_axis_null_grad(u32 outer, u32 target, u32 inner,
                                             const f32 *restrict logits,
                                             const f32 *restrict expectation,
                                             f32 *restrict output);
-Tensor tensor_ce_contiguous_backward(const Tensor logits,
-                                     const Tensor expectation,
-                                     const Tensor grad, i32 axis) {
+Tensor      tensor_ce_contiguous_backward(const Tensor logits,
+                                          const Tensor expectation,
+                                          const Tensor grad, i32 axis) {
   if (!logits)
     return nullptr;
 
@@ -130,34 +135,35 @@ Tensor tensor_ce_contiguous_backward(const Tensor logits,
 
   if (reduce_axis + 1 == logits->ndims && grad) {
     softmax_last_axis(outer, logits->shape[reduce_axis], logits->data->data,
-                      expectation->data->data, grad->data->data,
-                      res->data->data, tensor_num_elements(grad) == 1);
+                           expectation->data->data, grad->data->data,
+                           res->data->data, tensor_num_elements(grad) == 1);
   } else if (reduce_axis + 1 != logits->ndims && grad) {
     softmax_not_last_axis(outer, logits->shape[reduce_axis], inner,
-                          logits->data->data, expectation->data->data,
-                          grad->data->data, res->data->data,
-                          tensor_num_elements(grad) == 1);
+                               logits->data->data, expectation->data->data,
+                               grad->data->data, res->data->data,
+                               tensor_num_elements(grad) == 1);
   } else if (reduce_axis + 1 == logits->ndims && !grad) {
     softmax_last_axis_null_grad(outer, logits->shape[reduce_axis],
-                                logits->data->data, expectation->data->data,
-                                res->data->data);
+                                     logits->data->data, expectation->data->data,
+                                     res->data->data);
   } else if (reduce_axis + 1 != logits->ndims && !grad) {
     softmax_not_last_axis_null_grad(outer, logits->shape[reduce_axis], inner,
-                                    logits->data->data, expectation->data->data,
-                                    res->data->data);
+                                         logits->data->data, expectation->data->data,
+                                         res->data->data);
   }
 
   return res;
 }
 Tensor tensor_ce_backward_indexed(const Tensor logits, const Tensor expectation,
                                   const Tensor grad, i32 axis) {
-  auto probs = tensor_softmax(logits, axis);
+  auto probs            = tensor_softmax_axis(logits, axis);
   auto expectation_cont = expectation->is_contiguous
                               ? expectation
                               : tensor_to_contiguous(expectation);
-  auto res = tensor_ce_add_mul(probs, expectation_cont, grad);
+  auto res              = tensor_ce_add_mul(probs, expectation_cont, grad);
   tensor_destroy(probs);
-  tensor_destroy(expectation_cont);
+  if (expectation_cont != expectation)
+    tensor_destroy(expectation_cont);
   return res;
 }
 static void softmax_last_axis_indexed(u32 outer, u32 target,
@@ -232,16 +238,16 @@ static void softmax_last_axis(u32 outer, u32 target, const f32 *restrict logits,
     f32 sum = 0;
     f32 max = -INFINITY;
     for (u32 j = 0; j < target; ++j) {
-      f32 score = logits[(i * target) + j];
-      f32 new_max = fmaxf(max, score);
+      f32 score       = logits[(i * target) + j];
+      f32 new_max     = fmaxf(max, score);
       f32 probability = expf(score - new_max);
-      f32 diff = max - new_max;
-      f32 alpha = expf(diff);
-      sum = (sum * alpha) + probability;
-      max = new_max;
+      f32 diff        = max - new_max;
+      f32 alpha       = expf(diff);
+      sum             = (sum * alpha) + probability;
+      max             = new_max;
     }
     for (u32 j = 0; j < target; ++j) {
-      f32 score = logits[(i * target) + j];
+      f32 score       = logits[(i * target) + j];
       f32 probability = expf(score - max);
       output[(i * target) + j] =
           ((probability / sum) - expectation[(i * target) + j]) *
@@ -264,22 +270,22 @@ static void softmax_not_last_axis(u32 outer, u32 target, u32 inner,
     }
     for (u32 j = 0; j < target; ++j) {
       for (u32 k = 0; k < inner; ++k) {
-        f32 score = logits[((i * target + j) * inner) + k];
-        f32 max = max_array[k];
-        f32 sum = sum_array[k];
-        f32 new_max = fmaxf(max, score);
+        f32 score       = logits[((i * target + j) * inner) + k];
+        f32 max         = max_array[k];
+        f32 sum         = sum_array[k];
+        f32 new_max     = fmaxf(max, score);
         f32 probability = expf(score - new_max);
-        f32 diff = max - new_max;
-        f32 alpha = expf(diff);
-        sum_array[k] = (sum * alpha) + probability;
-        max_array[k] = new_max;
+        f32 diff        = max - new_max;
+        f32 alpha       = expf(diff);
+        sum_array[k]    = (sum * alpha) + probability;
+        max_array[k]    = new_max;
       }
     }
     for (u32 j = 0; j < target; ++j) {
       for (u32 k = 0; k < inner; ++k) {
-        f32 score = logits[((i * target + j) * inner) + k];
-        f32 max = max_array[k];
-        f32 sum = sum_array[k];
+        f32 score       = logits[((i * target + j) * inner) + k];
+        f32 max         = max_array[k];
+        f32 sum         = sum_array[k];
         f32 probability = expf(score - max);
         output[((i * target + j) * inner) + k] =
             ((probability / sum) -
@@ -299,16 +305,16 @@ static void softmax_last_axis_null_grad(u32 outer, u32 target,
     f32 sum = 0;
     f32 max = -INFINITY;
     for (u32 j = 0; j < target; ++j) {
-      f32 score = logits[(i * target) + j];
-      f32 new_max = fmaxf(max, score);
+      f32 score       = logits[(i * target) + j];
+      f32 new_max     = fmaxf(max, score);
       f32 probability = expf(score - new_max);
-      f32 diff = max - new_max;
-      f32 alpha = expf(diff);
-      sum = (sum * alpha) + probability;
-      max = new_max;
+      f32 diff        = max - new_max;
+      f32 alpha       = expf(diff);
+      sum             = (sum * alpha) + probability;
+      max             = new_max;
     }
     for (u32 j = 0; j < target; ++j) {
-      f32 score = logits[(i * target) + j];
+      f32 score       = logits[(i * target) + j];
       f32 probability = expf(score - max);
       output[(i * target) + j] =
           ((probability / sum) - expectation[(i * target) + j]);
@@ -329,22 +335,22 @@ static void softmax_not_last_axis_null_grad(u32 outer, u32 target, u32 inner,
     }
     for (u32 j = 0; j < target; ++j) {
       for (u32 k = 0; k < inner; ++k) {
-        f32 score = logits[((i * target + j) * inner) + k];
-        f32 max = max_array[k];
-        f32 sum = sum_array[k];
-        f32 new_max = fmaxf(max, score);
+        f32 score       = logits[((i * target + j) * inner) + k];
+        f32 max         = max_array[k];
+        f32 sum         = sum_array[k];
+        f32 new_max     = fmaxf(max, score);
         f32 probability = expf(score - new_max);
-        f32 diff = max - new_max;
-        f32 alpha = expf(diff);
-        sum_array[k] = (sum * alpha) + probability;
-        max_array[k] = new_max;
+        f32 diff        = max - new_max;
+        f32 alpha       = expf(diff);
+        sum_array[k]    = (sum * alpha) + probability;
+        max_array[k]    = new_max;
       }
     }
     for (u32 j = 0; j < target; ++j) {
       for (u32 k = 0; k < inner; ++k) {
-        f32 score = logits[((i * target + j) * inner) + k];
-        f32 max = max_array[k];
-        f32 sum = sum_array[k];
+        f32 score       = logits[((i * target + j) * inner) + k];
+        f32 max         = max_array[k];
+        f32 sum         = sum_array[k];
         f32 probability = expf(score - max);
         output[((i * target + j) * inner) + k] =
             ((probability / sum) - expectation[((i * target + j) * inner) + k]);
@@ -362,21 +368,21 @@ static void softmax_last_axis_indexed(u32 outer, u32 target,
                                       const f32 *restrict grad,
                                       f32 *restrict output, bool unit_grad) {
   for (u32 i = 0; i < outer; ++i) {
-    f32 sum = 0;
-    f32 max = -INFINITY;
+    f32 sum          = 0;
+    f32 max          = -INFINITY;
     f32 target_class = expectation[i];
     for (u32 j = 0; j < target; ++j) {
-      f32 score = logits[(i * target) + j];
-      f32 new_max = fmaxf(max, score);
+      f32 score       = logits[(i * target) + j];
+      f32 new_max     = fmaxf(max, score);
       f32 probability = expf(score - new_max);
-      f32 diff = max - new_max;
-      f32 alpha = expf(diff);
-      sum = (sum * alpha) + probability;
-      max = new_max;
+      f32 diff        = max - new_max;
+      f32 alpha       = expf(diff);
+      sum             = (sum * alpha) + probability;
+      max             = new_max;
     }
     for (u32 j = 0; j < target; ++j) {
-      f32 score = logits[(i * target) + j];
-      f32 probability = expf(score - max);
+      f32 score           = logits[(i * target) + j];
+      f32 probability     = expf(score - max);
       f32 target_implicit = fabsf(target_class - j) > EPS ? 0 : 1;
       output[(i * target) + j] =
           ((probability / sum) - target_implicit) * grad[unit_grad ? 0 : i];
@@ -399,24 +405,24 @@ static void softmax_not_last_axis_indexed(u32 outer, u32 target, u32 inner,
     }
     for (u32 j = 0; j < target; ++j) {
       for (u32 k = 0; k < inner; ++k) {
-        f32 score = logits[((i * target + j) * inner) + k];
-        f32 max = max_array[k];
-        f32 sum = sum_array[k];
-        f32 new_max = fmaxf(max, score);
+        f32 score       = logits[((i * target + j) * inner) + k];
+        f32 max         = max_array[k];
+        f32 sum         = sum_array[k];
+        f32 new_max     = fmaxf(max, score);
         f32 probability = expf(score - new_max);
-        f32 diff = max - new_max;
-        f32 alpha = expf(diff);
-        sum_array[k] = (sum * alpha) + probability;
-        max_array[k] = new_max;
+        f32 diff        = max - new_max;
+        f32 alpha       = expf(diff);
+        sum_array[k]    = (sum * alpha) + probability;
+        max_array[k]    = new_max;
       }
     }
     for (u32 j = 0; j < target; ++j) {
       for (u32 k = 0; k < inner; ++k) {
-        f32 target_class = expectation[(i * inner) + k];
-        f32 score = logits[((i * target + j) * inner) + k];
-        f32 max = max_array[k];
-        f32 sum = sum_array[k];
-        f32 probability = expf(score - max);
+        f32 target_class    = expectation[(i * inner) + k];
+        f32 score           = logits[((i * target + j) * inner) + k];
+        f32 max             = max_array[k];
+        f32 sum             = sum_array[k];
+        f32 probability     = expf(score - max);
         f32 target_implicit = fabsf(target_class - j) > EPS ? 0 : 1;
         output[((i * target + j) * inner) + k] =
             ((probability / sum) - target_implicit) *
@@ -432,22 +438,22 @@ static void softmax_last_axis_null_grad_indexed(u32 outer, u32 target,
                                                 const f32 *restrict expectation,
                                                 f32 *restrict output) {
   for (u32 i = 0; i < outer; ++i) {
-    f32 sum = 0;
-    f32 max = -INFINITY;
+    f32 sum          = 0;
+    f32 max          = -INFINITY;
     f32 target_class = expectation[i];
     for (u32 j = 0; j < target; ++j) {
-      f32 score = logits[(i * target) + j];
-      f32 new_max = fmaxf(max, score);
+      f32 score       = logits[(i * target) + j];
+      f32 new_max     = fmaxf(max, score);
       f32 probability = expf(score - new_max);
-      f32 diff = max - new_max;
-      f32 alpha = expf(diff);
-      sum = (sum * alpha) + probability;
-      max = new_max;
+      f32 diff        = max - new_max;
+      f32 alpha       = expf(diff);
+      sum             = (sum * alpha) + probability;
+      max             = new_max;
     }
     for (u32 j = 0; j < target; ++j) {
-      f32 score = logits[(i * target) + j];
-      f32 probability = expf(score - max);
-      f32 target_implicit = fabsf(target_class - j) > EPS ? 0 : 1;
+      f32 score                = logits[(i * target) + j];
+      f32 probability          = expf(score - max);
+      f32 target_implicit      = fabsf(target_class - j) > EPS ? 0 : 1;
       output[(i * target) + j] = ((probability / sum) - target_implicit);
     }
   }
@@ -465,24 +471,24 @@ static void softmax_not_last_axis_null_grad_indexed(
     }
     for (u32 j = 0; j < target; ++j) {
       for (u32 k = 0; k < inner; ++k) {
-        f32 score = logits[((i * target + j) * inner) + k];
-        f32 max = max_array[k];
-        f32 sum = sum_array[k];
-        f32 new_max = fmaxf(max, score);
+        f32 score       = logits[((i * target + j) * inner) + k];
+        f32 max         = max_array[k];
+        f32 sum         = sum_array[k];
+        f32 new_max     = fmaxf(max, score);
         f32 probability = expf(score - new_max);
-        f32 diff = max - new_max;
-        f32 alpha = expf(diff);
-        sum_array[k] = (sum * alpha) + probability;
-        max_array[k] = new_max;
+        f32 diff        = max - new_max;
+        f32 alpha       = expf(diff);
+        sum_array[k]    = (sum * alpha) + probability;
+        max_array[k]    = new_max;
       }
     }
     for (u32 j = 0; j < target; ++j) {
       for (u32 k = 0; k < inner; ++k) {
-        f32 target_class = expectation[(i * inner) + k];
-        f32 score = logits[((i * target + j) * inner) + k];
-        f32 max = max_array[k];
-        f32 sum = sum_array[k];
-        f32 probability = expf(score - max);
+        f32 target_class    = expectation[(i * inner) + k];
+        f32 score           = logits[((i * target + j) * inner) + k];
+        f32 max             = max_array[k];
+        f32 sum             = sum_array[k];
+        f32 probability     = expf(score - max);
         f32 target_implicit = fabsf(target_class - j) > EPS ? 0 : 1;
         output[((i * target + j) * inner) + k] =
             ((probability / sum) - target_implicit);
