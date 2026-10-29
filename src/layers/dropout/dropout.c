@@ -7,10 +7,21 @@
 
 DropoutLayer dropout_layer_new(f32 rate) {
   DropoutLayer layer = tcalloc(1, sizeof(*layer));
-  dropout_layer_init(layer, rate);
+  if (!layer) {
+    return nullptr;
+  }
+  if (!dropout_layer_init(layer, rate)) {
+    tfree(layer);
+    return nullptr;
+  }
+  LAYER_SET_VT(layer, dropout);
+
   return layer;
 }
 bool dropout_layer_init(DropoutLayer layer, f32 rate) {
+  if (rate > 1 || rate < 0)
+    return false;
+
   layer->rate        = rate;
   layer->base.vtable = &dropout_vtable;
   layer->tracking    = false;
@@ -22,13 +33,13 @@ Tensor dropout_layer_forward(DropoutLayer layer, Tensor input) {
   return var_dropout(input, layer->rate);
 }
 
-bool dropout_layer_destroy(DropoutLayer layer) {
-  (void)layer;
-  return true;
-}
 bool dropout_layer_deinit(DropoutLayer layer) {
   (void)layer;
   return true;
+}
+
+bool dropout_layer_destroy(DropoutLayer layer) {
+  return dropout_layer_deinit(layer) && tfree(layer);
 }
 
 u32 dropout_layer_kernels(DropoutLayer layer, Tensor buffer[],

@@ -10,5 +10,7 @@ Tensor tensor_mean_axis(Tensor tensor, u32 axis) {
 }
 
 f32 tensor_mean(Tensor tensor) {
+  if (!tensor)
+    return -NAN;
   return tensor_reduce_all(tensor, 0, tensor_num_elements(tensor), mean);
 }

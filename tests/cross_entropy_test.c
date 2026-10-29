@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define EPS 1e-4
+
 
 bool verify_tensor(Tensor out, f32 *target, const char *test_name) {
   if (!out) {

@@ -5,6 +5,7 @@
 #include "tensor.h"
 #include "tensor_memory.h"
 #include "transformer_enc_layer.h"
+#include <stdint.h>
 
 TransformerEncoderLayer
 transformer_enc_layer_new(u32 n_head, u32 head_dim,
@@ -14,7 +15,7 @@ transformer_enc_layer_new(u32 n_head, u32 head_dim,
   auto dmodelff = 4 * dmodel;
 
   TASSERT(dmodel < BLOCK_SIZE ||
-          (dmodel & (BLOCK_SIZE - 1) == 0) &&
+          ((dmodel & (BLOCK_SIZE - 1)) == 0) &&
               "Expects sequence lenght and mmodel dimensions to be a multiple "
               "of BLOCK_SIZE or less than BLOCK_SIZE.");
 
@@ -22,6 +23,9 @@ transformer_enc_layer_new(u32 n_head, u32 head_dim,
     return nullptr;
 
   TransformerEncoderLayer layer = tcalloc(1, sizeof(*layer));
+  if (layer == nullptr) {
+    return nullptr;
+  }
   layer_norm_init(&layer->layernorm_0, dmodel);
   layer_norm_init(&layer->layernorm_1, dmodel);
   linear_layer_init(&layer->ffn_0, dmodel, dmodelff);

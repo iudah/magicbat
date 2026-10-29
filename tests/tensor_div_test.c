@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define EPS 1e-6
+
 
 int main() {
   /* ---------------- SAME SHAPE ---------------- */

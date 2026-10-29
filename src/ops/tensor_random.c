@@ -37,9 +37,10 @@ void tensor_random(Tensor tensor) {
   f32 random_ratio;
   f32 value;
   if (tensor->is_contiguous) {
-    for (u32 i = 0; i < tensor->data->nelements; ++i) {
+    auto len = tensor_num_elements(tensor);
+    for (u32 i = 0; i < len; ++i) {
       random_ratio = urand() / (f32)UINT64_MAX;
-      tensor->data->data[i] =
+      tensor->data->data[i + tensor->offset] =
           FLT_MIN + (FLT_MAX * random_ratio) - (FLT_MIN * random_ratio);
     }
   } else {
@@ -58,9 +59,11 @@ void tensor_random_bound(Tensor tensor, f32 lower_bound, f32 upper_bound) {
   f32  random_ratio;
   f32  value;
   if (tensor->is_contiguous) {
-    for (u32 i = 0; i < tensor->data->nelements; ++i) {
-      random_ratio          = urand() / (f32)UINT64_MAX;
-      tensor->data->data[i] = lower_bound + (gap * random_ratio);
+    auto len = tensor_num_elements(tensor);
+    for (u32 i = 0; i < len; ++i) {
+      random_ratio = urand() / (f32)UINT64_MAX;
+      tensor->data->data[i + tensor->offset] =
+          lower_bound + (gap * random_ratio);
     }
   } else {
     u32 *index = tensor_odometer_new(tensor->ndims);

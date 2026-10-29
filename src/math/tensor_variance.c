@@ -2,7 +2,7 @@
 #include "tensor_reduce.h"
 #include <math.h>
 
-#define EPS 1e-6
+
 
 static inline f32 layer_norm_var(f32 accumulator, f32 curr, f32 alpha,
                                  bool is_last_in_axis) {

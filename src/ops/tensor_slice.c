@@ -3,12 +3,12 @@
 #include <stdio.h>
 
 Tensor tensor_slice(Tensor tensor, TensorSlice *slices) {
-  Tensor slice = tensor_view(tensor);
+  Tensor slice         = tensor_view(tensor);
   slice->is_contiguous = false;
 
   u32 steps[MAX_DIMS];
   for (u32 i = 0; i < slice->ndims; ++i) {
-    if (!(0 <= slices[i].start && slices[i].start < tensor->shape[i] &&
+    if (!(slices[i].start < tensor->shape[i] &&
           slices[i].start < slices[i].stop &&
           slices[i].stop <= tensor->shape[i])) {
       fprintf(stderr, "Slice start or end is out of bound.\n");

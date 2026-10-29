@@ -11,6 +11,8 @@ Tensor tensor_mean_sqr_axis(Tensor tensor, u32 axis) {
 }
 
 f32 tensor_mean_sqr(Tensor tensor) {
+  if (!tensor)
+    return -NAN;
   u32 len = 1;
   for (u32 i = 0; i < tensor->ndims; ++i) {
     len *= tensor->shape[i];

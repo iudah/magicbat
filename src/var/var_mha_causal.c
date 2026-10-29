@@ -121,6 +121,12 @@ Tensor var_multihead_attention_causal(Tensor input, Tensor W_qkv, u32 n_head,
   f32 *maxs      = tmalloc(cache_len * sizeof(f32));
   f32 *sums      = tcalloc(cache_len, sizeof(f32));
 
+  if (!maxs || !sums) {
+    tfree(maxs);
+    tfree(sums);
+    return nullptr;
+  }
+
   for (u32 i = 0; i < cache_len; ++i) {
     maxs[i] = -INFINITY;
   }
@@ -268,6 +274,8 @@ void multihead_attention_causal_backward_fn(Var self) {
   tensor_to_contiguous_inplace(out);
 
   f32 *row_sum_do_o = tcalloc(full_batch, sizeof(f32));
+  if (!row_sum_do_o)
+    return;
   compute_row_sum((u32[]){full_batch, head_dim}, self->base.data->data,
                   self->grad->data->data, row_sum_do_o);
 

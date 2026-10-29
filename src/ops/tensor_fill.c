@@ -12,7 +12,8 @@ bool tensor_fill(const Tensor tensor, f32 value) {
     return false;
 
   if (tensor->is_contiguous) {
-    for (u32 i = 0; i < tensor->data->nelements; i++) {
+    u32 n_elmnts = tensor_num_elements(tensor);
+    for (u32 i = 0; i < n_elmnts; i++) {
       tensor->data->data[tensor->offset + i] = value;
     }
   } else
@@ -20,8 +21,6 @@ bool tensor_fill(const Tensor tensor, f32 value) {
 
   return true;
 }
-
-#define EPS (1e-6)
 
 f32 masked_fill_fn(f32 __attribute__((unused)) float_a, f32 mask, f32 value) {
   auto masked = mask > EPS || mask < -EPS;
@@ -34,7 +33,8 @@ bool tensor_masked_fill(const Tensor tensor, const Tensor mask, f32 value) {
     return false;
 
   if (tensor->is_contiguous && mask->is_contiguous) {
-    for (u32 i = 0; i < tensor->data->nelements; i++) {
+    u32 n_elmnts = tensor_num_elements(tensor);
+    for (u32 i = 0; i < n_elmnts; i++) {
       auto masked = mask->data->data[mask->offset + i] < EPS &&
                     mask->data->data[mask->offset + i] > -EPS;
       tensor->data->data[tensor->offset + i] = masked ? 0 : value;

@@ -4,7 +4,7 @@
 #include <math.h>
 #include <stdint.h>
 
-#define EPS (1e-6)
+
 static void softmax_last_axis(u32 outer, u32 target, const f32 *restrict input,
                               f32 *restrict output) {
   for (u32 i = 0; i < outer; ++i) {
@@ -124,9 +124,10 @@ Tensor tensor_softmax_axis(const Tensor tensor, i32 axis) {
   if (!tensor)
     return nullptr;
 
-  u32 reduce_axis = axis < 0 ? tensor->ndims + axis : axis;
-  if (reduce_axis < 0)
+  i32 reduce_axis_i = axis < 0 ? (i32)tensor->ndims + axis : axis;
+  if (reduce_axis_i < 0 || reduce_axis_i >= (i32)tensor->ndims)
     return nullptr;
+  u32 reduce_axis = (u32)reduce_axis_i;
 
   auto res = tensor_new(tensor->ndims, tensor->shape);
   if (!tensor->is_contiguous) {

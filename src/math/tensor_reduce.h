@@ -138,10 +138,8 @@ static inline Tensor tensor_reduce_to_shape(Tensor tensor, u32 ndims,
       return nullptr;
     }
 
-#define EPS 1e-5
     if (initial_value > EPS || initial_value < -EPS)
       tensor_fill(res, initial_value);
-#undef EPS
 
     u32 index[MAX_DIMS] = {0};
 

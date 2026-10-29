@@ -34,8 +34,8 @@ RNNCell rnn_cell_new(u32 in_features, u32 batch_size, u32 hidden_features,
     layer->cell.bias    = bias;
 
     tensor_xavier(layer->cell.weight, in_features, out_features);
+    LAYER_SET_VT(layer, rnn_cell);
   }
-  LAYER_SET_VT(layer, rnn_cell);
 
   return layer;
 }

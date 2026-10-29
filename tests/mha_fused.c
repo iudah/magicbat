@@ -53,6 +53,6 @@ void test_fused_mha(u32 seq_len) {
     sgd_optimize(optim, (Tensor[]){var_grad(w_qkv)});
 
     // 4. Zero Grads & GC
-    var_zero_grad(loss);
+    var_null_grads(&w_qkv, 1);
   }
 }

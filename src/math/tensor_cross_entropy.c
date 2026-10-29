@@ -229,7 +229,7 @@ Tensor tensor_ce_contiguous_backward_indexed(const Tensor logits,
 
   return res;
 }
-#define EPS (1e-6)
+
 static void softmax_last_axis(u32 outer, u32 target, const f32 *restrict logits,
                               const f32 *restrict expectation,
                               const f32 *restrict grad, f32 *restrict output,

@@ -167,5 +167,7 @@ int main() {
   printf("\n\n");
   tensor_destroy(inf_input);
 
+  layers_bin_close(bin);
+
   return 0;
 }

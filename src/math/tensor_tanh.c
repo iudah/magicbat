@@ -22,7 +22,7 @@ Tensor tensor_tanh(const Tensor tensor) {
   return res;
 }
 
-#define EPS (1e-8)
+
 Tensor tensor_tanh_backward(const Tensor tensor, const Tensor grad) {
   if (!tensor)
     return nullptr;

@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define EPS 1e-4f
+
 
 #define ASSERT_NEAR(a, b, msg)                                                 \
   do {                                                                         \

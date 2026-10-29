@@ -15,8 +15,9 @@ void softmax_backward_fn(Var self) {
     if (!parent->grad) {
       parent->grad = tensor_zero(parent->base.ndims, parent->base.shape);
     }
-    auto tmp = tensor_softmax_axis_backward((Tensor)parent, self->grad,
+    auto tmp = tensor_softmax_axis_backward(self->grad, &self->base,
                                             *(u32 *)self->ctx);
+
     auto tmp_red =
         tensor_sum_to_shape(tmp, parent->base.ndims, parent->base.shape);
     tensor_add_inplace(parent->grad, tmp_red);

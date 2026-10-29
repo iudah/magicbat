@@ -26,7 +26,8 @@ bool transformer_enc_layer_untrack(TransformerEncoderLayer layer);
 
 bool transformer_enc_layer_write(TransformerEncoderLayer layer, FILE *binary);
 TransformerEncoderLayer
-transformer_enc_layer_read(TransformerEncoderLayer layer, FILE *binary);
+     transformer_enc_layer_read(TransformerEncoderLayer layer, FILE *binary);
+bool transformer_enc_layer_deinit(TransformerEncoderLayer layer);
 
 DEFINE_VTABLE(transformer_enc, transformer_enc_layer, TransformerEncoderLayer,
               "TransformerEncoderLayer", N_XFORMER_KERNELS,

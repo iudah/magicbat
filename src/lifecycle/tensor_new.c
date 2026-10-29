@@ -5,7 +5,6 @@
 #include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdlib.h>
 
 Tensor tensor_new(const u32 ndims, const u32 *shape) {
   if (ndims == 0 || shape == nullptr || ndims > MAX_DIMS)
@@ -23,8 +22,9 @@ Tensor tensor_new(const u32 ndims, const u32 *shape) {
     tensor->stride[i] = lenght;
     lenght *= shape[i];
     if (lenght == 0 || lenght >= UINT32_MAX) {
+      tfree(tensor);
       fprintf(stderr, "Overflow occured\n");
-      abort();
+      return nullptr;
     }
     tmp[i] = shape[i];
   }

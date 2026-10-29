@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#define EPS        (1e-6)
 #define UNUSED_ARG __attribute__((unused))
 
 typedef struct tensor_struct *Tensor;
@@ -89,7 +90,6 @@ Tensor tensor_tanh_backward(Tensor tensor, Tensor grad);
 Tensor tensor_negate(Tensor tensor);
 void   tensor_negate_inplace(Tensor restrict tensor);
 Tensor tensor_log(Tensor tensor);
-Tensor tensor_softmax(Tensor tensor);
 Tensor tensor_softmax_axis(Tensor tensor, i32 axis);
 Tensor tensor_softmax_axis_backward(Tensor grad, Tensor softmax, u32 axis);
 Tensor tensor_log_sum_exp(Tensor tensor);

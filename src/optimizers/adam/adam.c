@@ -97,6 +97,7 @@ bool adam_optimizer_destroy(AdamOptimizer optimizer) {
   }
 
   optimizer->learn_rate = 0;
+  tfree(optimizer);
   return true;
 }
 
@@ -188,10 +189,12 @@ bool adam_optimize(AdamOptimizer adam, Tensor *grads) {
       if (!grad)
         continue;
 
-      auto adam_g = tensor_scaled_add(grad, weight_decay, param);
+      auto adam_g =
+          has_decay ? tensor_scaled_add(grad, adam->weight_decay, param) : grad;
       tensor_update_adam_m(adam->slots[i].m, beta1, adam_g);
       tensor_update_adam_v(adam->slots[i].v, beta2, adam_g);
-      tensor_destroy(adam_g);
+      if (has_decay)
+        tensor_destroy(adam_g);
       Tensor new_param = tensor_trinary_op(
           param, adam->slots[i].m, adam->slots[i].v, &state, adam_opt_cb);
       if (!new_param)
@@ -224,6 +227,7 @@ bool adamw_optimize(AdamOptimizer adam, Tensor *grads) {
       .inv_bc2      = 1.0F / bias_corr_2,
       .epsilon      = adam->epsilon,
       .weight_decay = adam->weight_decay,
+      .scaled_lr    = adam->learn_rate * alpha,
   };
 
   if (!grads) {

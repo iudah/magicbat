@@ -4,7 +4,7 @@
 #include <math.h>
 #include <stdio.h>
 
-#define EPS 1e-6
+
 
 int main(void) {
   printf("Testing max_axis and max_all...\n");

@@ -12,6 +12,10 @@ Tensor tensor_scalar(f32 value) {
   tensor->ndims = 1;
 
   tensor->data = data_storage_new(1);
+  if (!tensor->data) {
+    tfree(tensor);
+    return nullptr;
+  }
 
   *tensor->data->data = value;
   tensor->shape[0]    = 1;

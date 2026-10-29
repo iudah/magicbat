@@ -12,13 +12,13 @@
 
 #define FILE_MEME 0x3A61C8A7
 #define META_SIZE (16)
+#define path_len  (2048)
 
-BinStream *layers_bin_create(const char *path, const char *bin_name,
-                             u32 version) {
-#define path_len (2048)
+mb_bin_stream *layers_bin_create(const char *path, const char *bin_name,
+                                 u32 version) {
   char bin_path[path_len] = {0};
   snprintf(bin_path, path_len, "%s/%s.mbat", path, bin_name);
-  BinStream *bins = tcalloc(1, sizeof(*bins));
+  mb_bin_stream *bins = tcalloc(1, sizeof(*bins));
   if (!bins)
     return nullptr;
 
@@ -36,10 +36,10 @@ BinStream *layers_bin_create(const char *path, const char *bin_name,
   return bins;
 }
 
-BinStream *layers_bin_open(const char *path, const char *bin_name) {
+mb_bin_stream *layers_bin_open(const char *path, const char *bin_name) {
   char bin_path[path_len] = {0};
   snprintf(bin_path, path_len, "%s/%s.mbat", path, bin_name);
-  BinStream *bins = tcalloc(1, sizeof(*bins));
+  mb_bin_stream *bins = tcalloc(1, sizeof(*bins));
   if (!bins)
     return nullptr;
 
@@ -57,16 +57,20 @@ BinStream *layers_bin_open(const char *path, const char *bin_name) {
 
   if (meta[0] != FILE_MEME) {
     fclose(bin);
+    tfree(bins);
     return nullptr;
   }
 
   return bins;
 }
 
-bool layers_bin_close(BinStream *bstream) {
+bool layers_bin_close(mb_bin_stream *bstream) {
   if (!bstream || !bstream->fp)
     return false;
-  return fclose(bstream->fp) == 0;
+  if (fclose(bstream->fp) != 0)
+    return false;
+  tfree(bstream);
+  return true;
 }
 bool layer_write(LayerSerializerId serializer, mem layer, FILE *binary) {
   fwrite(&serializer, sizeof(serializer), 1, binary);
@@ -90,18 +94,42 @@ bool layer_write(LayerSerializerId serializer, mem layer, FILE *binary) {
 mem layer_read(FILE *binary) {
   enum serializer_enum serializer_id = 0;
   fread(&serializer_id, sizeof(serializer_id), 1, binary);
+  mem layer = nullptr;
   switch (serializer_id) {
   case LINEAR_SERIALIZER:
-    return linear_layer_read(tcalloc(1, sizeof(struct linear_layer)), binary);
+    layer = tcalloc(1, sizeof(struct linear_layer));
+    break;
   case LAYERNORM_SERIALIZER:
-    return layer_norm_read(tcalloc(1, sizeof(struct layer_norm)), binary);
+    layer = tcalloc(1, sizeof(struct layer_norm));
+    break;
   case TRANSFORMER_ENC_SERIALIZER:
-    return transformer_enc_layer_read(
-        tcalloc(1, sizeof(struct transfomer_enc_layer)), binary);
+    layer = tcalloc(1, sizeof(struct transfomer_enc_layer));
+    break;
   case RNNCELL_SERIALIZER:
-    return rnn_cell_read(tcalloc(1, sizeof(struct rnn_cell)), binary);
+    layer = tcalloc(1, sizeof(struct rnn_cell));
+    break;
   case DROPOUT_SERIALIZER:
-    return dropout_layer_read(tcalloc(1, sizeof(struct dropout_layer)), binary);
+    layer = tcalloc(1, sizeof(struct dropout_layer));
+    break;
+  default:
+    fprintf(stderr, "Unknown serializer id: %llu", serializer_id);
+    return nullptr;
+  }
+
+  if (!layer)
+    return nullptr;
+
+  switch (serializer_id) {
+  case LINEAR_SERIALIZER:
+    return linear_layer_read(layer, binary);
+  case LAYERNORM_SERIALIZER:
+    return layer_norm_read(layer, binary);
+  case TRANSFORMER_ENC_SERIALIZER:
+    return transformer_enc_layer_read(layer, binary);
+  case RNNCELL_SERIALIZER:
+    return rnn_cell_read(layer, binary);
+  case DROPOUT_SERIALIZER:
+    return dropout_layer_read(layer, binary);
   default:
     fprintf(stderr, "Unknown serializer id: %llu", serializer_id);
     return nullptr;

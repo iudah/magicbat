@@ -83,8 +83,7 @@ Tensor tensor_gather_axis(const Tensor tensor, const Tensor indices, i32 axis) {
             cls = 0;
           }
           u32 a_offset = o_offset + (cls * inner_size) + i;
-          r_data[i + res->offset] =
-              tensor->data->data[a_offset + tensor->offset];
+          r_data[i]    = tensor->data->data[a_offset + tensor->offset];
         }
       }
     }

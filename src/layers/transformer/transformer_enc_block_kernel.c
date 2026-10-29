@@ -55,5 +55,5 @@ u32 transformer_enc_layer_kernels(TransformerEncoderLayer layer,
   len += layer_norm_kernels(&layer->layernorm_1, buffer + 1 + len,
                             buffer_length - 1 - len);
 
-  return N_XFORMER_KERNELS;
+  return (u32)(len + 1);
 }

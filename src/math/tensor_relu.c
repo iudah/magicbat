@@ -30,7 +30,7 @@ Tensor tensor_relu(const Tensor tensor) {
   return res;
 }
 
-#define EPS (1e-8)
+
 Tensor tensor_relu_backward(const Tensor tensor, const Tensor relu,
                             const Tensor grad) {
   if (!tensor)

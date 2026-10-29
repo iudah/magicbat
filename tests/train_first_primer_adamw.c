@@ -144,7 +144,14 @@ int main() {
       printf("Epoch %d | Serialized\n", epoch + 1);
       bin =
           layers_bin_create(home, model_bin ? model_bin : CKPT_NAME, CKPT_VER);
-      layers_write(layers, 8, bin->fp);
+      if (!bin) {
+        printf("failed to create model binary");
+        abort();
+      }
+      if (!layers_write(layers, 8, bin->fp)) {
+        printf("Failed to save layers");
+        abort();
+      };
       tensor_write(weight_matrix, bin->fp);
       tensor_write(positional_encoder, bin->fp);
       fwrite(&adam_steps, sizeof(adam_steps), 1, bin->fp);
@@ -156,13 +163,13 @@ int main() {
     adamw_optimize(optim, nullptr);
     ++adam_steps;
 
-    for (u32 k = 0; k < total_kernels; ++k) {
-      if (kernels[k]) {
-        auto grad = var_grad(kernels[k]);
-        tensor_fill(grad, 0.0F);
-      }
-    }
-
+    // for (u32 k = 0; k < total_kernels; ++k) {
+    //   if (kernels[k]) {
+    //     auto grad = var_grad(kernels[k]);
+    //     tensor_fill(grad, 0.0F);
+    //   }
+    // }
+    var_null_grads(kernels, total_kernels);
     var_destroy(loss);
     tarena_reset(active_arena);
   }
@@ -215,7 +222,7 @@ int main() {
     }
 
     if (inf_limit >= (INF_LIMIT - 1)) {
-      printf("'%s'", inf_buffer);
+      printf("%s", inf_buffer);
       inf_limit     = 0;
       inf_buffer[0] = 0;
       fflush(stdout);

@@ -7,8 +7,6 @@
 #include "var.h"
 #include <math.h>
 
-#define EPS (1e-6)
-
 bool global_norm_clip(Optimizer optimizer, Tensor *grads, f32 *alpha) {
   if (!optimizer)
     return false;

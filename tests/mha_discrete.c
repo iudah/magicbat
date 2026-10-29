@@ -29,8 +29,8 @@ void test_discrete_mha(u32 seq_len) {
   auto         w_k           = to_var(tensor_new(2, (u32[]){d_model, d_model}));
   auto         w_v           = to_var(tensor_new(2, (u32[]){d_model, d_model}));
   auto         target_tensor = tensor_new(3, (u32[]){batch, seq_len, d_model});
-  SgdOptimizer optim =
-      sgd_optimizer_new((Tensor[]){w_q, w_k, w_v}, 3, LR, GRAD_THR, VAL_CLAMP);
+  auto         kernels       = (Tensor[]){w_q, w_k, w_v};
+  SgdOptimizer optim = sgd_optimizer_new(kernels, 3, LR, GRAD_THR, VAL_CLAMP);
 
   for (u32 i = 0; i < input->data->nelements; ++i) {
     input->data->data[i] = X[i];
@@ -73,6 +73,6 @@ void test_discrete_mha(u32 seq_len) {
                  (Tensor[]){var_grad(w_q), var_grad(w_k), var_grad(w_v)});
 
     // 5. Zero Grads & GC
-    var_zero_grad(loss);
+    var_null_grads(kernels, 3);
   }
 }

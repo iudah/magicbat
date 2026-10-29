@@ -31,7 +31,7 @@ static inline bool layer_vt_valid(mem self) {
   const LayerVTable *virt_table = *(const LayerVTable **)self;
   return virt_table && virt_table->name && virt_table->forward &&
          virt_table->destroy && virt_table->track && virt_table->untrack &&
-         virt_table->kernels;
+         virt_table->kernels && virt_table->deinit;
 }
 static Tensor layer_forward(mem self, Tensor input) {
   TASSERT(layer_vt_valid(self) && "layer has no vtable");
@@ -82,11 +82,15 @@ static void layers_destroy(mem layers[], u32 n) {
   for (u32 i = 0; i < n; ++i)
     layer_destroy(layers[i]);
 }
-static void layers_write(mem layers[], u32 n, FILE *binary) {
+static bool layers_write(mem layers[], u32 n, FILE *binary) {
   for (u32 i = 0; i < n; ++i) {
     TASSERT(layer_vt_valid(layers[i]) && "layer has no vtable");
+    if (!layer_vt_valid(layers[i])) {
+      return false;
+    }
     layer_write(LAYER_VT(layers[i])->serializer_id, layers[i], binary);
   }
+  return true;
 }
 static void layers_read(mem layers[], u32 n, FILE *binary) {
   for (u32 i = 0; i < n; ++i) {
@@ -109,7 +113,8 @@ static Tensor layers_forward(mem layers[], u32 n, Tensor input) {
   static bool base##_untrack_v(mem self) { return base##_untrack((T)self); }   \
   static u32  base##_kernels_v(mem self, Tensor buff[], u32 buffer_length) {   \
     return base##_kernels((T)self, buff, buffer_length);                      \
-  }
+  }                                                                            \
+  static bool base##_deinit_v(mem self) { return base##_deinit((T)self); }
 
 #define DEFINE_VTABLE(prefix, base, T, name_str, n_k, ser_id)                  \
   WRAP_LAYER_CB(base, T)                                                       \
@@ -122,6 +127,7 @@ static Tensor layers_forward(mem layers[], u32 n, Tensor input) {
       .track         = base##_track_v,                                         \
       .untrack       = base##_untrack_v,                                       \
       .kernels       = base##_kernels_v,                                       \
+      .deinit        = base##_deinit_v,                                        \
   };
 
 #define LAYER_SET_VT(layer, prefix)                                            \

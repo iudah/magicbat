@@ -53,6 +53,12 @@ bool var_backward(Tensor top);
 bool var_backward_with_grad(Tensor top, Tensor grad);
 bool var_backward_verbose(Tensor top, bool user_thread_safety_assured,
                           Tensor grad);
+
+void var_null_grad(Tensor tensor);
+u32  var_null_grads(Tensor *params, u32 n);
+
+/* Deprecated: prefer var_null_grads(optim->parameters,
+   optim->n_parameters). Kept for callers that only hold the loss tensor. */
 bool var_zero_grad(Tensor top);
 
 static inline Tensor to_var(Tensor var) {

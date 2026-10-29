@@ -31,12 +31,14 @@ Tensor tensor_matmul(const Tensor tensor_a, const Tensor tensor_b) {
 
   if (row < BLOCK_SIZE || col < BLOCK_SIZE || com < BLOCK_SIZE) {
 
-    matmul_lt_block_size(row, col, com, tensor_a->data->data,
-                         tensor_b->data->data, product->data->data);
+    matmul_lt_block_size(row, col, com, tensor_a->data->data + tensor_a->offset,
+                         tensor_b->data->data + tensor_b->offset,
+                         product->data->data + product->offset);
   } else {
 
-    matmul_gt_block_size(row, col, com, tensor_a->data->data,
-                         tensor_b->data->data, product->data->data);
+    matmul_gt_block_size(row, col, com, tensor_a->data->data + tensor_a->offset,
+                         tensor_b->data->data + tensor_b->offset,
+                         product->data->data + product->offset);
   }
 
   goto return_statement;
@@ -78,12 +80,16 @@ Tensor tensor_matmul_wrt_a(const Tensor tensor_grad, const Tensor tensor_b) {
 
   if (row < BLOCK_SIZE || col < BLOCK_SIZE || com < BLOCK_SIZE) {
 
-    matmul_transpose_b_lt_block_size(row, col, com, tensor_grad->data->data,
-                                     tensor_b->data->data, product->data->data);
+    matmul_transpose_b_lt_block_size(
+        row, col, com, tensor_grad->data->data + tensor_grad->offset,
+        tensor_b->data->data + tensor_b->offset,
+        product->data->data + product->offset);
   } else {
 
-    matmul_transpose_b_gt_block_size(row, col, com, tensor_grad->data->data,
-                                     tensor_b->data->data, product->data->data);
+    matmul_transpose_b_gt_block_size(
+        row, col, com, tensor_grad->data->data + tensor_grad->offset,
+        tensor_b->data->data + tensor_b->offset,
+        product->data->data + product->offset);
   }
 
   goto return_statement;
@@ -127,14 +133,16 @@ Tensor tensor_matmul_wrt_b(const Tensor tensor_a, const Tensor tensor_grad) {
 
   if (row < BLOCK_SIZE || col < BLOCK_SIZE || com < BLOCK_SIZE) {
 
-    matmul_transpose_a_lt_block_size(row, col, com, tensor_a->data->data,
-                                     tensor_grad->data->data,
-                                     product->data->data);
+    matmul_transpose_a_lt_block_size(
+        row, col, com, tensor_a->data->data + tensor_a->offset,
+        tensor_grad->data->data + tensor_grad->offset,
+        product->data->data + product->offset);
   } else {
 
-    matmul_transpose_a_gt_block_size(row, col, com, tensor_a->data->data,
-                                     tensor_grad->data->data,
-                                     product->data->data);
+    matmul_transpose_a_gt_block_size(
+        row, col, com, tensor_a->data->data + tensor_a->offset,
+        tensor_grad->data->data + tensor_grad->offset,
+        product->data->data + product->offset);
   }
 
   goto return_statement;

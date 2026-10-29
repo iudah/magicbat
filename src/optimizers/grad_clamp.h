@@ -6,8 +6,6 @@
 #include "type_alias.h"
 #include "var.h"
 
-#define EPS (1e-6)
-
 bool gradient_clamp(Optimizer optimizer, Tensor *grads, f32 alpha) {
   if (!optimizer)
     return false;

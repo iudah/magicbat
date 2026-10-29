@@ -4,7 +4,7 @@
 #include "type_alias.h"
 #include <stdint.h>
 
-#define EPS (1e-6)
+
 
 Tensor tensor_dropout(const Tensor tensor, u8 **mask_ptr, f32 rate) {
   TASSERT(tensor && "Null tensor");

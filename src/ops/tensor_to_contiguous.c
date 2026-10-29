@@ -4,12 +4,18 @@
 #include <stdatomic.h>
 #include <stdint.h>
 
+/**
+ * @return same tensor if contiguous and a new tensor otherwise.
+ */
 Tensor tensor_to_contiguous(Tensor tensor) {
   if (tensor->is_contiguous)
     return tensor;
 
-  Tensor res             = tensor_new(tensor->ndims, tensor->shape);
-  u32    index[MAX_DIMS] = {0};
+  Tensor res = tensor_new(tensor->ndims, tensor->shape);
+  if (!res)
+    return nullptr;
+
+  u32 index[MAX_DIMS] = {0};
   for (u32 i = 0; i < res->data->nelements; ++i) {
     res->data->data[i] = tensor_get(tensor, index);
     tensor_odometer_next(index, res->ndims, tensor->shape);

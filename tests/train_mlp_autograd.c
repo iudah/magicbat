@@ -71,13 +71,11 @@ int main(void) {
 
     printf("Epoch %d, Loss = %.4f\n", epoch, ((Tensor)loss)->data->data[0]);
 
-    var_zero_grad(loss);
-
     var_backward(loss);
 
-    sgd_optimize(optimizer, (Tensor[]){var_grad(w1), var_grad(b1), var_grad(w2),
-                                       var_grad(b2)});
+    sgd_optimize(optimizer, nullptr);
 
+    var_null_grads(parameters, 4);
     var_destroy(loss);
     var_destroy(n_scalar);
   }

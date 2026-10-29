@@ -31,8 +31,7 @@ void ms_backward_fn(Var self) {
     }
     auto tmp = tensor_sum_to_shape(dsub, var_b->base.ndims, var_b->base.shape);
     tensor_add_inplace(var_b->grad, tmp);
-    if (tmp != dsub)
-      tensor_destroy(dsub);
+    tensor_destroy(dsub);
     var_destroy(tmp);
   }
 }

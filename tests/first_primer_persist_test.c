@@ -107,7 +107,7 @@ int main() {
   // TRAINING PHASE
   set_active_arena(train_arena);
   for (u32 epoch = 0; epoch < EPOCH; ++epoch) {
-#define TRAIN_SIZE (VOCAB_SIZE * 7 / 10)
+#define TRAIN_SIZE (DATA_LEN * 7 / 10)
     fill_input(input, target, (i32 *)train_data, TRAIN_SIZE);
     Tensor x_emb = var_embedding(input, weight_matrix);
 
@@ -128,20 +128,24 @@ int main() {
     var_backward(loss);
     sgd_optimize(optim, nullptr);
 
-    for (u32 k = 0; k < total_kernels; ++k) {
-      if (kernels[k]) {
-        auto grad = var_grad(kernels[k]);
-        tensor_fill(grad, 0.0F);
-      }
-    }
-
+    // for (u32 k = 0; k < total_kernels; ++k) {
+    //   if (kernels[k]) {
+    //     auto grad = var_grad(kernels[k]);
+    //     tensor_fill(grad, 0.0F);
+    //   }
+    // }
+    var_null_grads(kernels, total_kernels);
     var_destroy(loss);
 
     tarena_reset(active_arena);
   }
   bin = layers_bin_create(getenv("HOME"), ".magicbat.first_primer", 1);
+  if (!bin) {
+    printf("failed to create binary");
+    abort();
+  }
   layer_write(TRANSFORMER_ENC_SERIALIZER, transformer_0, bin->fp);
-  layer_write(TRANSFORMER_ENC_SERIALIZER, transformer_0, bin->fp);
+  layer_write(TRANSFORMER_ENC_SERIALIZER, transformer_1, bin->fp);
   layer_write(LAYERNORM_SERIALIZER, layer_norm_out, bin->fp);
   layer_write(LINEAR_SERIALIZER, lang_model_head, bin->fp);
   tensor_write(weight_matrix, bin->fp);

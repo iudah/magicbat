@@ -4,8 +4,6 @@
 #include <stdatomic.h>
 #include <stdint.h>
 
-#define EPS (1e-6)
-
 struct dropout_ctx {
   u8 *mask;
   f32 rate;

@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define EPS      1e-6
+
 #define MAX_DIMS 5
 
 /* Helper: compare two tensors element‑wise */

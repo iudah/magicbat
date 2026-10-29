@@ -43,8 +43,8 @@ static Tensor std_pre_ln(LayerNorm ln, Tensor input, mem sublayer,
 /* Standard post-LN:  LN( x + Sublayer(x) )  */
 static Tensor std_post_ln(LayerNorm ln, Tensor input, mem sublayer,
                           Tensor (*sublayer_forward)(mem, Tensor)) {
-  return layer_norm_forward(
-      ln, var_add(input, sublayer_forward(sublayer, input)));
+  return layer_norm_forward(ln,
+                            var_add(input, sublayer_forward(sublayer, input)));
 }
 
 /* ------------------------------------------------------------------ */
@@ -52,13 +52,14 @@ static Tensor std_post_ln(LayerNorm ln, Tensor input, mem sublayer,
 /* ------------------------------------------------------------------ */
 
 static f32 tensor_variance(Tensor t) {
-  u32 n   = tensor_num_elements(t);
+  u32 n    = tensor_num_elements(t);
   f32 mean = 0;
-  for (u32 i = 0; i < n; ++i) mean += t->data->data[i];
+  for (u32 i = 0; i < n; ++i)
+    mean += t->data->data[i + t->offset];
   mean /= (f32)n;
   f32 var = 0;
   for (u32 i = 0; i < n; ++i) {
-    f32 d = t->data->data[i] - mean;
+    f32 d = t->data->data[t->offset + i] - mean;
     var += d * d;
   }
   return var / (f32)n;
@@ -72,11 +73,11 @@ static f32 position_variance(Tensor t /* [B,S,D] */) {
     for (u32 d = 0; d < D; ++d) {
       f32 mean = 0;
       for (u32 s = 0; s < S; ++s)
-        mean += t->data->data[(b * S + s) * D + d];
+        mean += t->data->data[(b * S + s) * D + d + t->offset];
       mean /= (f32)S;
       f32 var = 0;
       for (u32 s = 0; s < S; ++s) {
-        f32 v = t->data->data[(b * S + s) * D + d] - mean;
+        f32 v = t->data->data[(b * S + s) * D + d + t->offset] - mean;
         var += v * v;
       }
       total += var / (f32)S;
@@ -125,12 +126,12 @@ static void test_forward_variance(void) {
   Tensor o_pst = transformer_enc_layer_forward(pst, in);
 
   printf("pattern               out var      pos var\n");
-  printf("current  x + LN(.)   %9.6f   %9.6f\n",
-         tensor_variance(o_cur), position_variance(o_cur));
-  printf("pre-LN   LN(x) + .   %9.6f   %9.6f\n",
-         tensor_variance(o_fix), position_variance(o_fix));
-  printf("post-LN  LN(x + .)   %9.6f   %9.6f\n",
-         tensor_variance(o_pst), position_variance(o_pst));
+  printf("current  x + LN(.)   %9.6f   %9.6f\n", tensor_variance(o_cur),
+         position_variance(o_cur));
+  printf("pre-LN   LN(x) + .   %9.6f   %9.6f\n", tensor_variance(o_fix),
+         position_variance(o_fix));
+  printf("post-LN  LN(x + .)   %9.6f   %9.6f\n", tensor_variance(o_pst),
+         position_variance(o_pst));
 
   printf("\ninterpretation:\n");
   printf("  pos var ~0  -> output does not distinguish positions\n");
@@ -165,8 +166,8 @@ static void test_causal_mask(void) {
   f32 d0 = 0, dL = 0;
   for (u32 d = 0; d < D_MODEL; ++d) {
     f32 a0 = ox->data->data[d] - oy->data->data[d];
-    f32 aL = ox->data->data[(SEQ_SIZE - 1) * D_MODEL + d]
-           - oy->data->data[(SEQ_SIZE - 1) * D_MODEL + d];
+    f32 aL = ox->data->data[(SEQ_SIZE - 1) * D_MODEL + d] -
+             oy->data->data[(SEQ_SIZE - 1) * D_MODEL + d];
     d0 += a0 * a0;
     dL += aL * aL;
   }
@@ -245,10 +246,8 @@ static void test_train_ab(void) {
 
   Tensor p_cur[N_XFORMER_KERNELS];
   Tensor p_fix[N_XFORMER_KERNELS];
-  u32 n_cur =
-      transformer_enc_layer_kernels(cur, p_cur, N_XFORMER_KERNELS);
-  u32 n_fix =
-      transformer_enc_layer_kernels(fix, p_fix, N_XFORMER_KERNELS);
+  u32    n_cur = transformer_enc_layer_kernels(cur, p_cur, N_XFORMER_KERNELS);
+  u32    n_fix = transformer_enc_layer_kernels(fix, p_fix, N_XFORMER_KERNELS);
 
   SgdOptimizer opt_cur =
       sgd_optimizer_new(p_cur, n_cur, LR, GRAD_THR, VAL_CLAMP);
@@ -282,8 +281,8 @@ static void test_train_ab(void) {
     sgd_optimize(opt_cur, nullptr);
     sgd_optimize(opt_fix, nullptr);
 
-    var_zero_grad(lc);
-    var_zero_grad(lf);
+    var_null_grads(p_cur, n_cur);
+    var_null_grads(p_fix, n_fix);
 
     tarena_reset(step_arena);
   }

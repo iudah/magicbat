@@ -22,6 +22,7 @@ bool rnn_cell_untrack(RNNCell layer);
 
 bool    rnn_cell_write(RNNCell layer, FILE *binary);
 RNNCell rnn_cell_read(RNNCell layer, FILE *binary);
+bool    rnn_cell_deinit(RNNCell layer);
 
 DEFINE_VTABLE(rnn_cell, rnn_cell, RNNCell, "RNNCell", 2, RNNCELL_SERIALIZER)
 #endif

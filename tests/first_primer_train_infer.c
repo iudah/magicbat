@@ -89,7 +89,7 @@ int main() {
   // TRAINING PHASE
   set_active_arena(train_arena);
   for (u32 epoch = 0; epoch < EPOCH; ++epoch) {
-#define TRAIN_SIZE VOCAB_SIZE * 7 / 10
+#define TRAIN_SIZE (DATA_LEN * 7 / 10)
     fill_input(input, target, (i32 *)train_data, TRAIN_SIZE);
     Tensor x_emb = var_embedding(input, weight_matrix);
 
@@ -109,13 +109,15 @@ int main() {
     var_backward(loss);
     sgd_optimize(optim, nullptr);
 
-    for (u32 k = 0; k < total_kernels; ++k) {
-      if (kernels[k]) {
-        auto grad = var_grad(kernels[k]);
-        tensor_fill(grad, 0.0F);
-      }
-    }
-
+    // for (u32 k = 0; k < total_kernels; ++k) {
+    //   if (kernels[k]) {
+    //     ((Var)kernels[k])->grad = nullptr;
+    //
+    //     auto grad = var_grad(kernels[k]);
+    //     tensor_fill(grad, 0.0F);
+    //   }
+    // }
+    var_null_grads(kernels, total_kernels);
     var_destroy(loss);
 
     tarena_reset(active_arena);

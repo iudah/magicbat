@@ -170,7 +170,7 @@ int main() {
              tensor_get(total_loss, (u32[MAX_DIMS]){0}));
     }
 
-    var_zero_grad(total_loss);
+    var_null_grads(params, 4);
   }
 
   // 5. Cleanup

@@ -7,13 +7,13 @@
 
 void concat_non_contiguous(Tensor concat, u32 axis, Tensor *tensors,
                            const u32 *bounds, const u32 n_tensor) {
-  u32 pivot_index = 0;
-  u32 pivot = 0;
+  u32 pivot_index  = 0;
+  u32 pivot        = 0;
   u32 pivot_tensor = 0;
 
-  auto ndims = concat->ndims;
-  auto data = concat->data->data;
-  u32 index[MAX_DIMS] = {0};
+  auto ndims           = concat->ndims;
+  auto data            = concat->data->data;
+  u32  index[MAX_DIMS] = {0};
   // for (u32 i = 0; i < concat->data->nelements; ++i) {
   /*if (axis == 0 && tensors[pivot_tensor]->is_contiguous) {
     auto nelements = tensors[pivot_tensor]->data->nelements;
@@ -47,8 +47,8 @@ Tensor tensor_concat(u32 n_tensor, Tensor *tensors, u32 axis) {
   if (n_tensor == 1)
     return *tensors;
 
-  u32 shape[MAX_DIMS];
-  u32 ndims = tensors[0]->ndims;
+  u32  shape[MAX_DIMS];
+  u32  ndims          = tensors[0]->ndims;
   bool all_contiguous = true;
   for (u32 i = 0; i < ndims; ++i) {
     shape[i] = tensors[0]->shape[i];
@@ -62,19 +62,21 @@ Tensor tensor_concat(u32 n_tensor, Tensor *tensors, u32 axis) {
     shape[axis] += tensors[i]->shape[axis];
     bounds[i] = shape[axis];
 
-    if (i == axis)
-      continue;
+    // if (i == axis)
+    //   continue;
 
     if (tensors[i]->ndims != ndims)
       return nullptr;
 
     for (u32 j = 0; j < ndims; ++j) {
+      if (j == axis)
+        continue;
       if (tensors[i]->shape[j] != shape[j])
         return nullptr;
     }
   }
 
-  u32 offset = 0;
+  u32  offset = 0;
   auto concat = tensor_new(ndims, shape);
   if (axis == 0 && all_contiguous) {
     auto data = concat->data->data;

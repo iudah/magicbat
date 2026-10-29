@@ -16,12 +16,12 @@ typedef struct {
   u32 header_bytes;
   /* bit0 = has_crc32, reserved */
   u32 flags;
-} BinHeader;
+} mb_bin_header;
 
 typedef struct {
-  FILE     *fp;
-  BinHeader hdr;
-} BinStream;
+  FILE         *fp;
+  mb_bin_header hdr;
+} mb_bin_stream;
 
 typedef enum serializer_enum {
   UNKNOWN_LAYER_SERIALIZER   = 0ULL,
@@ -32,11 +32,11 @@ typedef enum serializer_enum {
   DROPOUT_SERIALIZER         = 0xD709ULL
 } LayerSerializerId;
 
-bool       layer_write(LayerSerializerId serializer, mem layer, FILE *binary);
-mem        layer_read(FILE *binary);
-BinStream *layers_bin_create(const char *path, const char *bin_name,
-                             u32 version);
-BinStream *layers_bin_open(const char *path, const char *bin_name);
-bool       layers_bin_close(BinStream *bstream);
+bool layer_write(LayerSerializerId serializer, mem layer, FILE *binary);
+mem  layer_read(FILE *binary);
+mb_bin_stream *layers_bin_create(const char *path, const char *bin_name,
+                                 u32 version);
+mb_bin_stream *layers_bin_open(const char *path, const char *bin_name);
+bool           layers_bin_close(mb_bin_stream *bstream);
 
 #endif // !LAYER_BINARY

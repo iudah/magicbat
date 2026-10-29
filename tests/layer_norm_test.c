@@ -31,7 +31,7 @@ int main() {
 
   auto dinput = var_grad(input);
 
-#define EPS 1e-4
+
 
   bool success = true;
   for (u32 i = 0; i < out->data->nelements; ++i) {

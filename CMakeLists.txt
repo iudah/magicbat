@@ -113,6 +113,7 @@ src/var/var_div.c
 src/var/var_matmul.c
 src/var/var_mul.c
 src/var/var_new.c
+src/var/var_null_grad.c
 src/var/var_relu.c
 src/var/var_sub.c
 src/var/var_sum.c
@@ -173,7 +174,6 @@ include/layers/linear/linear_layer.h
 include/layers/layer_norm/layer_norm.h
 include/layers/transformer/transformer_enc_layer.h
 include/layers/bin/layer_bin.h
-include/layers/dropout_layer.h
 include/layers/dropout/dropout_layer.h
 include/optimizers/sgd.h
 include/optimizers/adam.h
